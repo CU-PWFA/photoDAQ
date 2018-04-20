@@ -6,21 +6,15 @@ Created on Wed Apr  4 15:07:54 2018
 @author: cu-pwfa
 """
 
-import PyCapture2 as pc2
 import globalVAR as Gvar
+import Camera as C
 import datetime as dt
 import os
 
-# Connect to Camera
-bus = pc2.BusManager()
-if not bus.getNumOfCameras():
-    print('\nNo Cameras Detected.\n')
-    exit()
-    
-cam = pc2.Camera()
-cam.connect(bus.getCameraFromIndex(0))
+# Initialize Camera
+Cam = C.Camera(0)
 
-SET = True
+SET = Cam.cam
 while SET:
     
     # Identify DataSetNumber
@@ -43,18 +37,10 @@ while SET:
         os.makedirs('META/year_{}/month_{}/day_{}'.format(YEAR, MONTH, DAY))
     if not os.path.exists('IMAGES/year_{}/month_{}/day_{}/{}'.format(YEAR, MONTH, DAY, dataSetNum)):
         os.makedirs('IMAGES/year_{}/month_{}/day_{}/{}'.format(YEAR, MONTH, DAY, dataSetNum))
-        
-    while True:
-        try:
-            numOfPhotos = int(input('\nNumber of Photos: '))
-            break
-        except:
-            print('\nInvalid Answer')
-            
-    dataSetDesc = input('\nData Set Description: ')
-
-    Gvar.takePhotoSet(cam, numOfPhotos, dataSetDesc)
+    
+    Cam.takePhotoSet()
     
     SET = Gvar.promptREPEAT()
-    
-cam.disconnect()   
+
+if Cam.cam:    
+    Cam.disconnect()

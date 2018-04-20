@@ -62,5 +62,3 @@ metaDATA = ast.literal_eval(str(metaDATA, 'ascii'))
 print()
 print(metaDATA)
 print()
-
-#IMAGES/year_2018/month_04/day_10/1804100003/Cam03_1804100003_0002.tiff

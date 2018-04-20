@@ -14,44 +14,36 @@ Created on Wed Feb 28 11:23:09 2018
 #                                                                       #
 #########################################################################
 
-
-import PyCapture2 as pc2
 import datetime as dt
 import os
 import globalVAR as Gvar
+import Camera as C
 
-# Detect Camera
-bus = pc2.BusManager()
-numOfCam = bus.getNumOfCameras()
-if not numOfCam:
-    print('\nNo Cameras Detected.\n')
-    exit()
- 
-# Connect to Camera
-c = pc2.Camera()
-c.connect(bus.getCameraFromIndex(0))
+# Initialize Camera
+Cam = C.Camera(0)
 
-# Identify photo ID number
-dataSetNum = Gvar.getDataSetNum()
+if Cam.cam:
+    # Identify photo ID number
+    dataSetNum = Gvar.getDataSetNum()
+    
+    # Determine Date and Make Necessary Directories
+    date = dt.datetime.now()
+    YEAR = date.year
+    MONTH = Gvar.stringTIME(date.month)
+    DAY = Gvar.stringTIME(date.day)
+    
+    if not os.path.exists('IMAGES/year_{}'.format(YEAR)):
+        os.makedirs('IMAGES/year_{}'.format(YEAR))
+        os.makedirs('META/year_{}'.format(YEAR))
+    if not os.path.exists('IMAGES/year_{}/month_{}'.format(YEAR, MONTH)):
+        os.makedirs('IMAGES/year_{}/month_{}'.format(YEAR, MONTH))
+        os.makedirs('META/year_{}/month_{}'.format(YEAR, MONTH))
+    if not os.path.exists('IMAGES/year_{}/month_{}/day_{}'.format(YEAR, MONTH, DAY)):
+        os.makedirs('IMAGES/year_{}/month_{}/day_{}'.format(YEAR, MONTH, DAY))
+        os.makedirs('META/year_{}/month_{}/day_{}'.format(YEAR, MONTH, DAY))
+    if not os.path.exists('IMAGES/year_{}/month_{}/day_{}/{}'.format(YEAR, MONTH, DAY, dataSetNum)):
+        os.makedirs('IMAGES/year_{}/month_{}/day_{}/{}'.format(YEAR, MONTH, DAY, dataSetNum))
 
-# Determine Date and Make Necessary Directories
-date = dt.datetime.now()
-YEAR = date.year
-MONTH = Gvar.stringTIME(date.month)
-DAY = Gvar.stringTIME(date.day)
-
-if not os.path.exists('IMAGES/year_{}'.format(YEAR)):
-    os.makedirs('IMAGES/year_{}'.format(YEAR))
-    os.makedirs('META/year_{}'.format(YEAR))
-if not os.path.exists('IMAGES/year_{}/month_{}'.format(YEAR, MONTH)):
-    os.makedirs('IMAGES/year_{}/month_{}'.format(YEAR, MONTH))
-    os.makedirs('META/year_{}/month_{}'.format(YEAR, MONTH))
-if not os.path.exists('IMAGES/year_{}/month_{}/day_{}'.format(YEAR, MONTH, DAY)):
-    os.makedirs('IMAGES/year_{}/month_{}/day_{}'.format(YEAR, MONTH, DAY))
-    os.makedirs('META/year_{}/month_{}/day_{}'.format(YEAR, MONTH, DAY))
-if not os.path.exists('IMAGES/year_{}/month_{}/day_{}/{}'.format(YEAR, MONTH, DAY, dataSetNum)):
-    os.makedirs('IMAGES/year_{}/month_{}/day_{}/{}'.format(YEAR, MONTH, DAY, dataSetNum))
-
-# Prompt Photo Capture  
-Gvar.takePHOTO(c)
-c.disconnect()
+    Cam.takePhoto()
+    
+    Cam.disconnect()
