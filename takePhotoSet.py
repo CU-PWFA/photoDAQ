@@ -6,6 +6,14 @@ Created on Wed Apr  4 15:07:54 2018
 @author: cu-pwfa
 """
 
+#########################################################################
+#                                                                       #
+#   This code allows the user to take a set of photos from a single     #
+#   camera.  The photos are automatically placed in the appropriate     #
+#   directories and the photo ID number is updated accordingly.         #
+#                                                                       #
+#########################################################################
+
 import globalVAR as Gvar
 import Camera as C
 import datetime as dt

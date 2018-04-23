@@ -12,10 +12,10 @@ import datetime as dt
 import globalVAR as Gvar
 
 class Camera():
-    def __init__(self, camIND, camPIXEL=16, camGAIN=0):
+    def __init__(self, camIND, camPIXEL=16, camPixMONO=False, camGAIN=0):
         self.connectCam(camIND)
         if self.cam:
-            self.prepareSettings(camPIXEL, camGAIN)
+            self.prepareSettings(camPIXEL, camPixMONO, camGAIN)
     
     def connectCam(self, camIND):
         self.bus = pc2.BusManager()
@@ -35,16 +35,27 @@ class Camera():
             self.serialNUM = str(self.camINFO.serialNumber)
             self.camNAME = Gvar.camNAME[str(self.serialNUM)]
             
-    def prepareSettings(self, camPIXEL, camGAIN):
-        if camPIXEL == 8:
-            self.dtype = np.uint8
-            pixelFormat = pc2.PIXEL_FORMAT.RAW8
-        elif camPIXEL == 16:
-            self.dtype = np.uint16
-            pixelFormat = pc2.PIXEL_FORMAT.RAW16
-        else:
-            pixelFormat = False
-            print('\nError: Unsupported Pixel Format')
+    def prepareSettings(self, camPIXEL, camPixMONO, camGAIN):
+        if not camPixMONO:
+            if camPIXEL == 8:
+                self.dtype = np.uint8
+                pixelFormat = pc2.PIXEL_FORMAT.RAW8
+            elif camPIXEL == 16:
+                self.dtype = np.uint16
+                pixelFormat = pc2.PIXEL_FORMAT.RAW16
+            else:
+                pixelFormat = False
+                print('\nError: Unsupported Pixel Format')
+        elif camPixMONO:
+            if camPIXEL == 8:
+                self.dtype = np.uint8
+                pixelFormat = pc2.PIXEL_FORMAT.MONO8
+            elif camPIXEL == 16:
+                self.dtype = np.uint16
+                pixelFormat = pc2.PIXEL_FORMAT.MONO16
+            else:
+                pixelFormat = False
+                print('\nError: Unsupported Pixel Format')
         
         fmt7info = self.cam.getFormat7Info(0)[0]
         self.pixROW = fmt7info.maxHeight
@@ -77,6 +88,14 @@ class Camera():
         
     def disconnect(self):
         self.cam.disconnect()
+    
+    def retrieveBuffer(self):
+        try:
+            image = self.cam.retrieveBuffer()
+            return image
+        except pc2.Fc2error as fc2Err:
+            print('\nError retrieving buffer : ', fc2Err)
+            return False
         
     def takePhoto(self):
         setDesc = input('\nData Set Description: ')

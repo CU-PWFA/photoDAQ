@@ -6,6 +6,16 @@ Created on Thu Mar 29 21:50:46 2018
 @author: cu-pwfa
 """
 
+#########################################################################
+#                                                                       #
+#   This code prints the metadata stored in a single .tiff image.       #
+#   To find the image, the user must know the date the file was         #
+#   taken, the last four digist of the data set number, the camera      #
+#   name and the shot number of the image.  The metadata is coded       #
+#   in base64.                                                          #
+#                                                                       #
+#########################################################################
+
 from PIL import Image
 import ast
 import base64
