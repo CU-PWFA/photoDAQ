@@ -89,12 +89,13 @@ class Camera():
     def disconnect(self):
         self.cam.disconnect()
     
-    def retrieveBuffer(self):
+    def retrieveBuffer(self, verbose=True):
         try:
             image = self.cam.retrieveBuffer()
             return image
         except pc2.Fc2error as fc2Err:
-            print('\nError retrieving buffer : ', fc2Err)
+            if verbose:
+                print('\nError retrieving buffer : ', fc2Err)
             return False
         
     def takePhoto(self):

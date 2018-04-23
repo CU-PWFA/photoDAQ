@@ -15,10 +15,13 @@ cam.startCapture()
 
 try:
     while True:
-        image = cam.retrieveBuffer()
-        cv_image = np.frombuffer(bytes(image.getData()), dtype=cam.dtype).reshape( (cam.pixROW, cam.pixCOL) )
-        cv2.imshow('frame',cv_image)
-        cv2.waitKey(1)
+        image = cam.retrieveBuffer(verbose=False)
+        if image:
+            cv_image = np.frombuffer(bytes(image.getData()), dtype=cam.dtype).reshape( (cam.pixROW, cam.pixCOL) )
+            cv2.imshow('frame',cv_image)
+            cv2.waitKey(1)
+        else:
+            continue
 except KeyboardInterrupt:
     cam.stopCapture()
     cam.disconnect()
