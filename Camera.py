@@ -12,10 +12,10 @@ import datetime as dt
 import globalVAR as Gvar
 
 class Camera():
-    def __init__(self, camIND, camPIXEL=16, camPixMONO=False, camGAIN=0):
+    def __init__(self, camIND, camPIXEL=16, camPixMONO=False, camGAIN=0, camSHUTTER=10):
         self.connectCam(camIND)
         if self.cam:
-            self.prepareSettings(camPIXEL, camPixMONO, camGAIN)
+            self.prepareSettings(camPIXEL, camPixMONO, camGAIN, camSHUTTER)
     
     def connectCam(self, camIND):
         self.bus = pc2.BusManager()
@@ -35,7 +35,7 @@ class Camera():
             self.serialNUM = str(self.camINFO.serialNumber)
             self.camNAME = Gvar.camNAME[str(self.serialNUM)]
             
-    def prepareSettings(self, camPIXEL, camPixMONO, camGAIN):
+    def prepareSettings(self, camPIXEL, camPixMONO, camGAIN, camSHUTTER):
         if not camPixMONO:
             if camPIXEL == 8:
                 self.dtype = np.uint8
@@ -73,6 +73,12 @@ class Camera():
         gain.autoManualMode = False
         gain.absValue = camGAIN
         self.cam.setProperty(gain)
+        
+        shutPROP = pc2.PROPERTY_TYPE.SHUTTER
+        shut = self.cam.getProperty(shutPROP)
+        shut.autoManualMode = False
+        shut.absValue = camSHUTTER
+        self.cam.setProperty(shut)
         
     def startCapture(self):
         self.cam.startCapture()
