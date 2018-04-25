@@ -11,6 +11,9 @@ import base64
 import subprocess
 
 def stringTIME(timeUNIT, powOfTen=1):
+    # Convert timeUNIT (integer) to a string with as many place 
+    # holding zeros preceding the integer as specified by powOfTen.
+    # For example, stringTIME(1, 5) returns '00001'.
     if timeUNIT != 0:
         zeroSTRG = ''
         while powOfTen >= 0:
@@ -23,6 +26,7 @@ def stringTIME(timeUNIT, powOfTen=1):
         return '0'*(powOfTen+1)    
 
 def writeNewDataSetNum():
+    # Writes a new data set number for the present date.
     now = dt.datetime.now()
     year = str(now.year-2000)
     month = stringTIME(now.month)
@@ -32,9 +36,11 @@ def writeNewDataSetNum():
     
 
 def getDataSetNum():
-    ### This function reads the DataSetNumber from Meta/last_DataSet.txt 
-    ### and compares it to today's date.  The function returns the relevant
-    ### DataSetNumber, determined by either the .txt file or the date.
+    # Reads the latest Data Set Number from Meta/last_DataSet.txt 
+    # and compares it to today's date.  If the latest Data Set
+    # Number matches today's date then the function returns the 
+    # previous Data Set Number + 1.  If the number does not match
+    # the date, the function returns a new number that does.
     with open('META/last_DataSet.txt','r') as file:
         data = file.readlines()    
     dataSetPrev = data[5]
@@ -58,8 +64,8 @@ def getDataSetNum():
     return dataSetNum
 
 def advDataSetNum(dataSetNum):
-    ### This function writes dataSetNum as the new DataSetNumber
-    ### in Meta/last_DataSet.txt
+    # Writes dataSetNum as the new Data 
+    # Set Number in Meta/last_DataSet.txt
     with open('META/last_DataSet.txt','r') as file:
         data = file.readlines()   
     
@@ -69,6 +75,8 @@ def advDataSetNum(dataSetNum):
         file.writelines(data)
 
 def promptREPEAT():
+    # Prompts the user to decide if they want to continue 
+    # with their current process.
     SET = True
     while SET:
         ans = input('\nDo you want to take more photos? (y/n): ')
@@ -81,6 +89,8 @@ def promptREPEAT():
             continue
 
 def writeTimeStamp(date):
+    # Returns the system's internal clock in a readable
+    # year/month/day/hour/minute/second/microsecond time stamp.
     year = date.year
     month = stringTIME(date.month)
     day = stringTIME(date.day)
@@ -93,6 +103,7 @@ def writeTimeStamp(date):
     return TS
         
 def writeMetaData(serialNum, dataSET, dateNOW, shotNUM, imageDESC):
+    # Returns a dictionary which holds an image's meta data.
     Dict = {}
     Dict['CamName'] = camNAME[serialNum]+': '+serialNum
     Dict['DatasetID'] = dataSET
@@ -103,12 +114,14 @@ def writeMetaData(serialNum, dataSET, dateNOW, shotNUM, imageDESC):
     return Dict
 
 def saveMetaDATA(meta, fileNAME):
+    # Writes an image's meta data to its tiff tag (270).
     fileNAME = fileNAME+'.tiff'
     metaBYTE = str(meta).encode()
     metaBASE = str(base64.b64encode(metaBYTE), 'ascii')
     subprocess.call('tiffset -s 270 '+metaBASE+' '+fileNAME, shell=True)
 
 def writeMetaDataTxt(dataSetNum, imageDESC, serialNUM, succRATE, timeSTAMP):
+    # Writes a .txt file that records a Data Set's meta data.
     now = dt.datetime.now()
     year = now.year
     month = stringTIME(now.month)
@@ -131,6 +144,7 @@ def writeMetaDataTxt(dataSetNum, imageDESC, serialNUM, succRATE, timeSTAMP):
         else:
             file.write('shot {}: FAIL\n'.format(j+1))
     file.close()    
-            
+
+# Camera Name dictionary
 camNAME = {'17529184':'Cam01', '17570564':'Cam02', '17571186':'Cam03', '17583372':'Cam04'}       
 

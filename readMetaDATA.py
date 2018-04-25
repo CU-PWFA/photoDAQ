@@ -10,7 +10,7 @@ Created on Thu Mar 29 21:50:46 2018
 #                                                                       #
 #   This code prints the metadata stored in a single .tiff image.       #
 #   To find the image, the user must know the date the file was         #
-#   taken, the last four digist of the data set number, the camera      #
+#   taken, the last four digits of the data set number, the camera      #
 #   name and the shot number of the image.  The metadata is coded       #
 #   in base64.                                                          #
 #                                                                       #

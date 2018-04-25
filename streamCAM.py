@@ -6,6 +6,14 @@ Created on Mon Apr 23 12:44:44 2018
 @author: cu-pwfa
 """
 
+##########################################################
+#                                                        #
+#    This script opens a live stream of any connected    #
+#    camera.  To close the stream after opening press    #
+#    ctrl+c.                                             #
+#                                                        #
+##########################################################
+
 import Camera as C
 import cv2
 import numpy as np
