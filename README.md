@@ -4,9 +4,9 @@
 
 ### Setup USB device access
 
-For interfacing with USB devices, we use pyusb. 
+For interfacing with USB devices, we use pyusb (NOTE: a lot of USB devices can be controlled just using pyserial, for these devices you can ignore this). 
 Out of the box pyusb does not have access to the USB ports unless it is run as sudo, this can be changed by udev rule.
-Open any file in /lib/udev/rules.d/ and add the line
+Open any file in /lib/udev/rules.d/ and add the line (I save in 10-local.rules)
 ```
 ACTION=="add", SUBSYSTEMS=="usb", ATTRS{idVendor}=="171b", ATTRS{idProduct}=="2001", MODE="660", GROUP="plugdev"
 ```
@@ -21,3 +21,28 @@ sudo udevadm control --reload (that is minus minus reload)
 ```
 sudo udevadm trigger
 ```
+
+### Setup USB serial devices
+
+The only thing we need to do for USB serial devices is find the port they are on.
+Run the command
+```
+dmesg | grep tty
+```
+to find the device list. 
+The part that says "ttyACMX" says that the device is on port X.
+
+### Permissions
+
+The user needs to be added to dialout, and tty. Use the command
+```
+sudo usermod -a -G <group> <username>
+```
+The user will need to logout and log back in for the changes to take effect.
+
+### pyvisa
+
+To see if everything is installed correctly for pyvisa use
+```
+python -m visa info
+``` 

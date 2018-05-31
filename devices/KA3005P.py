@@ -28,12 +28,15 @@ class KA3005P():
             device name sent to pyserial.
         """
         name = "/dev/ttyACM" + str(port)
-        self.PS = serial.Serial(name,
-                                baudrate=9600,
-                                bytesize=8,
-                                parity='N',
-                                stopbits=1,
-                                timeout=1)
+        try:
+            self.PS = serial.Serial(name,
+                                    baudrate=9600,
+                                    bytesize=8,
+                                    parity='N',
+                                    stopbits=1,
+                                    timeout=1)
+        except:
+            print("USB error: Could not connect to the power supply.")    
         self.ID = self.get_ID()
         print('Power supply ID:', self.ID.decode("utf-8") )
         
