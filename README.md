@@ -46,3 +46,12 @@ To see if everything is installed correctly for pyvisa use
 ```
 python -m visa info
 ``` 
+
+### pyvisa-py bug
+
+There is a bug in pyvisa-py that is fixed in the latest development version but not the latest release.
+It makes the host try and read data an extra time from the oscilloscope, the second read times out making the oscilloscope replies really slow.
+To fix in pyvisa-py -> usb.py change line 98 to read
+```
+lambda current: True
+```
