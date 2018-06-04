@@ -14,20 +14,20 @@ class KA3005P():
     Note, the power supply needs at least 0.05s between commands or else
     it will not execute all of the commands.
     """
-    def __init__(self, port=0):
+    def __init__(self, address):
         """ Create the serial object for the power supply. """
-        self.connectPS(port)
+        self.connectPS(address)
         
-    def connectPS(self, port):
+    def connectPS(self, address):
         """ Connect to the power supply and verify the connection. 
         
         Parameters
         ----------
-        port : int
-            The port the device is connected to, "/dev/ttyACM"+port is the 
+        port : string
+            The port the device is connected to, "/dev/<address>" is the 
             device name sent to pyserial.
         """
-        name = "/dev/ttyACM" + str(port)
+        name = "/dev/" + address
         try:
             self.PS = serial.Serial(name,
                                     baudrate=9600,
@@ -175,5 +175,9 @@ class KA3005P():
     def turn_off(self):
         """ Turn the power supply off. """
         self.PS.write(b"OUT0")
+        
+    def close(self):
+        """ Close the instrument (turn off, dont need to disconnect). """
+        self.turn_off()
         
     

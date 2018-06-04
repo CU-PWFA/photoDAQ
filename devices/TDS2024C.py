@@ -19,7 +19,6 @@ class TDS2024C():
         """ Create the serial object for the oscilloscope. """
         self.connectOS(port)
         self.setupOS()
-        self.OS.timeout = 25e4
         self.pre_fields = [
                 "Byte number",      #BYT_Nr bytes per data point (byte width)
                 "Bit number",       #BIT_Nr bits per data point (bit width)
@@ -62,6 +61,8 @@ class TDS2024C():
     
     def setupOS(self):
         """ Set settings required for correct waveform acquisition. """
+        self.OS.read_termination='\n'
+        #self.OS.chunk_size = 102400    # pyvisa-py hardcodes chunch size
         self.set_encoding("RIBinary")   # Binary, signed integer, big-endian
         self.set_bytes(1)               # Send data as a single byte
         self.set_data_start(1)          # Transfer the entire waveform
@@ -249,6 +250,10 @@ class TDS2024C():
         """ Check if the oscilloscope has a pending command. """
         return self.OS.query("BUSY?")
     
+    def close(self):
+        """ Close the instrument (turn off, dont need to disconnect). """
+        self.OS.close()
+    
     # Oscilloscope data managment
     #--------------------------------------------------------------------------
     def decode_preamble(self, pre):
@@ -268,6 +273,9 @@ class TDS2024C():
         pre = pre.strip("\n")   #Remove the newline from the end
         pre = pre.split(";")    #Brake the string into the different fields
         for i in range(len(pre)):
+            if pre[i] == '':
+                print('Scope Error: Empty preamble')
+                return preamble
             if self.pre_format[i] == "int":
                 preamble[self.pre_fields[i]] = int(pre[i])
             elif self.pre_format[i] == "float":
@@ -360,6 +368,8 @@ class TDS2024C():
             The array of time values for each sample point in seconds.
         y : array-like
             The array of sample values in volts.
+        pre : array-like
+            The dictionary containing the preamble data.
         """
         pre = self.get_preamble()
         curve = self.get_curve()
@@ -369,7 +379,7 @@ class TDS2024C():
             return [], []
         y = self.binary_to_volts(curve, pre)
         t = self.build_t(pre)
-        return t, y
+        return t, y, pre
     
     def acquire_waveform(self):
         """ The oscilloscope will acquire a waveform and transmit it.
