@@ -20,7 +20,7 @@ import globalVAR as Gvar
 
 def main(arg):
     # Set the save path for the data
-    file.PATH = "/media/robert/Data_Storage/daq/"
+    file.PATH = "/media/rariniello/Data_Storage/daq/"
     # Create a new data set number
     file.check_log() # Make sure the log exists, if it doesn't, create it
     dataSet = Gvar.getDataSetNum()
@@ -45,7 +45,13 @@ def main(arg):
     startTime = Gvar.get_timestamp()
     for i in range(arg[3]):
         shot = i+1
-        ret = getattr(script, 'measure')(i)
+        for attempt in range(10):
+            try:
+                ret = getattr(script, 'measure')(i)
+            except:
+                continue
+            break
+        
         for name in instr:
             meta = ret[name]['meta']
             meta['INSTR'] = name
