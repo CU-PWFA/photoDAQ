@@ -16,7 +16,7 @@ adduser username plugdev
 ```
 Finally, force the udev system to restart and see the changes, the device will probably need to be unplugged.
 ```
-sudo udevadm control --reload (that is minus minus reload)
+sudo udevadm control --reload
 ```
 ```
 sudo udevadm trigger
@@ -34,7 +34,7 @@ The part that says "ttyACMX" says that the device is on port X.
 
 ### Permissions
 
-The user needs to be added to dialout, and tty. Use the command
+The user needs to be added to dialout, plugdev, and tty. Use the command
 ```
 sudo usermod -a -G <group> <username>
 ```

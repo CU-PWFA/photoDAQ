@@ -20,18 +20,20 @@ def setup(instr):
     PS = instr['KA3005P']
     OS = instr['TDS2024C']
     
-    N = 10
-    voltages = np.linspace(0., 30., N)
+    N = 100
+    voltages = np.linspace(0.65, 30., N)
 
     PS.turn_on()
     OS.acquire_off()
-    OS.set_acquisition_mode("SAMple")
+    OS.set_acquisition_stop("SEQuence")
+    OS.set_acquisition_mode("AVErage")
+    OS.set_average_num(128)
 
 def measure(i):
     PS.set_voltage(voltages[i])
     time.sleep(0.1) # Give the power supply enough time to set the voltage
     OS.acquire_on()
-    time.sleep(2)
+    time.sleep(14)
     t, y, pre = OS.retrieve_current_waveform()
     ret = {
             'KA3005P' : {
