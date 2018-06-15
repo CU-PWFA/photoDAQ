@@ -50,8 +50,19 @@ python -m visa info
 ### pyvisa-py bug
 
 There is a bug in pyvisa-py that is fixed in the latest development version but not the latest release.
-It makes the host try and read data an extra time from the oscilloscope, the second read times out making the oscilloscope replies really slow.
+It makes the host try and read data an extra time from the oscilloscope, the second read times out making the oscilloscope reply really slow.
 To fix in pyvisa-py -> usb.py change line 98 to read
 ```
 lambda current: True
 ```
+
+### pyCapture
+
+When installing pyCapture in an enviornment, you need to run python as root. However, the root user doesn't know you are in an enviornment and doesn't install the package in the enviornment. Just point sudo to the correct python and it all works fine, from the the directory where pyCapture was extracted I use the command
+```
+sudo ~/anaconda3/envs/CU-PWFA/bin/python setup.py install
+```
+
+### Setup ethernet for the cameras
+
+The cameras are setup to operate in LLO (Link-Local Only mode). Once the camera is connected, the small LED on the back will begin to blink. If it blinks three times in a row about every second, then the camera is in LLO mode, if it doesn't blink three times it is in another mode. The wired connection in linux needs to be setup as an LLO connection in order to recognize the camera. Click on the connections button in the top right corner, then go to edit connections. In the menu that pops up select the etherent connection the camera is connected to and click edit. Go to the IPv4 tab and change the method to Link-Local Only and flyCap2 should detect the camera.
