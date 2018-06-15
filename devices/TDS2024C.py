@@ -57,6 +57,7 @@ class TDS2024C():
         except:
             print("USB error: Could not connect to the oscilloscope.")
         self.ID = self.get_ID()
+        self.serialNum = self.ID.split(',')[2]
         print('Oscilloscope ID:', self.ID)
     
     def setupOS(self):
