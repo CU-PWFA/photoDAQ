@@ -11,12 +11,12 @@ import PyCapture2 as pc2
 class Camera():
     """ Class to control the FLIR cameras. """
     
-    def __init__(self, ind=0):
+    def __init__(self, serial):
         """ Create the pyCapture Camera object fo the camera. """
-        self.connectCam(ind)
+        self.connectCam(serial)
         self.setupCam()
     
-    def connectCam(self, ind):
+    def connectCam(self, serial):
         """ Connect to the camera and verify the connection. 
         
         Parameters
@@ -32,7 +32,7 @@ class Camera():
             self.cam = False
         else:
             self.cam = pc2.GigECamera()
-            self.guid = self.bus.getCameraFromIndex(ind)
+            self.guid = self.bus.getCameraFromSerialNumber(serial)
             try:
                 self.cam.connect(self.guid)
             except:
@@ -153,12 +153,8 @@ class Camera():
         image : obj
             A PyCapture2.Image object which includes the image data.
         """
-        try:
-            image = self.cam.retrieveBuffer()
-            return image
-        except pc2.Fc2error as fc2Err:
-            print('Error retrieving buffer: ', fc2Err)
-            return False
+        image = self.cam.retrieveBuffer()
+        return image
         
     def close(self):
         """ Disconnect the camera. """
