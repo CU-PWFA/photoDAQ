@@ -72,3 +72,7 @@ The recieve memory buffer needs to be increased to prevent the annoying image in
 sudo sysctl -w net.core.rmem_max=1048576 net.core.rmem_default=1048576
 ```
 To make the changes persist after a reboot add the following lines to etc/sysctl.conf
+```
+#net.core.rmem_max=1048576
+#net.core.rmem_default=1048576
+```
