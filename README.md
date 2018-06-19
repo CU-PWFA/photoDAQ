@@ -66,3 +66,9 @@ sudo ~/anaconda3/envs/CU-PWFA/bin/python setup.py install
 ### Setup ethernet for the cameras
 
 The cameras are setup to operate in LLO (Link-Local Only mode). Once the camera is connected, the small LED on the back will begin to blink. If it blinks three times in a row about every second, then the camera is in LLO mode, if it doesn't blink three times it is in another mode. The wired connection in linux needs to be setup as an LLO connection in order to recognize the camera. Click on the connections button in the top right corner, then go to edit connections. In the menu that pops up select the etherent connection the camera is connected to and click edit. Go to the IPv4 tab and change the method to Link-Local Only and flyCap2 should detect the camera.
+
+The recieve memory buffer needs to be increased to prevent the annoying image inconsistency error. To do this run the command
+```
+sudo sysctl -w net.core.rmem_max=1048576 net.core.rmem_default=1048576
+```
+To make the changes persist after a reboot add the following lines to etc/sysctl.conf
