@@ -86,6 +86,7 @@ def check_log():
     """ If it doesn't exist, create the dataset log file. """
     if not os.path.exists(PATH + 'META/'):
         os.makedirs(PATH + 'META/')
+    if not os.path.isfile(PATH + 'META/DataSet_log.txt'):
         with open(PATH + 'META/DataSet_log.txt', 'w') as file:
             file.writelines("# Data sets taken\n")
         file.close()
