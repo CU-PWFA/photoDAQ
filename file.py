@@ -92,6 +92,22 @@ def check_log():
         with open(PATH + 'META/DataSet_log.txt', 'w') as file:
             file.writelines("# Data sets taken\n")
         file.close()
+        
+        
+def get_file_path():
+    """ Load the path to the daq directory on this computer. 
+    
+    Returns
+    -------
+    data : string
+        The path to the daq directory.
+    """
+    try:
+        import var.var as var
+        return var.path
+    except:
+        print('File Error: No var/var.py to specify the path to the daq.')
+        return False
 
 
 def add_to_log(dataSet):

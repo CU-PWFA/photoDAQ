@@ -11,7 +11,6 @@ import file
 import importlib
 import globalVAR as Gvar
 import time
-import numpy as np
 
 ###############################################################################
 #   
@@ -21,10 +20,7 @@ import numpy as np
 ###############################################################################
 
 def main(arg):
-    # Set the save path for the data
-    file.PATH = "/media/robert/Data_Storage/daq/"
-    # Create a new data set number
-    file.check_log() # Make sure the log exists, if it doesn't, create it
+    setup_daq()
     dataSet = Gvar.getDataSetNum()
     file.add_to_log(dataSet)
     file.make_dir_struct('META', dataSet)
@@ -34,16 +30,13 @@ def main(arg):
     instrAdr  = arg[1]
     instr = {}
     
-    # TODO rework this nameing - it will break if two of the same instruments are added
-    # Should probably go to serial numbers - always unique
     for i in range(len(instrInit)):
         name = instrInit[i]
-        if name in INSTR:
-            module = importlib.import_module('devices.' + name)
-            instr_class = getattr(module, name)
-            instr[name] = instr_class(instrAdr[i])
-            # Create the directories to store output in
+        connect_instr(name, instrAdr[i], instr)
+        try:
             file.make_dir_struct(INSTR[name]['dataType'], dataSet)
+        except:
+            print('The directory structure couldnt be made, instrument:', name)
     
     # Setup some statistics functions
     failed = 0
@@ -51,29 +44,10 @@ def main(arg):
     script = importlib.import_module('scripts.' + arg[2])
     getattr(script, 'setup')(instr)
     startTime = time.clock()
+    measure = getattr(script, 'measure')
     for i in range(arg[3]):
         shot = i+1
-        for attempt in range(10):
-            try:
-                ret = getattr(script, 'measure')(i)
-            except:
-                print('Attempt', attempt, 'of measurement', i, 'failed.')
-                failed += 1
-                continue
-            break
-        
-        if ret:
-            for name in instr:
-                meta = ret[name]['meta']
-                meta['INSTR'] = name
-                meta['ID'] = instr[name].ID
-                meta['Serial number'] = instr[name].serialNum
-                meta['Timestamp'] = Gvar.get_timestamp()
-                meta['Data set'] = dataSet
-                meta['Shot number'] = shot
-                save = getattr(file, 'save_' + INSTR[name]['dataType'])
-                if save(ret[name], dataSet, shot) == False:
-                    break;
+        failed += do_measurement(instr, measure, shot, dataSet)
                 
     endTime = time.clock()
     # Save the dataset metadata
@@ -109,6 +83,84 @@ def print_stat(i, failed, startTime, endTime):
     print('Total measurement time:                  %0.3f s' % elapsed)
     
 
+def setup_daq():
+    """ Setup everything necessary to run the daq. """
+    # Set the save path for the data
+    file.PATH = file.get_file_path()
+    # Create a new data set number
+    file.check_log() # Make sure the log exists, if it doesn't, create it
+    
+    
+def connect_instr(name, adr, instr):
+    """ Create an object for a passed instrument type and address.
+    
+    Parameters
+    ----------
+    name : string
+        The name of the instrument, must be a key in INSTR.
+    adr : string
+        The address of the instrument, will be passed to the constructor.
+    instr : dict
+        The instrument dictionary to add the object to, is returned.
+    """
+    if name in INSTR:
+        module = importlib.import_module('devices.' + name)
+        instr_class = getattr(module, name)
+        device = instr_class(adr)
+        device.type = name
+        try:
+            instr[str(device.serialNum)] = device
+        except:
+            print('Could not connect to device:', name)
+        return instr
+
+
+def do_measurement(instr, measure, shot, dataSet, attempts=10):
+    """ Carry out a single measurement and save the data from it. 
+    
+    Parameter
+    ---------
+    instr : dict
+        The instrument dictionary.
+    measure : func
+        The function to call each measurement.
+    shot : int
+        The shot number.
+    dataSet : int
+        The data set number.
+    attempts : int, optional
+        The number of times to attempt each measurement.
+        
+    Returns
+    -------
+    failed : int
+        The number of failed measurements.
+    """
+    failed = 0
+    for attempt in range(10):
+        try:
+            ret = measure(shot)
+        except:
+            print('Attempt', attempt, 'of measurement', shot, 'failed.')
+            failed += 1
+            continue
+        break
+        
+    if ret:
+        for name in instr:
+            meta = ret[name]['meta']
+            meta['INSTR'] = instr[name].type
+            meta['ID'] = instr[name].ID
+            meta['Serial number'] = instr[name].serialNum
+            meta['Timestamp'] = Gvar.get_timestamp()
+            meta['Data set'] = dataSet
+            meta['Shot number'] = shot
+            save = getattr(file, 'save_' + INSTR[instr[name].type]['dataType'])
+            if save(ret[name], dataSet, shot) == False:
+                break;
+    return failed
+
+
 def post_process(instr, dataSet, shot):
     """ Complete normal post processing on the dataset. 
     
@@ -125,7 +177,7 @@ def post_process(instr, dataSet, shot):
     startTime = time.clock()
     # Run through every instrument and run any postprocessing necessary
     for name in instr:
-        if name == 'Camera':    
+        if instr[name].type == 'Camera':    
             # Correct the images to remove the the 4 lsb (added to get 16bits)
             serial = instr[name].serialNum
             for i in range(shot):
