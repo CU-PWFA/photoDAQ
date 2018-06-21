@@ -34,6 +34,8 @@ def main(arg):
     instrAdr  = arg[1]
     instr = {}
     
+    # TODO rework this nameing - it will break if two of the same instruments are added
+    # Should probably go to serial numbers - always unique
     for i in range(len(instrInit)):
         name = instrInit[i]
         if name in INSTR:
@@ -84,7 +86,7 @@ def main(arg):
     
     print_stat(shot, failed, startTime, endTime)
     # Handle any post processing that needs to occur
-    post_process(arg, dataSet)
+    post_process(instr, dataSet, shot)
 
 def print_stat(i, failed, startTime, endTime):
     """ Print some information about the data set run.
@@ -104,10 +106,10 @@ def print_stat(i, failed, startTime, endTime):
     print('Number of successful measurements:       %d' % i)
     print('Total number of failed measurements:     %d' % failed)
     elapsed = endTime - startTime
-    print('Total measurement time:                  %0.2f s' % elapsed)
+    print('Total measurement time:                  %0.3f s' % elapsed)
     
 
-def post_process(instr, dataSet):
+def post_process(instr, dataSet, shot):
     """ Complete normal post processing on the dataset. 
     
     Parameters
@@ -116,8 +118,21 @@ def post_process(instr, dataSet):
         The arguments passed to main.
     dataSet : int
         The data set number.
+    shot : int
+        The number of shots.
     """
-    # First correct the images to remove the padding to 16bit
+    print('Begin post processing')
+    startTime = time.clock()
+    # Run through every instrument and run any postprocessing necessary
+    for name in instr:
+        if name == 'Camera':    
+            # Correct the images to remove the the 4 lsb (added to get 16bits)
+            serial = instr[name].serialNum
+            for i in range(shot):
+                file.convert_image(serial, dataSet, i+1)
+    endTime = time.clock()
+    elapsed = endTime - startTime
+    print('Total post processing time:              %0.3f s' % elapsed)
     
     
 # Store information about our various instruments
