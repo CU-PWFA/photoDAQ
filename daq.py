@@ -113,7 +113,27 @@ def connect_instr(name, adr, instr):
         except:
             print('Could not connect to device:', name)
         return instr
-
+def disconnect_instr(name, adr, instr):
+    """ Deletes an object for a passed instrument type and address.
+    
+    Parameters
+    ----------
+    name : string
+        The name of the instrument, must be a key in INST.
+    adr : string
+        The address of the instrument, will be passed to the constructor.
+    instr : dict
+        The instrument dictionary to remove the object from, is returned.
+    """
+    if name in INSTR:
+        module = importlib.import_module('devices.' + name)
+        instr_class = getattr(module, name)
+        device = instr_class(adr)
+        device.close()
+        del instr[str(device.serialNum)]
+        
+        
+        
 
 def do_measurement(instr, measure, shot, dataSet, attempts=10):
     """ Carry out a single measurement and save the data from it. 
