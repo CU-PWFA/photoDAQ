@@ -56,7 +56,7 @@ class Camera():
         
     # Request camera parameters
     #--------------------------------------------------------------------------
-    
+    # TODO implement a get max height and width function
     
     # Set camera parameters
     #--------------------------------------------------------------------------        
