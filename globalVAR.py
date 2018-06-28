@@ -199,5 +199,6 @@ def create_metadata(arg, startTime):
     meta['Start time'] = startTime
     meta['End time'] = get_timestamp()
     meta['Shots'] = arg[3]
+    meta['Description'] = arg[4]
     return meta
     
