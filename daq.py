@@ -11,7 +11,7 @@ import file
 import importlib
 import globalVAR as Gvar
 import time
-
+import PyCapture2 as pc2
 ###############################################################################
 #   
 #   The main DAQ loop that controls acquisiton and parameters
@@ -19,15 +19,29 @@ import time
 #   
 ###############################################################################
 
-def main(arg):
+def main(instrInit, instrAdr, mod, nShots, desc):
+    """ Runs the DAQ.
+    
+    Parameters
+    ----------
+    instrInit : list of strings
+        List of the names of instruments used, must be keys in INSTR.
+    instrAdr : list of ints
+        The addresses of the instruments, will be passed to the constructor.
+    mod : string
+        Name of the script to be used for setup and measurment
+    nShots : int
+        Number of shots for the DAQ
+    desc : string
+        Description of the data set.
+    """
+    arg = [instrInit, instrAdr, mod, nShots, desc]
     setup_daq()
     dataSet = Gvar.getDataSetNum()
     file.add_to_log(dataSet)
     file.make_dir_struct('META', dataSet)
     
     # Create all the instrument classes
-    instrInit = arg[0]
-    instrAdr  = arg[1]
     instr = {}
     
     for i in range(len(instrInit)):
@@ -41,11 +55,11 @@ def main(arg):
     # Setup some statistics functions
     failed = 0
     # Take a series of measurements
-    script = importlib.import_module('scripts.' + arg[2])
+    script = importlib.import_module('scripts.' + mod)
     getattr(script, 'setup')(instr)
     startTime = time.clock()
     measure = getattr(script, 'measure')
-    for i in range(arg[3]):
+    for i in range(nShots):
         shot = i+1
         failed += do_measurement(instr, measure, shot, dataSet)
                 
@@ -61,7 +75,6 @@ def main(arg):
     print_stat(shot, failed, startTime, endTime)
     # Handle any post processing that needs to occur
     post_process(instr, dataSet, shot)
-
 def print_stat(i, failed, startTime, endTime):
     """ Print some information about the data set run.
     
@@ -153,10 +166,10 @@ def do_measurement(instr, measure, shot, dataSet, attempts=10):
         The number of failed measurements.
     """
     failed = 0
-    for attempt in range(10):
+    for attempt in range(attempts):
         try:
             ret = measure(shot)
-        except:
+        except: 
             print('Attempt', attempt, 'of measurement', shot, 'failed.')
             failed += 1
             continue
