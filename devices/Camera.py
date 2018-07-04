@@ -21,8 +21,8 @@ class Camera():
         
         Parameters
         ----------
-        ind : int
-            The index of the camera in the bus manager.
+        serial : int
+            The serial number of the camera.
         """
         self.bus = pc2.BusManager()
         numCams = self.bus.getNumOfCameras()
