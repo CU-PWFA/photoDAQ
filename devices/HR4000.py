@@ -6,33 +6,42 @@ Created on Thu Jun 28 13:34:57 2018
 @author: cu-pwfa
 """
 
+import seabreeze.spectrometers as sb
+
 class HR4000():
     
-    def __init__(self, port=0):
-        self.connectSP(port)
+    def __init__(self, serial):
+        self.connectSP(serial)
         
-    def connectSP(self, port):
-        """ Connect to the oscilloscope and verify the connection. 
+    def connectSP(self, serial):
+        """ Connect to the spectrometer and verify the connection. 
         
         Parameters
         ----------
-        port : int
-            The port the device is connected to.
+        serial : int
+            The serial number of the spectrometer.
         """
-        # TODO figure out how to tell which port the device is on
-        sp = visa.ResourceManager('@py')
-        # I'm not sure where the port comes in, I think it is USBX
         try:
-            self.SP = rm.open_resource('USB0::2457::1012::C046401::0::INSTR')
+            self.SP = sb.Spectrometer.from_serial_number(serial)
         except:
             print("USB error: Could not connect to the spectrometer.")
         self.ID = self.get_ID()
-        self.serialNum = self.ID.split(',')[2]
+        self.serialNum = self.SP.serial_number
         print('Spectrometer ID:', self.ID)
         
     # Request spectrometer parameters
     #--------------------------------------------------------------------------
+    def get_ID(self):
+        """ Get the spectrometer ID.
         
+        Returns
+        -------
+        ID : string
+            The make, model, serial number, and firmware version.
+        """
+        SP = self.SP
+        return SP.model + ',' + str(self.SP.serial_number)
+    
     def get_pixel(self):
         return self.SP.pixels()
     
@@ -49,7 +58,7 @@ class HR4000():
     def get_spectrum(self):
         """get the spectrum
         """
-        return spectrum()
+        return self.PS.spectrum()
     
     def set_integration_time(self):
         return self.SP.integration_time_micros()
@@ -59,5 +68,9 @@ class HR4000():
     
     def scans_to_average(self):
         return self.SP.scans_to_average()
+    
+    def close(self):
+        """ Disconnect the spectrometer. """
+        self.SP.close()
             
         

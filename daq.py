@@ -12,6 +12,9 @@ import importlib
 import globalVAR as Gvar
 import time
 import PyCapture2 as pc2
+import queue
+import threading
+
 ###############################################################################
 #   
 #   The main DAQ loop that controls acquisiton and parameters
@@ -36,19 +39,19 @@ def main(instrInit, instrAdr, mod, nShots, desc):
         Description of the data set.
     """
     arg = [instrInit, instrAdr, mod, nShots, desc]
-    setup_daq()
+    daq = Daq() 
     dataSet = Gvar.getDataSetNum()
     file.add_to_log(dataSet)
     file.make_dir_struct('META', dataSet)
     
     # Create all the instrument classes
-    instr = {}
+    instr = daq.instr
     
     for i in range(len(instrInit)):
         name = instrInit[i]
-        connect_instr(name, instrAdr[i], instr)
+        daq.connect_instr(name, instrAdr[i])
         try:
-            file.make_dir_struct(INSTR[name]['dataType'], dataSet)
+            file.make_dir_struct(daq.INSTR[name]['dataType'], dataSet)
         except:
             print('The directory structure couldnt be made, instrument:', name)
     
@@ -72,76 +75,218 @@ def main(instrInit, instrAdr, mod, nShots, desc):
     for name in instr:
         instr[name].close()
     
-    print_stat(shot, failed, startTime, endTime)
+    daq.print_stat(shot, failed, startTime, endTime)
     # Handle any post processing that needs to occur
     post_process(instr, dataSet, shot)
-def print_stat(i, failed, startTime, endTime):
-    """ Print some information about the data set run.
+
+
+class Daq():
+    """ Main daq class, handles instrument and thread managment. """
+    def __init__(self):
+        # Store information about our various instruments
+        self.INSTR = {
+                'KA3005P'   : {
+                            'IOtype'    : 'out',
+                            'dataType'  : 'SET'
+                            },
+                'TDS2024C'  : {
+                            'IOtype'    : 'in',
+                            'dataType'  : 'TRACE'
+                            },
+                'Camera'    : {
+                            'IOtype'    : 'in',
+                            'dataType'  : 'IMAGE'
+                            },
+                'HR4000'    : {
+                            'IOtype'    : 'in',
+                            'dataType'  : 'TRACE'
+                            }
+                }
+        self.setup_daq()
+        self.instr = {}
+        self.threads = {}
+        self.rthreads = {}
+        self.command_queue = {}
+        self.response_queue = {}
+        self.max_command_queue_size = 10000
+        self.max_response_queue_size = 1000
     
-    Parameters
-    ----------
-    shot : int
-        The number of shots.
-    failed : int
-        The number of measurements that had to be retried.
-    startTime : float
-        The time measurement taking started.
-    endTime : float
-        The time the measurements stopped taking.
-    """
-    print('Total number of attempted measurements:  %d' % (i+failed))
-    print('Number of successful measurements:       %d' % i)
-    print('Total number of failed measurements:     %d' % failed)
-    elapsed = endTime - startTime
-    print('Total measurement time:                  %0.3f s' % elapsed)
+    def print_stat(self, i, failed, startTime, endTime):
+        """ Print some information about the data set run.
+    
+        Parameters
+        ----------
+        shot : int
+            The number of shots.
+        failed : int
+            The number of measurements that had to be retried.
+        startTime : float
+            The time measurement taking started.
+        endTime : float
+            The time the measurements stopped taking.
+        """
+        print('Total number of attempted measurements:  %d' % (i+failed))
+        print('Number of successful measurements:       %d' % i)
+        print('Total number of failed measurements:     %d' % failed)
+        elapsed = endTime - startTime
+        print('Total measurement time:                  %0.3f s' % elapsed)
+    
+    def setup_daq(self):
+        """ Setup everything necessary to run the daq. """
+        # Set the save path for the data
+        file.PATH = file.get_file_path()
+        # Create a new data set number
+        file.check_log() # Make sure the log exists, if it doesn't, create it
+    
+    def connect_instr(self, name, adr):
+        """ Create an object for a passed instrument type and address.
+        
+        Parameters
+        ----------
+        name : string
+            The name of the instrument, must be a key in INSTR.
+        adr : string
+            The address of the instrument, will be passed to the constructor.
+        instr : dict
+            The instrument dictionary to add the object to, is returned.
+        """
+        if name in self.INSTR:
+            module = importlib.import_module('devices.' + name)
+            instr_class = getattr(module, name)
+            device = instr_class(adr)
+            device.type = name
+            try:
+                self.instr[str(device.serialNum)] = device
+            except:
+                print('Could not connect to device:', name)
+                return
+            self.create_thread(str(device.serialNum))
+            
+    def create_thread(self, serial):
+        """ Create a thread for the device and the corresponding queues.
+        
+        Parameters
+        ----------
+        serial : str
+            The serial number of the device, will be the key in self.threads.
+        """
+        c_queue = queue.Queue(self.max_command_queue_size)
+        r_queue = queue.Queue(self.max_response_queue_size)
+        thread = threading.Thread(target=self.command, 
+                                   args=(serial, c_queue, r_queue))
+        thread.setDaemon(True) #Thread dies if the main process dies
+        thread.start()
+        #Make the response thread
+        rthread = threading.Thread(target=self.response, args=(serial, r_queue))
+        rthread.setDaemon(True)
+        rthread.start()
+        # Make the threads and queues accessible from the class.
+        self.command_queue[serial] = c_queue
+        self.response_queue[serial] = r_queue
+        self.threads[serial] = thread
+        self.rthreads[serial] = rthread
+
+    def disconnect_instr(self, serial):
+        """ Deletes an object for a passed instrument type and address.
+        
+        Parameters
+        ----------
+        serial : str
+            The serial number of the device, will be the key in self.threads.
+        """
+        device = self.instr[serial]
+        device.close()
+        del self.instr[serial]
+        
+    def command(self, serial, c_queue, r_queue):
+        """ Command function for an instrument, runs the request loop. """
+        while True:
+            command = c_queue.get()
+            try:
+                ret = command.run()
+            # Add exceptions that should be handled here
+            except pc2.Fc2error as err:
+                msg = ("An exception was encountered in thread: " + serial +', '
+                       + str(err))
+                print(msg)
+                continue
+            except: 
+                msg = ("An exception was encountered in thread: " + serial +', '
+                       + str(sys.exc_info()[0]))
+                print(msg)
+                raise
+            if command.response:
+                # Build the response
+                response = Response(ret, command.callback, command.callargs)
+                r_queue.put(response)
+            c_queue.task_done()
+            time.sleep(command.wait)
+    
+    def response(self, serial, r_queue):
+        """ Response function for an instrument, runs the response loop. """
+        while True:
+            response = r_queue.get()
+            response.callback(response.ret, *response.args)
+            r_queue.task_done()
+
+
+class Command():
+    """ A class for creating commands to place in the queue. 
+    
+    You must create a new instance of this class for every command. """
+    def __init__(self, func=None, args=None, response=True, callback=None,
+                 callargs=None, wait=0.05):
+        """ Constructor for the command. 
+        
+        Parameters
+        ----------
+        func : function
+            The function to execute in the thread.
+        args : tuple
+            The arguments to pass to the function.
+        response : bool, optional
+            Whether to return a response from the instrument or not.
+        callback : function
+            A call back to be placed in the response.
+        wait : float
+            Time to wait after execution. 
+        """
+        if args is not None:
+            self.args = args
+        else:
+            self.args = ()
+        if callargs is not None:
+            self.callargs = callargs
+        else:
+            self.callargs = ()
+        self.response = response
+        # Set the functions if they are not none
+        if func is not None:
+            self.func = func
+        if callback is not None:
+            self.callback = callback
+        self.wait = wait
+    
+    def func(self):
+        """ Function that will be called. """
+        pass
+    
+    def run(self):
+        """ Call the function with self.args. """
+        return self.func(*self.args)
+    
+    def callback(self):
+        """ Callback function for after the response. """
+        pass
     
 
-def setup_daq():
-    """ Setup everything necessary to run the daq. """
-    # Set the save path for the data
-    file.PATH = file.get_file_path()
-    # Create a new data set number
-    file.check_log() # Make sure the log exists, if it doesn't, create it
-    
-    
-def connect_instr(name, adr, instr):
-    """ Create an object for a passed instrument type and address.
-    
-    Parameters
-    ----------
-    name : string
-        The name of the instrument, must be a key in INSTR.
-    adr : string
-        The address of the instrument, will be passed to the constructor.
-    instr : dict
-        The instrument dictionary to add the object to, is returned.
-    """
-    if name in INSTR:
-        module = importlib.import_module('devices.' + name)
-        instr_class = getattr(module, name)
-        device = instr_class(adr)
-        device.type = name
-        try:
-            instr[str(device.serialNum)] = device
-        except:
-            print('Could not connect to device:', name)
-        return instr
-def disconnect_instr(name, instr, device):
-    """ Deletes an object for a passed instrument type and address.
-    
-    Parameters
-    ----------
-    name : string
-        The name of the instrument, must be a key in INST.
-    instr : dict
-        The instrument dictionary to remove the object from, is returned.
-    device : custom class of instrument. Device to be disconnected
-    """
-    if name in INSTR:
-        device.close()
-        del instr[str(device.serialNum)]
-    return instr
-        
+class Response():
+    """ A class for creating responses to place in the queue. """
+    def __init__(self, ret, callback, args):
+        """ Constructor for the response. """
+        self.callback = callback
+        self.ret = ret
+        self.args = args
         
 
 def do_measurement(instr, measure, shot, dataSet, attempts=10):
@@ -216,21 +361,5 @@ def post_process(instr, dataSet, shot):
     print('Total post processing time:              %0.3f s' % elapsed)
     
     
-# Store information about our various instruments
-INSTR = {
-        'KA3005P' : {
-                'IOtype'    : 'out',
-                'dataType'  : 'SET'
-                },
-        'TDS2024C' : {
-                'IOtype'    : 'in',
-                'dataType'  : 'TRACE'
-                },
-        'Camera'    : {
-                'IOtype'    : 'in',
-                'dataType'  : 'IMAGE'
-                }
-        }
-
 if __name__ == "__main__":
     main(sys.argv)
