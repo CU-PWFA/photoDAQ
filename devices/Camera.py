@@ -105,7 +105,7 @@ class Camera():
         gain = self.cam.getProperty(gainPROP)
         info = self.cam.getPropertyInfo(gainPROP)
         if auto is not None:
-            gain.autoManualMode = False
+            gain.autoManualMode = auto
         if value is not None:
             if value > info.absMax or value < info.absMin:
                 print('Invalid value for shutter.')
@@ -127,7 +127,7 @@ class Camera():
         shut = self.cam.getProperty(shutPROP)
         info = self.cam.getPropertyInfo(shutPROP)
         if auto is not None:
-            shut.autoManualMode = False
+            shut.autoManualMode = auto
         if value is not None:
             if value > info.absMax or value < info.absMin:
                 print('Invalid value for shutter.')
