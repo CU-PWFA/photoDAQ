@@ -199,9 +199,39 @@ class Daq():
         del self.instr[serial]
         
     def command(self, serial, c_queue, r_queue):
-        """ Command function for an instrument, runs the request loop. """
+        """ Command function for an instrument, runs the request loop. 
+        
+        Parameter
+        ---------
+        serial : string
+            The serial number of the instrument, used for error messages.
+        c_queue : queue
+            The command queue for the instrument to retrieve commands from.
+        r_queue : queue
+            The response queue to place responses in.
+        """
         while True:
             command = c_queue.get()
+            ret = self.try_command(serial, command)
+            if command.response and ret is not None:
+                # Build the response
+                response = Response(ret, command.callback, command.callargs)
+                r_queue.put(response)
+            c_queue.task_done()
+            time.sleep(command.wait)
+    
+    def try_command(self, serial, command):
+        """ Attempts to execute a command and handles retrying and errors.
+        
+        Parameters
+        ----------
+        serial : string
+            The serial number of the instrument, used for error messages.
+        command : obj
+            Instance of the command class representing the command.
+        """
+        for attempt in range(command.attempts):
+            ret = None
             try:
                 ret = command.run()
             # Add exceptions that should be handled here
@@ -215,17 +245,22 @@ class Daq():
                        + str(sys.exc_info()[0]))
                 print(msg)
                 raise
-            if command.response:
-                # Build the response
-                response = Response(ret, command.callback, command.callargs)
-                r_queue.put(response)
-            c_queue.task_done()
-            time.sleep(command.wait)
+            return ret
+        return ret
     
     def response(self, serial, r_queue):
-        """ Response function for an instrument, runs the response loop. """
+        """ Response function for an instrument, runs the response loop. 
+        
+        Parameters
+        ----------
+        serial : string
+            The serial number of the instrument, used for error messages.
+        r_queue : queue
+            The response queue to retrieve responses from.
+        """
         while True:
             response = r_queue.get()
+            print('Response')
             response.callback(response.ret, *response.args)
             r_queue.task_done()
 
@@ -235,7 +270,7 @@ class Command():
     
     You must create a new instance of this class for every command. """
     def __init__(self, func=None, args=None, response=True, callback=None,
-                 callargs=None, wait=0.05):
+                 callargs=None, wait=0.05, attempts=10):
         """ Constructor for the command. 
         
         Parameters
@@ -266,6 +301,7 @@ class Command():
         if callback is not None:
             self.callback = callback
         self.wait = wait
+        self.attempts= attempts
     
     def func(self):
         """ Function that will be called. """
