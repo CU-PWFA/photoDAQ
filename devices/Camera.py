@@ -59,7 +59,8 @@ class Camera():
     # TODO implement a get max height and width function
     
     # Set camera parameters
-    #--------------------------------------------------------------------------        
+    #--------------------------------------------------------------------------   
+    # TODO should print the range of possible values when someone inputs an incorrect one     
     def set_image_settings(self, width=None, height=None, pixelFormat=None):
         """ Set the image format on the camera.
         
@@ -135,11 +136,47 @@ class Camera():
                 shut.absValue = value
         self.cam.setProperty(shut)
     
+    def set_frame_rate(self, frame_rate):
+        """ Set the camera frame rate.
+        
+        Parameters
+        ----------
+        frame_rate : float
+            The FPS for the camera to capture at.
+        """
+        framePROP = pc2.PROPERTY_TYPE.FRAME_RATE
+        frame = self.cam.getProperty(framePROP)
+        info = self.cam.getPropertyInfo(framePROP)
+        if frame_rate > info.absMax or frame_rate < info.absMin:
+            print('Invalid value for frame rate.')
+        else:
+            frame.absValue = frame_rate
+        self.cam.setProperty(frame)
+        
+    def set_trigger_settings(self):
+        """ Set the trigger mode of the camera.
+        """
+        # TODO implement triggering of the camera.
+        pass
+    
     # Control the camera
     #--------------------------------------------------------------------------
-    def start_capture(self):
-        """ Tell the camera to capture images and place them in the buffer. """
-        self.cam.startCapture()
+    def start_capture(self, callback=None, args=None):
+        """ Tell the camera to capture images and place them in the buffer. 
+        
+        Capture data from the camera to image buffers. The callback is called
+        when an  image is retrieved, otherwise images are retrieved manually
+        with retrieve buffer (not recommended).
+        
+        Parameters
+        ----------
+        callback : func, optional
+            A callback function for when an image is retrieved, must take an
+            pc2 image object as the first argument. 
+        *args : tuple
+            Arguments to be passed to the callback.
+        """
+        self.cam.startCapture(callback, args)
     
     def stop_capture(self):
         """ Tell the camera to stop capturing images. """
