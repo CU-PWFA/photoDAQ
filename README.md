@@ -69,13 +69,22 @@ The cameras are setup to operate in LLO (Link-Local Only mode). Once the camera 
 
 The recieve memory buffer needs to be increased to prevent the annoying image inconsistency error. To do this run the command
 ```
-sudo sysctl -w net.core.rmem_max=1048576 net.core.rmem_default=1048576
+sudo sysctl -w net.core.rmem_max=26214400 net.core.rmem_default=26214400
 ```
 To make the changes persist after a reboot add the following lines to etc/sysctl.conf
 ```
-#net.core.rmem_max=1048576
-#net.core.rmem_default=1048576
+net.core.rmem_max=26214400
+net.core.rmem_default=26214400
 ```
+(Note, I removed the leading number signs, maybe now it will actually persist). The maximum packet size for the ethernet interface also needs to be changed. The name of the interface is found by clicking on the little wifi symbol in the top right and then on connection information. The name in parenthesis in the interface line is the interface name. The MTU can be checked using 
+```
+netstat -i
+```
+it can be temporarily increased using 
+```
+sudo ifconfig <name> mtu 9000
+```
+This should also be changed on the cameras using the flycap software.
 ### libtiff tools
 To install libtiff tools run the following command
 ```
