@@ -168,7 +168,7 @@ def save_IMAGE(data, dataSet, shot):
     shot : int
         The shot number.
     """
-    if 'image' in data and 'meta' in data and hasattr(data['image'], 'save'):
+    if 'data' in data and 'meta' in data and hasattr(data['data'], 'save'):
         dirName = get_dirName('IMAGE', dataSet)
         serial = data['meta']['Serial number']
         fileName = get_fileName(serial, dataSet, shot)

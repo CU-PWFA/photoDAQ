@@ -11,10 +11,8 @@ import file
 import importlib
 import globalVAR as Gvar
 import time
-import PyCapture2 as pc2
-import queue
 import threading
-
+import multiprocessing as mp
 ###############################################################################
 #   
 #   The main DAQ loop that controls acquisiton and parameters
@@ -81,7 +79,7 @@ def main(instrInit, instrAdr, mod, nShots, desc):
 
 
 class Daq():
-    """ Main daq class, handles instrument and thread managment. """
+    """ Main daq class, handles instrument and thread/process managment. """
     def __init__(self):
         # Store information about our various instruments
         self.INSTR = {
@@ -102,14 +100,15 @@ class Daq():
                             'dataType'  : 'TRACE'
                             }
                 }
-        self.setup_daq()
-        self.instr = {}
-        self.threads = {}
-        self.rthreads = {}
+        self.instr = []
+        self.procs = {}
         self.command_queue = {}
         self.response_queue = {}
+        self.max_out_queue_size = 10000
         self.max_command_queue_size = 10000
         self.max_response_queue_size = 1000
+        # Setup the daq
+        self.setup_daq()
     
     def print_stat(self, i, failed, startTime, endTime):
         """ Print some information about the data set run.
@@ -133,13 +132,27 @@ class Daq():
     
     def setup_daq(self):
         """ Setup everything necessary to run the daq. """
+        # It isn't safe to fork multithreaded processes
+        # However you can't spawn if threads are already created - we'll live on the edge
+        # Apparently forking a multithreaded process can cause deadlock because a process can get a lock and then die with it...
+        # If the code starts freezing when instruments are disconnected - this might be the problem
+        #mp.set_start_method('spawn')
         # Set the save path for the data
         file.PATH = file.get_file_path()
         # Create a new data set number
         file.check_log() # Make sure the log exists, if it doesn't, create it
+        # Create the output queue for printing to stdout
+        self.o_queue = mp.JoinableQueue(self.max_out_queue_size)
+        # Start the output thread for printing output
+        self.o_thread = threading.Thread(target=self.print_out, 
+                                         args=(self.o_queue,))
+        self.o_thread.setDaemon(True)
+        self.o_thread.start()
+        # Setup an initial dataset number
+        self.dataset = Gvar.getDataSetNum()
     
     def connect_instr(self, name, adr):
-        """ Create an object for a passed instrument type and address.
+        """ Create the process for the instrument and attempt to connect.
         
         Parameters
         ----------
@@ -147,44 +160,39 @@ class Daq():
             The name of the instrument, must be a key in INSTR.
         adr : string
             The address of the instrument, will be passed to the constructor.
-        instr : dict
-            The instrument dictionary to add the object to, is returned.
         """
         if name in self.INSTR:
-            module = importlib.import_module('devices.' + name)
-            instr_class = getattr(module, name)
-            device = instr_class(adr)
-            device.type = name
-            try:
-                self.instr[str(device.serialNum)] = device
-            except:
-                print('Could not connect to device:', name)
-                return
-            self.create_thread(str(device.serialNum))
-            
-    def create_thread(self, serial):
-        """ Create a thread for the device and the corresponding queues.
+            c_queue = mp.JoinableQueue(self.max_command_queue_size)
+            r_queue = mp.JoinableQueue(self.max_response_queue_size)
+            args = (name, adr, c_queue, r_queue, self.o_queue)
+            proc = mp.Process(target=self.start_process, args=args)
+            proc.start()
+            # Create a thread to handle the response once the instrument connects
+            args = (c_queue, r_queue, proc)
+            rthread = threading.Thread(target=self.init_response, args=args)
+            rthread.setDaemon(True)
+            rthread.start()
+        else:
+            msg = name + " is not a valid instrument name, see INSTR."
+            self.o_queue.put(msg)
+    
+    def start_process(self, name, adr, c_queue, r_queue, o_queue):
+        """ Create the process class. 
         
         Parameters
         ----------
-        serial : str
-            The serial number of the device, will be the key in self.threads.
+        name : string
+            The name of the instrument, must be a key in INSTR.
+        adr : string
+            The address of the instrument, will be passed to the constructor.
+        c_queue : mp.Queue
+            The command queue to place commands in.
+        r_queue : mp.Queue
+            The response queue to place responses in.
         """
-        c_queue = queue.Queue(self.max_command_queue_size)
-        r_queue = queue.Queue(self.max_response_queue_size)
-        thread = threading.Thread(target=self.command, 
-                                   args=(serial, c_queue, r_queue))
-        thread.setDaemon(True) #Thread dies if the main process dies
-        thread.start()
-        #Make the response thread
-        rthread = threading.Thread(target=self.response, args=(serial, r_queue))
-        rthread.setDaemon(True)
-        rthread.start()
-        # Make the threads and queues accessible from the class.
-        self.command_queue[serial] = c_queue
-        self.response_queue[serial] = r_queue
-        self.threads[serial] = thread
-        self.rthreads[serial] = rthread
+        module = importlib.import_module('processes.' + name)
+        proc_class = getattr(module, name)
+        proc_class(name, adr, c_queue, r_queue, o_queue)    
 
     def disconnect_instr(self, serial):
         """ Deletes an object for a passed instrument type and address.
@@ -194,135 +202,73 @@ class Daq():
         serial : str
             The serial number of the device, will be the key in self.threads.
         """
-        device = self.instr[serial]
-        device.close()
-        del self.instr[serial]
+        self.send_command(self.command_queue[serial], 'close')
+        self.instr.remove(serial)
+        del self.command_queue[serial]
+        del self.response_queue[serial]
+        #XXX This is dangerous if the proc is still doing something - also might corrupt o_queue
+        self.procs[serial].terminate()
+    
+    def print_out(self, o_queue):
+        """ Print outputs from the output queue. 
         
-    def command(self, serial, c_queue, r_queue):
-        """ Command function for an instrument, runs the request loop. 
+        Parameters
+        ----------
+        o_queue : queue
+            The output queue which contains strings.
+        """
+        while True:
+            print(o_queue.get())
+            o_queue.task_done()
+    
+    def init_response(self, c_queue, r_queue, proc):
+        """ Initial response function for an instrument, adds queues to dict. 
         
-        Parameter
-        ---------
-        serial : string
-            The serial number of the instrument, used for error messages.
+        Parameters
+        ----------
         c_queue : queue
-            The command queue for the instrument to retrieve commands from.
+            The command queue for the process.
         r_queue : queue
-            The response queue to place responses in.
+            The response queue for the process.
+        proc : queue
+            The process itself. 
         """
-        while True:
-            command = c_queue.get()
-            ret = self.try_command(serial, command)
-            if command.response and ret is not None:
-                # Build the response
-                response = Response(ret, command.callback, command.callargs)
-                r_queue.put(response)
-            c_queue.task_done()
-            time.sleep(command.wait)
+        response = r_queue.get()
+        serial = response[0]
+        name = response[1]
+        msg = "Device " + str(serial) + " successfully connected and process started."
+        self.o_queue.put(msg)
+        self.instr.append(serial)
+        self.procs[serial] = proc
+        self.command_queue[serial] = c_queue
+        self.response_queue[serial] = r_queue
+        # Send the inital dataset number to the device and create the folders
+        file.make_dir_struct(self.INSTR[name]['dataType'], self.dataset)
+        self.send_command(c_queue, 'set_dataset', (self.dataset,))
+        r_queue.task_done()
     
-    def try_command(self, serial, command):
-        """ Attempts to execute a command and handles retrying and errors.
+    def send_command(self, c_queue, command, args=None):
+        """ Send a command object to a c_queue. 
         
         Parameters
         ----------
-        serial : string
-            The serial number of the instrument, used for error messages.
-        command : obj
-            Instance of the command class representing the command.
+        c_queue : queue
+            The command queue for the process.
+        command : string
+            The name of a function in either the instrument or process class.
+        args : tuple, optional
+            Arguments to pass to the function, must be picklable.
         """
-        for attempt in range(command.attempts):
-            ret = None
-            try:
-                ret = command.run()
-            # Add exceptions that should be handled here
-            except pc2.Fc2error as err:
-                msg = ("An exception was encountered in thread: " + serial +', '
-                       + str(err))
-                print(msg)
-                continue
-            except: 
-                msg = ("An exception was encountered in thread: " + serial +', '
-                       + str(sys.exc_info()[0]))
-                print(msg)
-                raise
-            return ret
-        return ret
-    
-    def response(self, serial, r_queue):
-        """ Response function for an instrument, runs the response loop. 
-        
-        Parameters
-        ----------
-        serial : string
-            The serial number of the instrument, used for error messages.
-        r_queue : queue
-            The response queue to retrieve responses from.
-        """
-        while True:
-            response = r_queue.get()
-            print('Response')
-            response.callback(response.ret, *response.args)
-            r_queue.task_done()
-
-
-class Command():
-    """ A class for creating commands to place in the queue. 
-    
-    You must create a new instance of this class for every command. """
-    def __init__(self, func=None, args=None, response=True, callback=None,
-                 callargs=None, wait=0.05, attempts=10):
-        """ Constructor for the command. 
-        
-        Parameters
-        ----------
-        func : function
-            The function to execute in the thread.
-        args : tuple
-            The arguments to pass to the function.
-        response : bool, optional
-            Whether to return a response from the instrument or not.
-        callback : function
-            A call back to be placed in the response.
-        wait : float
-            Time to wait after execution. 
-        """
+        com = {"command" : str(command)}
+        com["args"] = ()
         if args is not None:
-            self.args = args
-        else:
-            self.args = ()
-        if callargs is not None:
-            self.callargs = callargs
-        else:
-            self.callargs = ()
-        self.response = response
-        # Set the functions if they are not none
-        if func is not None:
-            self.func = func
-        if callback is not None:
-            self.callback = callback
-        self.wait = wait
-        self.attempts= attempts
-    
-    def func(self):
-        """ Function that will be called. """
-        pass
-    
-    def run(self):
-        """ Call the function with self.args. """
-        return self.func(*self.args)
-    
-    def callback(self):
-        """ Callback function for after the response. """
-        pass
-    
-
-class Response():
-    """ A class for creating responses to place in the queue. """
-    def __init__(self, ret, callback, args):
-        """ Constructor for the response. """
-        self.callback = callback
-        self.ret = ret
-        self.args = args
+            com["args"] = args
+        # If its not picklable, it should raise an error here
+        try:
+            c_queue.put(com)
+        except:
+            print(str(sys.exc_info()[0]))
+            raise
         
 
 def do_measurement(instr, measure, shot, dataSet, attempts=10):
