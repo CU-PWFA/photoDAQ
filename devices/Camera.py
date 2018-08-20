@@ -148,7 +148,8 @@ class Camera():
         frame = self.cam.getProperty(framePROP)
         info = self.cam.getPropertyInfo(framePROP)
         if frame_rate > info.absMax or frame_rate < info.absMin:
-            print('Invalid value for frame rate.')
+            rang = (info.absMin, info.absMax)
+            print('Invalid value for frame rate range: (%0.1f, %0.1f)'%rang)
         else:
             frame.absValue = frame_rate
         self.cam.setProperty(frame)

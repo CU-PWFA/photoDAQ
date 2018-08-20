@@ -38,8 +38,8 @@ class KA3005P():
         except:
             print("USB error: Could not connect to the power supply.")    
         self.ID = self.get_ID().decode("utf-8")
-        # TODO see if we can get the power supply serial number
-        self.serialNum = 'None'
+        # No way to get a serial number - address should be unique
+        self.serialNum = address
         print('Power supply ID:', self.ID)
         
     def status(self):

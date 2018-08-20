@@ -102,7 +102,10 @@ class Daq():
                 }
         self.instr = []
         self.procs = {}
+        self.s_procs = {}
+        self.p_procs = {}
         self.command_queue = {}
+        self.save_queue = {}
         self.response_queue = {}
         self.max_out_queue_size = 10000
         self.max_command_queue_size = 10000
@@ -150,6 +153,7 @@ class Daq():
         self.o_thread.start()
         # Setup an initial dataset number
         self.dataset = Gvar.getDataSetNum()
+        self.manager = mp.Manager()
     
     def connect_instr(self, name, adr):
         """ Create the process for the instrument and attempt to connect.
@@ -164,11 +168,19 @@ class Daq():
         if name in self.INSTR:
             c_queue = mp.JoinableQueue(self.max_command_queue_size)
             r_queue = mp.JoinableQueue(self.max_response_queue_size)
+            s_queue = mp.JoinableQueue(self.max_response_queue_size)
             args = (name, adr, c_queue, r_queue, self.o_queue)
             proc = mp.Process(target=self.start_process, args=args)
             proc.start()
+            
+            args = (r_queue, s_queue, self.o_queue)
+            s_proc = mp.Process(target=self.save_process, args=args)
+            
+            args = (s_queue, self.o_queue)
+            p_proc = mp.Process(target=self.post_process, args=args)
+            
             # Create a thread to handle the response once the instrument connects
-            args = (c_queue, r_queue, proc)
+            args = (c_queue, r_queue, s_queue, proc, s_proc, p_proc)
             rthread = threading.Thread(target=self.init_response, args=args)
             rthread.setDaemon(True)
             rthread.start()
@@ -176,7 +188,8 @@ class Daq():
             msg = name + " is not a valid instrument name, see INSTR."
             self.o_queue.put(msg)
     
-    def start_process(self, name, adr, c_queue, r_queue, o_queue):
+    @staticmethod
+    def start_process(name, adr, c_queue, r_queue, o_queue):
         """ Create the process class. 
         
         Parameters
@@ -192,7 +205,36 @@ class Daq():
         """
         module = importlib.import_module('processes.' + name)
         proc_class = getattr(module, name)
-        proc_class(name, adr, c_queue, r_queue, o_queue)    
+        proc_class(name, adr, c_queue, r_queue, o_queue)
+        
+    @staticmethod
+    def save_process(in_queue, out_queue, o_queue):
+        """ Pull data from the response queue and save it to memory. 
+        
+        Parameters
+        ----------
+        in_queue : mp.Queue
+            The input queue that data comes in on.
+        out_queue : np.Queue
+            The output queue to stick the data in after operating on it.
+        """
+        while True:
+            data = in_queue.get()
+            if data['save']:
+                meta = data['meta']
+                save = getattr(file, 'save_' + meta["Data type"])
+                if save(data, meta['Data set'], meta['Shot number']) == False:
+                    msg = "Failed to save datafrom " + meta['Serial number']
+                    o_queue.put(msg)
+            out_queue.put(data)
+            in_queue.task_done()
+    
+    @staticmethod
+    def post_process(in_queue, o_queue):
+        """ Base post process, clears queue. """
+        while True:
+            in_queue.get()
+            in_queue.task_done()
 
     def disconnect_instr(self, serial):
         """ Deletes an object for a passed instrument type and address.
@@ -205,9 +247,15 @@ class Daq():
         self.send_command(self.command_queue[serial], 'close')
         self.instr.remove(serial)
         del self.command_queue[serial]
+        del self.save_queue[serial]
         del self.response_queue[serial]
         #XXX This is dangerous if the proc is still doing something - also might corrupt o_queue
         self.procs[serial].terminate()
+        #self.s_procs[serial].terminate()
+        #self.p_procs[serial].terminate()
+        del self.procs[serial]
+        del self.s_procs[serial]
+        del self.p_procs[serial]
     
     def print_out(self, o_queue):
         """ Print outputs from the output queue. 
@@ -220,8 +268,38 @@ class Daq():
         while True:
             print(o_queue.get())
             o_queue.task_done()
+            
+    def add_s_proc(self, serial):
+        """ Start up the saving process. 
+        
+        Parameters
+        ----------
+        serial : str
+            The serial number of the device.
+        """
+        save_queue = mp.JoinableQueue(self.max_response_queue_size)
+        in_queue = self.response_queue[serial]
+        args = (in_queue, save_queue, self.o_queue)
+        proc = mp.Process(target=self.save_process, args=args)
+        self.save_queue[serial] = save_queue
+        self.s_procs[serial] = proc
+        proc.start()
+        
+    def add_p_proc(self, serial):
+        """ Start up the saving process. 
+        
+        Parameters
+        ----------
+        serial : str
+            The serial number of the device.
+        """
+        in_queue = self.save_queue[serial]
+        args = (in_queue, self.o_queue)
+        proc = mp.Process(target=self.post_process, args=args)
+        self.p_procs[serial] = proc
+        proc.start()
     
-    def init_response(self, c_queue, r_queue, proc):
+    def init_response(self, c_queue, r_queue, s_queue, proc, s_proc, p_proc):
         """ Initial response function for an instrument, adds queues to dict. 
         
         Parameters
@@ -230,18 +308,31 @@ class Daq():
             The command queue for the process.
         r_queue : queue
             The response queue for the process.
+        s_queue : queue
+            The save queue for the process.
         proc : queue
             The process itself. 
+        s_proc : queue
+            The save process. 
+        p_proc : queue
+            The post process. 
         """
         response = r_queue.get()
         serial = response[0]
         name = response[1]
         msg = "Device " + str(serial) + " successfully connected and process started."
         self.o_queue.put(msg)
+        # Add references to everything to self
         self.instr.append(serial)
         self.procs[serial] = proc
+        self.s_procs[serial] = s_proc
+        self.p_procs[serial] = p_proc
         self.command_queue[serial] = c_queue
         self.response_queue[serial] = r_queue
+        self.save_queue[serial] = s_queue
+        # Need to start them here so init_response catches the first response
+        s_proc.start()
+        p_proc.start()
         # Send the inital dataset number to the device and create the folders
         file.make_dir_struct(self.INSTR[name]['dataType'], self.dataset)
         self.send_command(c_queue, 'set_dataset', (self.dataset,))

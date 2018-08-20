@@ -14,6 +14,7 @@ import base64
 import subprocess
 from PIL import Image
 import ast
+import libtiff
 
 
 PATH = ''
@@ -168,19 +169,14 @@ def save_IMAGE(data, dataSet, shot):
     shot : int
         The shot number.
     """
-    if 'data' in data and 'meta' in data and hasattr(data['data'], 'save'):
-        dirName = get_dirName('IMAGE', dataSet)
-        serial = data['meta']['Serial number']
-        fileName = get_fileName(serial, dataSet, shot)
-        name = dirName + fileName + '.tiff'
-        imgFormat = pc2.IMAGE_FILE_FORMAT.TIFF
-        data['image'].save(bytes(name, 'utf-8'), imgFormat)
-        add_image_meta(name, data['meta'])
-        return True
-    else:
-        print('Saving Error: Image data does not have the correct structure.')
-        return False
-
+    #print("Need to update image saving")
+    dirName = get_dirName('IMAGE', dataSet)
+    serial = data['meta']['Serial number']
+    fileName = get_fileName(serial, dataSet, shot)
+    name = dirName + fileName + '.tiff'
+    # As of right now we don't have any good way of writing the image data to a
+    # tiff file. Libtiff can save it very fast but it internally converts a 
+    # numpy array if a list is passed, the conversion takes 400ms...
 
 def add_image_meta(fileName, meta):
     """ Save metadata into an existing tiff files description tag. 
@@ -233,7 +229,8 @@ def save_SET(data, dataSet, shot):
     """
     if 'meta' in data:
         dirName = get_dirName('SET', dataSet)
-        fileName = get_fileName(data['meta']['INSTR'], dataSet, shot)
+        serial = data['meta']['Serial number']
+        fileName = get_fileName(serial, dataSet, shot)
         np.save(dirName + fileName, data)
         return True
     else:

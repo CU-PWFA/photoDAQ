@@ -31,6 +31,7 @@ class Process():
         o_queue : mp.Queue
             The queue to place messages in.
         """
+        self.delay = 0.0
         self.c_queue = c_queue
         self.r_queue = r_queue
         self.o_queue = o_queue
@@ -68,7 +69,7 @@ class Process():
                 func = getattr(self, com['command'])
                 func(*com['args'])
             self.c_queue.task_done()
-            time.sleep(0.05)
+            time.sleep(self.delay)
     
     def create_save_thread(self):
         """ Create a dedicated thread to handle data saving. """
@@ -95,7 +96,7 @@ class Process():
             data = {'data' : ret,
                     'meta' : meta}
             save = getattr(file, 'save_' + self.get_datatype())
-            if save(data, self.dataSet, self.shot) == False:
+            if save(data, self.dataset, self.shot) == False:
                 msg = "Failed to save datafrom " + meta['Serial number']
                 self.o_queue.put(msg)
             self.r_queue.put(data)
@@ -113,6 +114,7 @@ class Process():
         meta['Timestamp'] = Gvar.get_timestamp()
         meta['Data set'] = self.dataset
         meta['Shot number'] = self.shot
+        meta['Data type'] = self.get_datatype()
         return meta
     
     def get_datatype(self):
