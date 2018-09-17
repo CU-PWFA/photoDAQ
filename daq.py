@@ -153,6 +153,7 @@ class Daq():
         self.o_thread.start()
         # Setup an initial dataset number
         self.dataset = Gvar.getDataSetNum()
+        file.add_to_log(self.dataset)
         self.manager = mp.Manager()
     
     def connect_instr(self, name, adr):
@@ -220,6 +221,7 @@ class Daq():
         """
         while True:
             data = in_queue.get()
+            #print(in_queue.qsize()) ### This was used to test data accessibility 
             if data['save']:
                 meta = data['meta']
                 save = getattr(file, 'save_' + meta["Data type"])
@@ -324,18 +326,18 @@ class Daq():
         self.o_queue.put(msg)
         # Add references to everything to self
         self.instr.append(serial)
-        self.procs[serial] = proc
-        self.s_procs[serial] = s_proc
-        self.p_procs[serial] = p_proc
-        self.command_queue[serial] = c_queue
-        self.response_queue[serial] = r_queue
-        self.save_queue[serial] = s_queue
         # Need to start them here so init_response catches the first response
         s_proc.start()
         p_proc.start()
         # Send the inital dataset number to the device and create the folders
         file.make_dir_struct(self.INSTR[name]['dataType'], self.dataset)
         self.send_command(c_queue, 'set_dataset', (self.dataset,))
+        self.procs[serial] = proc
+        self.s_procs[serial] = s_proc
+        self.p_procs[serial] = p_proc
+        self.command_queue[serial] = c_queue
+        self.response_queue[serial] = r_queue
+        self.save_queue[serial] = s_queue
         r_queue.task_done()
     
     def send_command(self, c_queue, command, args=None):

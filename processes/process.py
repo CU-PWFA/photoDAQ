@@ -59,14 +59,15 @@ class Process():
         self.r_queue.put([device.serialNum, self.get_type()])
         
     def command_loop(self):
-        """ Chaeck the queue for commands and execute them. """
+        """ Check the queue for commands and execute them. """
         while True:
             com = self.c_queue.get()
-            if hasattr(self.device, com['command']):
-                func = getattr(self.device, com['command'])
-                func(*com['args'])
-            elif hasattr(self, com['command']):
+            # Always check process class first to allow overrides to be placed there
+            if hasattr(self, com['command']):
                 func = getattr(self, com['command'])
+                func(*com['args'])
+            elif hasattr(self.device, com['command']):
+                func = getattr(self.device, com['command'])
                 func(*com['args'])
             self.c_queue.task_done()
             time.sleep(self.delay)

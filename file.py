@@ -15,6 +15,7 @@ import subprocess
 from PIL import Image
 import ast
 import libtiff
+import time
 
 
 PATH = ''
@@ -156,7 +157,6 @@ def save_meta(meta, dataSet):
     fileName = 'meta' + '_' + str(dataSet)
     np.save(dirName + fileName, meta)
     
-
 def save_IMAGE(data, dataSet, shot):
     """ Save an image to a tiff file with LZW compression. 
     
@@ -169,14 +169,23 @@ def save_IMAGE(data, dataSet, shot):
     shot : int
         The shot number.
     """
-    #print("Need to update image saving")
     dirName = get_dirName('IMAGE', dataSet)
-    serial = data['meta']['Serial number']
+    meta = data['meta']
+    serial = meta['Serial number']
     fileName = get_fileName(serial, dataSet, shot)
-    name = dirName + fileName + '.tiff'
-    # As of right now we don't have any good way of writing the image data to a
-    # tiff file. Libtiff can save it very fast but it internally converts a 
-    # numpy array if a list is passed, the conversion takes 400ms...
+    name = dirName + fileName + '.tiff' 
+    
+    raw = data['raw']
+    width, height = meta['pixel']
+    imageArray = np.frombuffer(bytes(raw), dtype=np.uint16).reshape(width, height) 
+    
+    tiff = libtiff.TIFF.open(name, mode='w')
+    tiff.write_image(imageArray)
+    tiff.close()  
+    
+    metaBYTE = str(meta).encode()
+    metaBASE = str(base64.b64encode(metaBYTE), 'ascii')
+    subprocess.call('tiffset -s 270 '+metaBASE+' '+name, shell=True)
 
 def add_image_meta(fileName, meta):
     """ Save metadata into an existing tiff files description tag. 
@@ -360,7 +369,6 @@ def decode_image_meta(image):
     meta = base64.b64decode(meta).decode()
     # Eval is insecure but this version is a little safer
     return ast.literal_eval(meta)
-
 
 def convert_image(serial, dataSet, shot):
     """ Convert a 16bit image with 12bits of data to the 12bit data.

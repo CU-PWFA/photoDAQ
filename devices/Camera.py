@@ -71,7 +71,7 @@ class Camera():
         height : int, optional
             The height of the image in pixels.
         pixelFormat : int, optional
-            Pass a atrribute of pc2.PIXEL_FORMAT for a valid integer.
+            Pass an atrribute of pc2.PIXEL_FORMAT for a valid integer.
         """
         settings = self.cam.getGigEImageSettings()
         if pixelFormat is not None:
