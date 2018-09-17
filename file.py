@@ -177,9 +177,9 @@ def save_IMAGE(data, dataSet, shot):
     
     raw = data['raw']
     width, height = meta['pixel']
-    
-    imageArray = np.frombuffer(bytes(raw), dtype=np.uint16).reshape(height, width)
-    
+
+    imageArray = np.frombuffer(bytes(raw), dtype=np.uint16).reshape(height, width) 
+
     tiff = libtiff.TIFF.open(name, mode='w')
     tiff.write_image(imageArray)
     tiff.close()  

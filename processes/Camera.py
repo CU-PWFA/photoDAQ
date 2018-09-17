@@ -43,19 +43,11 @@ class Camera(Process):
         # a queue so we have to save it directly here
         if args:
             if self.shot < args:
-                                
+
                 ts = image.getTimeStamp()
-                dateTime = datetime.datetime.fromtimestamp(ts.seconds)
-                yr = dateTime.year
-                mn = dateTime.month
-                dy = dateTime.day
-                hr = dateTime.hour
-                mi = dateTime.minute
-                sc = dateTime.second
-                ms = ts.microSeconds
-                print('\nYear/Month/Day/Hour/Min: {}/{}/{}/{}/{}'
-                      '\nSeconds: {}'
-                      '\n   MicroSec: {}'.format(yr, mn, dy, hr, mi, sc, ms))
+                # ts is not currently being used for the time stamp meta data,
+                # though it is a more accurate time stamp than the one being 
+                # used in the create_meta() function
                 
                 meta = self.create_meta()
                 raw = image.getData()
