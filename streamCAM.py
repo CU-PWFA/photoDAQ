@@ -28,6 +28,11 @@ try:
             cv_image = np.frombuffer(bytes(image.getData()), dtype=cam.dtype).reshape( (cam.pixROW, cam.pixCOL) )
             cv2.imshow('frame',cv_image)
             cv2.waitKey(1)
+            #dynamic Range Printout (adjusting factor from 16 to 12bit)
+            minpixel=np.amin(cv_image)*(1/16)
+            maxpixel=np.amax(cv_image)*(1/16)
+            pixelrange=maxpixel-minpixel
+            print(pixelrange)
         else:
             continue
 except KeyboardInterrupt:
