@@ -9,6 +9,8 @@ Created on Wed Jul 11 15:33:16 2018
 from processes.process import Process
 import PyCapture2 as pc2
 import datetime
+import cv2
+import numpy as np
 
 class Camera(Process):
     """ Process class for a camera. """
@@ -16,6 +18,29 @@ class Camera(Process):
         """ Save images from the camera as they come in. """        
         cam = self.device
         cam.start_capture(self.save_image, numShots)
+        
+    def live_stream(self, dr_option=False,):
+        """sets up a livestream with dynamic range printout (T/F)"""
+        cam = self.device
+        cam.start_capture()
+        while True:
+            try:
+                image = cam.retrieve_buffer()
+            except:
+                image = False
+            if image:
+                cv_image = np.frombuffer(bytes(image.getData()), dtype=np.uint16)
+                cv_image = cv_image.reshape( (cam.imageINFO.maxHeight, cam.imageINFO.maxWidth) )
+                cv2.imshow('frame',cv_image)
+                cv2.waitKey(1)
+                '''dynamic Range Printout (adjusting factor from 16 to 12bit)'''
+                if dr_option==True:
+                    minpixel=np.amin(cv_image)*(1/16)
+                    maxpixel=np.amax(cv_image)*(1/16)
+                    pixelrange=maxpixel-minpixel
+                    print(pixelrange)
+            else:
+                continue
         
     def take_photo(self):
         """ Start capturing and retrieve an image from the buffer.
