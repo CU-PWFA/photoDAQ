@@ -36,7 +36,11 @@ def get_dirName(root, dataSet):
         The path and directory name.
     """
     datePath = Gvar.get_date_path()
-    dirName = PATH + root + datePath + str(dataSet) + '/'
+    if root=='META':
+        dirName = PATH + root + datePath
+    else:
+        dirName = PATH + root + datePath + str(dataSet) + '/'
+    
     return dirName
 
 
@@ -246,6 +250,31 @@ def save_SET(data, dataSet, shot):
     else:
         print('Saving Error: Settings have no metadata.')
         return False
+    
+def save_meta_txt(desc, dataset, INSTR):
+    """Records meta data in txt file and then ends dataset
+    """
+    metaName = get_dirName('META', dataset)+'meta_{}.txt'.format(dataset)
+    f = open(metaName, 'w')   
+    f.write('# Description of Data Set\n\n   '+desc)
+    
+    f.write('\n\n# Devices Used')
+    for key in INSTR:
+        f.write('\n\n   '+key+' :')
+        for val in INSTR[key]:
+            f.write('\n      {}'.format(val))
+                
+    f.write('\n\n# Time Stamp of Each Shot (year/month/day/hour/minute/second/microsecond)\n')
+    dirName = get_dirName('IMAGE', dataset)
+    for fileName in sorted( os.listdir(dirName) ):
+        im = Image.open(dirName+fileName)
+        meta = im.tag[270][0]
+        meta = base64.b64decode(meta) 
+        meta = ast.literal_eval(str(meta, 'ascii'))
+        
+        f.write('\nShot {}: {}'.format(meta['Shot number'], meta['Timestamp']))
+        
+    f.close()
 
 # Load functions
 #------------------------------------------------------------------------------
