@@ -9,6 +9,8 @@ Created on Wed Jul 11 15:33:16 2018
 from processes.process import Process
 import PyCapture2 as pc2
 import datetime
+import numpy as np
+import cv2
 
 class Camera(Process):
     """ Process class for a camera. """
@@ -16,6 +18,33 @@ class Camera(Process):
         """ Save images from the camera as they come in. """        
         cam = self.device
         cam.start_capture(self.save_image, numShots)
+        
+    def live_stream(self):
+        """Stream images from the camera in a live feed."""
+        cam = self.device
+        width, height = self.device.imageINFO.maxWidth, self.device.imageINFO.maxHeight
+        cam.start_capture()
+        try:
+            while True:
+                image = cam.retrieve_buffer()
+                if image:
+                    cv_image = np.frombuffer(bytes(image.getData()), dtype=np.uint16).reshape( (height, width) )
+                    cv2.imshow('frame',cv_image)
+                    c = cv2.waitKey(1)
+                    #dynamic Range Printout (adjusting factor from 16 to 12bit)
+                    minpixel=np.amin(cv_image)*(1/16)
+                    maxpixel=np.amax(cv_image)*(1/16)
+                    pixelrange=maxpixel-minpixel
+                    self.o_queue.put(pixelrange)
+                    #print(pixelrange)
+                    if c == 13:
+                        self.save_image(image)
+                else:
+                    continue
+        except KeyboardInterrupt:
+            cam.stop_capture()
+            cam.close()    
+            
         
     def take_photo(self):
         """ Start capturing and retrieve an image from the buffer.
@@ -29,7 +58,7 @@ class Camera(Process):
         image = cam.take_photo()
         self.save_image(image, [])
         
-    def save_image(self, image, args):
+    def save_image(self, image, args=[]):
         """ Callback from start_capture, saves the image.  
         
         Parameters
@@ -43,11 +72,6 @@ class Camera(Process):
         # a queue so we have to save it directly here
         if args:
             if self.shot < args:
-
-                ts = image.getTimeStamp()
-                # ts is not currently being used for the time stamp meta data,
-                # though it is a more accurate time stamp than the one being 
-                # used in the create_meta() function
                 
                 meta = self.create_meta()
                 raw = image.getData()
@@ -75,7 +99,7 @@ class Camera(Process):
             
         # Note we have the option to directly save the image here using 
         # image.save and it runs at 10 Hz but only on an ssd
-                
+
     def get_datatype(self):
         """ Return the type of data. """
         return "IMAGE"
