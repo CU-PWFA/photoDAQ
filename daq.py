@@ -13,6 +13,10 @@ import globalVAR as Gvar
 import time
 import threading
 import multiprocessing as mp
+import os
+from PIL import Image
+import base64
+import ast
 ###############################################################################
 #   
 #   The main DAQ loop that controls acquisiton and parameters
@@ -80,8 +84,14 @@ def main(instrInit, instrAdr, mod, nShots, desc):
 
 class Daq():
     """ Main daq class, handles instrument and thread/process managment. """
-    def __init__(self):
+    def __init__(self, desc=None):
         # Store information about our various instruments
+        """
+        Parameters
+        ----------
+        desc : str
+            Description of data set
+        """
         self.INSTR = {
                 'KA3005P'   : {
                             'IOtype'    : 'out',
@@ -100,7 +110,7 @@ class Daq():
                             'dataType'  : 'TRACE'
                             }
                 }
-        self.instr = []
+        self.instr = {}
         self.procs = {}
         self.s_procs = {}
         self.p_procs = {}
@@ -110,6 +120,7 @@ class Daq():
         self.max_out_queue_size = 10000
         self.max_command_queue_size = 10000
         self.max_response_queue_size = 1000
+        self.desc = desc
         # Setup the daq
         self.setup_daq()
     
@@ -155,6 +166,7 @@ class Daq():
         self.dataset = Gvar.getDataSetNum()
         file.add_to_log(self.dataset)
         self.manager = mp.Manager()
+        file.make_dir_struct('META', self.dataset)
     
     def connect_instr(self, name, adr):
         """ Create the process for the instrument and attempt to connect.
@@ -221,7 +233,6 @@ class Daq():
         """
         while True:
             data = in_queue.get()
-            #print(in_queue.qsize()) ### This was used to test data accessibility 
             if data['save']:
                 meta = data['meta']
                 save = getattr(file, 'save_' + meta["Data type"])
@@ -238,7 +249,7 @@ class Daq():
             in_queue.get()
             in_queue.task_done()
 
-    def disconnect_instr(self, serial):
+    def disconnect_instr(self, name, serial):
         """ Deletes an object for a passed instrument type and address.
         
         Parameters
@@ -247,7 +258,7 @@ class Daq():
             The serial number of the device, will be the key in self.threads.
         """
         self.send_command(self.command_queue[serial], 'close')
-        self.instr.remove(serial)
+        self.instr[name].remove(serial)
         del self.command_queue[serial]
         del self.save_queue[serial]
         del self.response_queue[serial]
@@ -269,6 +280,7 @@ class Daq():
         """
         while True:
             print(o_queue.get())
+            time.sleep(.09)
             o_queue.task_done()
             
     def add_s_proc(self, serial):
@@ -325,7 +337,10 @@ class Daq():
         msg = "Device " + str(serial) + " successfully connected and process started."
         self.o_queue.put(msg)
         # Add references to everything to self
-        self.instr.append(serial)
+        if name in self.instr:
+            self.instr[name].append(serial)
+        else:
+            self.instr[name] = [serial]
         # Need to start them here so init_response catches the first response
         s_proc.start()
         p_proc.start()
@@ -363,6 +378,23 @@ class Daq():
             print(str(sys.exc_info()[0]))
             raise
         
+    def end_dataset(self):
+        """Records meta data in txt file and then ends dataset
+        """
+        file.save_meta_txt(self.desc, self.dataset, self.instr)
+        
+    def adv_dataset(self):
+        """Advances dataset number
+        """
+        self.dataset += 1
+        file.add_to_log(self.dataset)
+        file.make_dir_struct('META', self.dataset)
+        
+        for key in self.instr:
+            file.make_dir_struct(self.INSTR[key]['dataType'], self.dataset)
+        
+        for key in self.command_queue:              
+            self.send_command(self.command_queue[key], 'set_dataset', (self.dataset,))
 
 def do_measurement(instr, measure, shot, dataSet, attempts=10):
     """ Carry out a single measurement and save the data from it. 
