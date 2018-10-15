@@ -14,7 +14,7 @@ class Camera():
     def __init__(self, serial):
         """ Create the pyCapture Camera object fo the camera. """
         self.connectCam(serial)
-        self.setupCam()
+        self.setupCam(serial)
     
     def connectCam(self, serial):
         """ Connect to the camera and verify the connection. 
@@ -45,11 +45,14 @@ class Camera():
             self.ID = (model + ',' + str(self.serialNum) + ',FV:' + fv)
             print('Camera ID:', self.ID)
     
-    def setupCam(self):
+    def setupCam(self, serial):
         """ Set settings required for correct image acquisition. """
         width = self.imageINFO.maxWidth
         height = self.imageINFO.maxHeight
-        pixelFormat = pc2.PIXEL_FORMAT.RAW16
+        if serial == 17570564:
+            pixelFormat = pc2.PIXEL_FORMAT.MONO16
+        else:
+            pixelFormat = pc2.PIXEL_FORMAT.RAW16
         self.set_image_settings(width, height, pixelFormat)
         self.set_gain_settings(False, 0)
         self.set_shutter_settings(False, 10)

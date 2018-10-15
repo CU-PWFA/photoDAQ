@@ -9,13 +9,10 @@ Created on Wed Jul 11 15:33:16 2018
 from processes.process import Process
 import PyCapture2 as pc2
 import datetime
-<<<<<<< HEAD
 import numpy as np
 import cv2
-=======
 import cv2
 import numpy as np
->>>>>>> ddeabc2deaa0c0fb65d5422b347146c8869cc595
 
 class Camera(Process):
     """ Process class for a camera. """
@@ -24,34 +21,33 @@ class Camera(Process):
         cam = self.device
         cam.start_capture(self.save_image, numShots)
         
-<<<<<<< HEAD
     def live_stream(self):
         """Stream images from the camera in a live feed."""
         cam = self.device
         width, height = self.device.imageINFO.maxWidth, self.device.imageINFO.maxHeight
         cam.start_capture()
-        try:
-            while True:
-                image = cam.retrieve_buffer()
-                if image:
-                    cv_image = np.frombuffer(bytes(image.getData()), dtype=np.uint16).reshape( (height, width) )
-                    cv2.imshow('frame',cv_image)
-                    c = cv2.waitKey(1)
-                    #dynamic Range Printout (adjusting factor from 16 to 12bit)
-                    minpixel=np.amin(cv_image)*(1/16)
-                    maxpixel=np.amax(cv_image)*(1/16)
-                    pixelrange=maxpixel-minpixel
-                    self.o_queue.put(pixelrange)
-                    #print(pixelrange)
-                    if c == 13:
-                        self.save_image(image)
+        while True:
+            image = cam.retrieve_buffer()
+            if image:
+                cv_image = np.frombuffer(bytes(image.getData()), dtype=np.uint16).reshape( (height, width) )
+                cv2.imshow('frame',cv_image)
+                c = cv2.waitKey(1)
+                #dynamic Range Printout (adjusting factor from 16 to 12bit)
+                minpixel=np.amin(cv_image)*(1/16)
+                maxpixel=np.amax(cv_image)*(1/16)
+                pixelrange=maxpixel-minpixel
+                self.o_queue.put(pixelrange)
+                if c == 13:
+                    self.save_image(image)
+                elif c == 27:
+                    cam.stop_capture()
+                    cam.close()
+                    break
                 else:
                     continue
-        except KeyboardInterrupt:
-            cam.stop_capture()
-            cam.close()    
-            
-=======
+            else:
+                continue
+    '''
     def live_stream(self, dr_option=False,):
         """sets up a livestream with dynamic range printout (T/F)"""
         cam = self.device
@@ -66,7 +62,7 @@ class Camera(Process):
                 cv_image = cv_image.reshape( (cam.imageINFO.maxHeight, cam.imageINFO.maxWidth) )
                 cv2.imshow('frame',cv_image)
                 cv2.waitKey(1)
-                '''dynamic Range Printout (adjusting factor from 16 to 12bit)'''
+                #dynamic Range Printout (adjusting factor from 16 to 12bit)
                 if dr_option==True:
                     minpixel=np.amin(cv_image)*(1/16)
                     maxpixel=np.amax(cv_image)*(1/16)
@@ -74,7 +70,7 @@ class Camera(Process):
                     print(pixelrange)
             else:
                 continue
->>>>>>> ddeabc2deaa0c0fb65d5422b347146c8869cc595
+    '''
         
     def take_photo(self):
         """ Start capturing and retrieve an image from the buffer.
