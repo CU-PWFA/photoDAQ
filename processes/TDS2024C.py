@@ -18,10 +18,12 @@ class TDS2024C(Process):
         """ Return the device type. """
         return "TDS2024C"
     
-    def save_waveform(self):
+    def save_waveform(self, chan=None):
         """ Save the current waveform to disk. """
         t, y, pre = self.device.retrieve_current_waveform()
         meta = self.create_meta()
+        if chan != None:
+            meta['Channel'] = chan
         for name in pre:
             meta[name] = pre[name]
         data = {'save' : True,
