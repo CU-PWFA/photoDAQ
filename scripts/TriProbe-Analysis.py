@@ -100,6 +100,7 @@ c2='r'
 lns1 = ax1.plot(V3_set, T_set, label='Plasma Temperature', c=c1)
 #lns11 = ax1.plot(V3_set, [T_avg]*lng, label='Average Temperature', c=c1, ls='--')
 
+#ax1.set_ylim(0, np.max(T_set))
 ax1.set_xlabel('$V_{d3} \ (V)$', color=c0, fontsize=fnt)
 ax1.set_ylabel('Temp (eV)', color=c1, fontsize=fnt)
 
@@ -111,7 +112,7 @@ ax1.set_title('Triple Probe in Air Plasma', color=c0, fontsize=fnt)
 
 ax2 = ax1.twinx()
 lns2 = ax2.plot(V3_set, V2_set, label='Floating Potential', c=c2)
-#ax2.set_ylim(np.min(T_set), np.max(T_set))
+#ax2.set_ylim(0, np.max(T_set))
 ax2.set_ylabel('$V_{d2} \ (V)$', color=c2, fontsize=fnt)
 ax2.tick_params(axis='y', colors=c2, labelsize=fnt-2)
 
