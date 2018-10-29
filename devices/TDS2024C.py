@@ -8,6 +8,7 @@ Created on Wed May 30 09:54:58 2018
 
 import visa
 import numpy as np
+import time
 
 class TDS2024C():
     """ Class to control the Tektronix TDS2024C oscilloscope. 
@@ -239,17 +240,21 @@ class TDS2024C():
         """ Stop data aquisition. """
         self.OS.write("ACQuire:STATE OFF")
     
-    def wait(self):
+    def wait(self, delay=0.05):
         """ Tells the oscilloscope to wait to finish the current command.
         
         The oscilliscope will wait to finish the current command (for example
         an acquisition) before it executes the next command.
         """
-        self.OS.write("*WAI")
+        #self.OS.write("*WAI")
+        chk = self.check_busy()
+        while chk == '1':            
+            time.sleep(delay)
+            chk = self.check_busy()
     
     def check_busy(self):
         """ Check if the oscilloscope has a pending command. """
-        return self.OS.query("BUSY?")
+        return self.OS.query("BUSY?") 
     
     def close(self):
         """ Close the instrument (turn off, dont need to disconnect). """
