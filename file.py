@@ -251,31 +251,172 @@ def save_SET(data, dataSet, shot):
         print('Saving Error: Settings have no metadata.')
         return False
     
-def save_meta_txt(desc, dataset, INSTR):
+def meta_IMAGE(dataset, serial, ts):
+    """ Save the image meta data in a txt file. 
+    
+    Parameters
+    ----------
+    dataset : int
+        The data set number.
+    serial : int
+        List of Cameras used in dataset by serial number
+    ts : bool
+        Records time stamp of each shot if True. 
+        Does nothing if False.
+    """
+    metaName = get_dirName('META', dataset)+'meta_{}.txt'.format(dataset)
+    f = open(metaName, 'r')
+    contents = f.readlines()
+    f.close()
+    
+    cnt = 0
+    for ind in range(len(contents)):
+        line = contents[ind]
+        if line[0] == '#':
+            cnt += 1
+        if cnt == 3:
+            contents.insert(ind, '    Camera :')
+            for num in serial:
+                ind+=1
+                contents.insert(ind, '\n      {}'.format(num))
+            contents.insert(ind+1, '\n\n')
+            break
+        
+    if cnt != 3:
+        contents.append('\n\n    Camera :')
+        for num in serial:
+            contents.append('\n      {}'.format(num))
+        contents.append('\n\n')
+    
+    if ts:
+        contents.append('# Time Stamp of Each Shot (year/month/day/hour/minute/second/microsecond)\n')
+        dirName = get_dirName('IMAGE', dataset)
+        for fileName in sorted( Gvar.list_files(dirName, 'tiff') ):
+            im = Image.open(dirName+fileName)
+            meta = im.tag[270][0]
+            meta = base64.b64decode(meta) 
+            meta = ast.literal_eval(str(meta, 'ascii'))
+            
+            contents.append('\nShot {}: {}'.format(meta['Shot number'], meta['Timestamp']))
+    
+    f = open(metaName, 'w')
+    contents = ''.join(contents)
+    f.write(contents)
+    f.close()
+    
+def meta_TRACE(dataset, serial, ts):
+    """Save the trace meta data in a txt file.
+    
+    Parameters
+    ----------
+    dataset : int
+        The data set number
+    serial : int
+        List of O-scopes used in dataset by serial number
+    ts : bool
+        Records time stamp of each shot if True. 
+        Does nothing if False.
+    """
+    metaName = get_dirName('META', dataset)+'meta_{}.txt'.format(dataset)
+    f = open(metaName, 'r')
+    contents = f.readlines()
+    f.close()
+      
+    dirName = get_dirName('TRACE', dataset)      
+    filName = sorted( Gvar.list_files(dirName, 'npy') )
+    trace = load_TRACE(dirName+filName[0])
+    chan = trace['meta']['Channel']
+    
+    cnt = 0
+    for ind in range(len(contents)):
+        line = contents[ind]
+        if line[0] == '#':
+            cnt += 1
+        if cnt == 3:
+            contents.insert(ind, '    Oscilliscope : ')
+            contents.insert(ind+1, '\n      {}'.format(serial[0]))
+            for key, elem in chan.items():
+                ind+=1
+                contents.insert(ind+1, '\n        {} : {}'.format(key, elem[1]))
+            contents.insert(ind+2, '\n\n')
+            break   
+        
+    if cnt != 3:
+        contents.append('\n\n    Oscilliscope : ')
+        contents.append('\n      {}'.format(serial[0]))
+        for key, elem in chan.items():
+            contents.append('\n        {} : {}'.format(key, elem[1]))
+        contents.append('\n\n')
+        
+    if ts:
+        contents.append('# Time Stamp of Each Shot (year/month/day/hour/minute/second/microsecond)\n')
+        for file in filName:
+            meta = load_TRACE(dirName+file)['meta']
+            contents.append('\nShot {}: {}'.format(meta['Shot number'], meta['Timestamp']))
+    
+    f = open(metaName, 'w')
+    contents = ''.join(contents)
+    f.write(contents)      
+    f.close()
+    
+def meta_SET(dataset, serial, ts):
+    """Save the trace meta data in a txt file.
+    
+    Parameters
+    ----------
+    dataset : int
+        The data set number
+    serial : int
+        List of O-scopes used in dataset by serial number
+    ts : bool
+        Records time stamp of each shot if True. 
+        Does nothing if False.
+    """
+    metaName = get_dirName('META', dataset)+'meta_{}.txt'.format(dataset)
+    f = open(metaName, 'r')
+    contents = f.readlines()
+    f.close()
+    
+    cnt = 0
+    for ind in range(len(contents)):
+        line = contents[ind]
+        if line[0] == '#':
+            cnt += 1
+        if cnt == 3:
+            contents.insert(ind, '    Power Supply : ')
+            for val in serial:
+                ind+=1
+                contents.insert(ind, '\n      {}'.format(val))
+            contents.insert(ind+1, '\n\n')
+            break   
+        
+    if cnt != 3:
+        contents.append('\n\n    Power Supply : ')
+        for val in serial:
+            contents.append('\n      {}'.format(val))
+        contents.append('\n\n')
+        
+    if ts:
+        dirName = get_dirName('SET', dataset)      
+        filName = sorted( Gvar.list_files(dirName, 'npy') )
+        contents.append('# Time Stamp of Each Shot (year/month/day/hour/minute/second/microsecond)\n')
+        for file in filName:
+            meta = load_TRACE(dirName+file)['meta']
+            contents.append('\nShot {}: {}'.format(meta['Shot number'], meta['Timestamp']))
+    
+    f = open(metaName, 'w')
+    contents = "".join(contents)
+    f.write(contents)
+    f.close()
+    
+def meta_TXT(desc, dataset):
     """Records meta data in txt file and then ends dataset
     """
     metaName = get_dirName('META', dataset)+'meta_{}.txt'.format(dataset)
     f = open(metaName, 'w')   
     f.write('# Description of Data Set\n\n   '+desc)
-    
     f.write('\n\n# Devices Used')
-    for key in INSTR:
-        f.write('\n\n   '+key+' :')
-        for val in INSTR[key]:
-            f.write('\n      {}'.format(val))
                 
-    f.write('\n\n# Time Stamp of Each Shot (year/month/day/hour/minute/second/microsecond)\n')
-    dirName = get_dirName('IMAGE', dataset)
-    for fileName in sorted( os.listdir(dirName) ):
-        im = Image.open(dirName+fileName)
-        meta = im.tag[270][0]
-        meta = base64.b64decode(meta) 
-        meta = ast.literal_eval(str(meta, 'ascii'))
-        
-        f.write('\nShot {}: {}'.format(meta['Shot number'], meta['Timestamp']))
-        
-    f.close()
-
 # Load functions
 #------------------------------------------------------------------------------
 
@@ -326,7 +467,7 @@ def load_IMAGE(serial, dataSet, shot):
     return image
 
 
-def load_TRACE(instr, dataSet, shot):
+def load_TRACE(fileName):
     """ Load a trace from a given data set.
     
     Parameters
@@ -343,14 +484,12 @@ def load_TRACE(instr, dataSet, shot):
     trace : dict
         The trace dictionary.
     """
-    dirName = get_dirName_from_dataset('TRACE', dataSet)
-    fileName = get_fileName(instr, dataSet, shot) + '.npy'
     try:
-        trace = np.load(dirName + fileName)
+        trace = np.load(fileName)
         return trace.item()
     except:
         print('Loading Error: The trace file could not be opened.')
-        print('Looking in: ' + dirName + fileName)
+        print('Looking in: ' + fileName)
         return False
 
 

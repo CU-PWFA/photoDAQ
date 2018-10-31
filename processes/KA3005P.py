@@ -36,5 +36,5 @@ class KA3005P(Process):
         response = {'save' : True,
                     'meta' : meta,
                     'voltage' : v}
-        shot += 1
+        self.shot += 1
         self.r_queue.put(response)

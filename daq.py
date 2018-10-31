@@ -381,7 +381,16 @@ class Daq():
     def end_dataset(self):
         """Records meta data in txt file and then ends dataset
         """
-        file.save_meta_txt(self.desc, self.dataset, self.instr)
+        file.meta_TXT(self.desc, self.dataset)
+        
+        ts = True
+        for name in self.instr:
+            if self.instr[name]:
+                dType = self.INSTR[name]['dataType']
+                metaproc = getattr(file, 'meta_'+dType)
+                metaproc(self.dataset, self.instr[name], ts)
+                ts = False
+                #time.sleep(0)
         
     def adv_dataset(self):
         """Advances dataset number

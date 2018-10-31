@@ -136,3 +136,4 @@ class Process():
         """
         self.dataset = dataset
         self.shot = 0
+        
