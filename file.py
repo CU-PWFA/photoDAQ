@@ -188,9 +188,7 @@ def save_IMAGE(data, dataSet, shot):
     tiff.write_image(imageArray)
     tiff.close()  
     
-    metaBYTE = str(meta).encode()
-    metaBASE = str(base64.b64encode(metaBYTE), 'ascii')
-    subprocess.call('tiffset -s 270 '+metaBASE+' '+name, shell=True)
+    add_image_meta(name, meta)
 
 def add_image_meta(fileName, meta):
     """ Save metadata into an existing tiff files description tag. 
@@ -205,7 +203,6 @@ def add_image_meta(fileName, meta):
     metaBYTE = str(meta).encode()
     metaBASE = str(base64.b64encode(metaBYTE), 'ascii')
     subprocess.call('tiffset -s 270 ' + metaBASE + ' ' + fileName, shell=True)
-
 
 def save_TRACE(data, dataSet, shot):
     """ Save an oscilloscope trace to a numpy file. 
@@ -251,7 +248,43 @@ def save_SET(data, dataSet, shot):
         print('Saving Error: Settings have no metadata.')
         return False
     
-def meta_IMAGE(dataset, serial, ts):
+def save_DELAY(data, dataSet, shot):
+    """ Save the settings of an instrument as a numpy file. 
+    
+    Parameters
+    ----------
+    data : dict
+        The dictionary with the delay and output voltage of each SDG output.
+    dataSet : int
+        The data set number.
+    shot : int
+        The shot number.
+    """
+    if data['saveType'] == 'settings':
+        dirName = get_dirName('DELAY', dataSet)
+        serial = data['meta']['Serial number']
+        fileName = get_fileName(serial, dataSet, shot)
+        np.save(dirName + fileName, data['data'])
+        return True
+    
+    elif data['saveType'] == 'trigger':
+        metaName = get_dirName('META', dataSet)+'meta_{}.txt'.format(dataSet)
+        f = open(metaName, 'r')
+        contents = f.readlines()
+        f.close()
+        
+        contents.append(data['data']['shot']+data['data']['Time Stamp']+'\n')
+        f = open(metaName, 'w')
+        contents = ''.join(contents)
+        f.write(contents)
+        f.close()
+        return True
+    
+    else:
+        print("Saving Error: DELAY does not have the correct structure.")
+        return False
+    
+def meta_IMAGE(dataset, serial):
     """ Save the image meta data in a txt file. 
     
     Parameters
@@ -269,23 +302,33 @@ def meta_IMAGE(dataset, serial, ts):
     contents = f.readlines()
     f.close()
     
+    contents.append('\n\tCamera :')
+    for num in serial:
+        contents.append('\n\t\t{}'.format(num))
+    contents.append('\n')
+    
+    f = open(metaName, 'w')
+    contents = ''.join(contents)
+    f.write(contents)
+    f.close()
+    '''
     cnt = 0
     for ind in range(len(contents)):
         line = contents[ind]
         if line[0] == '#':
             cnt += 1
         if cnt == 3:
-            contents.insert(ind, '    Camera :')
+            contents.insert(ind, '\tCamera :')
             for num in serial:
                 ind+=1
-                contents.insert(ind, '\n      {}'.format(num))
+                contents.insert(ind, '\n\t\t{}'.format(num))
             contents.insert(ind+1, '\n\n')
             break
-        
+      
     if cnt != 3:
-        contents.append('\n\n    Camera :')
+        contents.append('\n\n\tCamera :')
         for num in serial:
-            contents.append('\n      {}'.format(num))
+            contents.append('\n\t\t{}'.format(num))
         contents.append('\n\n')
     
     if ts:
@@ -298,13 +341,13 @@ def meta_IMAGE(dataset, serial, ts):
             meta = ast.literal_eval(str(meta, 'ascii'))
             
             contents.append('\nShot {}: {}'.format(meta['Shot number'], meta['Timestamp']))
-    
+
     f = open(metaName, 'w')
     contents = ''.join(contents)
     f.write(contents)
     f.close()
-    
-def meta_TRACE(dataset, serial, ts):
+    '''
+def meta_TRACE(dataset, serial):
     """Save the trace meta data in a txt file.
     
     Parameters
@@ -321,31 +364,34 @@ def meta_TRACE(dataset, serial, ts):
     f = open(metaName, 'r')
     contents = f.readlines()
     f.close()
-      
-    dirName = get_dirName('TRACE', dataset)      
-    filName = sorted( Gvar.list_files(dirName, 'npy') )
-    trace = load_TRACE(dirName+filName[0])
-    chan = trace['meta']['Channel']
+
+    contents.append('\n\tOscilliscope : %s' % serial[0])
+    contents.append('\n')
     
+    f = open(metaName, 'w')
+    contents = ''.join(contents)
+    f.write(contents)      
+    f.close()
+    '''
     cnt = 0
     for ind in range(len(contents)):
         line = contents[ind]
         if line[0] == '#':
             cnt += 1
         if cnt == 3:
-            contents.insert(ind, '    Oscilliscope : ')
-            contents.insert(ind+1, '\n      {}'.format(serial[0]))
+            contents.insert(ind, '\tOscilliscope : ')
+            contents.insert(ind+1, '\n\t\t{}'.format(serial[0]))
             for key, elem in chan.items():
                 ind+=1
-                contents.insert(ind+1, '\n        {} : {}'.format(key, elem[1]))
+                contents.insert(ind+1, '\n\t\t\t{} : {}'.format(key, elem[1]))
             contents.insert(ind+2, '\n\n')
             break   
-        
+       
     if cnt != 3:
-        contents.append('\n\n    Oscilliscope : ')
-        contents.append('\n      {}'.format(serial[0]))
+        contents.append('\n\n\tOscilliscope : ')
+        contents.append('\n\t{}'.format(serial[0]))
         for key, elem in chan.items():
-            contents.append('\n        {} : {}'.format(key, elem[1]))
+            contents.append('\n\t\t\t{} : {}'.format(key, elem[1]))
         contents.append('\n\n')
         
     if ts:
@@ -358,8 +404,8 @@ def meta_TRACE(dataset, serial, ts):
     contents = ''.join(contents)
     f.write(contents)      
     f.close()
-    
-def meta_SET(dataset, serial, ts):
+    '''
+def meta_SET(dataset, serial):
     """Save the trace meta data in a txt file.
     
     Parameters
@@ -377,25 +423,33 @@ def meta_SET(dataset, serial, ts):
     contents = f.readlines()
     f.close()
     
+    contents.append('\n\tPower Supply : %s' % serial[0])
+    contents.append('\n')
+    
+    f = open(metaName, 'w')
+    contents = "".join(contents)
+    f.write(contents)
+    f.close()
+    '''
     cnt = 0
     for ind in range(len(contents)):
         line = contents[ind]
         if line[0] == '#':
             cnt += 1
         if cnt == 3:
-            contents.insert(ind, '    Power Supply : ')
+            contents.insert(ind, '\tPower Supply : ')
             for val in serial:
                 ind+=1
-                contents.insert(ind, '\n      {}'.format(val))
+                contents.insert(ind, '\n\t\t{}'.format(val))
             contents.insert(ind+1, '\n\n')
             break   
-        
+       
     if cnt != 3:
-        contents.append('\n\n    Power Supply : ')
+        contents.append('\n\n\tPower Supply : ')
         for val in serial:
-            contents.append('\n      {}'.format(val))
+            contents.append('\n\t\t{}'.format(val))
         contents.append('\n\n')
-        
+    
     if ts:
         dirName = get_dirName('SET', dataset)      
         filName = sorted( Gvar.list_files(dirName, 'npy') )
@@ -408,15 +462,90 @@ def meta_SET(dataset, serial, ts):
     contents = "".join(contents)
     f.write(contents)
     f.close()
+    '''
+def meta_DELAY(dataset, serial):
+    """Save the trace meta data in a txt file.
     
+    Parameters
+    ----------
+    dataset : int
+        The data set number
+    serial : int
+        Ethernet port for signal delay generator
+    ts : bool
+        Records time stamp of each shot if True. 
+        Does nothing if False.
+    """
+    
+    metaName = get_dirName('META', dataset)+'meta_{}.txt'.format(dataset)
+    f = open(metaName, 'r')
+    contents = f.readlines()
+    f.close()
+    
+    contents.append('\n\tSignal Delay Generator : %s' % serial[0])
+    contents.append('\n')
+    
+    f = open(metaName, 'w')
+    contents = "".join(contents)
+    f.write(contents)
+    f.close()
+    '''
+    s = '   '
+    cnt = 0
+    for ind in range(len(contents)):
+        line = contents[ind]
+        if line[0] == '#':
+            cnt += 1
+        if cnt == 3:
+            contents.insert(ind, s+'Signal Delay Generator : ')
+            ind+=1
+            contents.insert(ind, '\n'+s+s+'{}'.format(serial[0]))
+            for file in files:
+                ind+=1
+                shot = int(file[-8:-4])
+                contents.insert(ind, '\n'+s+s+'Set before shot {}'.format(shot))
+                data = load_DELAY(dirName+file)
+                settings = data['settings']
+                for key in list(settings.keys()):
+                    ind+=1
+                    contents.insert(ind, '\n'+s+s+s++key)
+                    for delay in settings[key]['delay']:
+                        ind+=1
+                        contents.insert(ind, '\n'+s+s+s+'%s to %s by %s s' % tuple(delay) )
+                    ind+=1
+                    contents.insert(ind, '\n'+s+s+s+'%s = %s V\n' % tuple(settings[key]['output']))
+            contents.insert(ind+1, '\n')
+            break   
+        
+    if cnt != 3:
+        contents.append('\n\n'+s+'Signal Delay Generator : ')
+        contents.append('\n'+s+s+'{}'.format(serial[0]))
+        for file in files:
+            shot = int(file[-8:-4])
+            contents.append('\n'+s+s+s+'Set before shot {}'.format(shot))
+            data = load_DELAY(dirName+file)
+            settings = data['settings']
+            for key in list(settings.keys()):
+                contents.append('\n'+s+s+s+s+key)
+                for delay in settings[key]['delay']:
+                    contents.append('\n'+s+s+s+s+'%s to %s by %s s' % tuple(delay) )
+                contents.append('\n'+s+s+s+s+'%s = %s V\n' % tuple(settings[key]['output']))
+        contents.append('\n')
+    
+    f = open(metaName, 'w')
+    contents = "".join(contents)
+    f.write(contents)
+    f.close()
+    '''
 def meta_TXT(desc, dataset):
     """Records meta data in txt file and then ends dataset
     """
     metaName = get_dirName('META', dataset)+'meta_{}.txt'.format(dataset)
     f = open(metaName, 'w')   
-    f.write('# Description of Data Set\n\n   '+desc)
-    f.write('\n\n# Devices Used')
-                
+    f.write('# Description of Data Set\n\n\t'+desc+''
+            '\n\n# Devices Used\n')
+    f.close()
+    
 # Load functions
 #------------------------------------------------------------------------------
 
@@ -516,9 +645,23 @@ def load_SET(instr, dataSet, shot):
         settings = np.load(dirName + fileName)
         return settings.item()
     except:
-        print('Loading Error: The settings file could not be opened.')
+        print('Loading Error: The PS settings file could not be opened.')
         return False
     
+def load_DELAY(fileName):
+    """Load settings for SDG.
+
+    Parameters
+    ----------
+    fileName : str
+        Directory path and file name to be loaded.
+    """    
+    try:
+        settings = np.load(fileName)
+        return settings.item()
+    except:
+        print('Loading Error: The SDG settings file could not be opened.')
+        return False
 
 def decode_image_meta(image):
     """ Return the metadata dictionary from a pillow image object.
