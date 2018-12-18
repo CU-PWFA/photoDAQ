@@ -58,10 +58,10 @@ class HR4000():
     def get_spectrum(self):
         """get the spectrum
         """
-        return self.PS.spectrum()
+        return self.SP.spectrum()
     
-    def set_integration_time(self):
-        return self.SP.integration_time_micros()
+    def set_integration_time_microsec(self, microsec):
+        return self.SP.integration_time_micros(microsec)
     
     def set_triggermode(self):
         return self.SP.trigger_mode()

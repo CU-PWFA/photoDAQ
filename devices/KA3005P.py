@@ -23,7 +23,7 @@ class KA3005P():
         
         Parameters
         ----------
-        port : string
+        address : string
             The port the device is connected to, "/dev/<address>" is the 
             device name sent to pyserial.
         """

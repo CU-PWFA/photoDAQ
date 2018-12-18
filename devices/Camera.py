@@ -179,7 +179,7 @@ class Camera():
             pc2 image object as the first argument. 
         *args : tuple
             Arguments to be passed to the callback.
-        """
+        """            
         self.cam.startCapture(callback, args)
     
     def stop_capture(self):
