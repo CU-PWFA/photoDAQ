@@ -81,7 +81,6 @@ def main(instrInit, instrAdr, mod, nShots, desc):
     # Handle any post processing that needs to occur
     post_process(instr, dataSet, shot)
 
-
 class Daq():
     """ Main daq class, handles instrument and thread/process managment. """
     def __init__(self, desc=None):
@@ -108,6 +107,10 @@ class Daq():
                 'HR4000'    : {
                             'IOtype'    : 'in',
                             'dataType'  : 'TRACE'
+                            },
+                'SRSDG645'  : {
+                            'IOtype'    : 'in',
+                            'dataType'  : 'DELAY'
                             }
                 }
         self.instr = {}
@@ -123,7 +126,7 @@ class Daq():
         self.desc = desc
         # Setup the daq
         self.setup_daq()
-    
+        
     def print_stat(self, i, failed, startTime, endTime):
         """ Print some information about the data set run.
     
@@ -283,6 +286,22 @@ class Daq():
             time.sleep(.09)
             o_queue.task_done()
             
+    def turn_off_daq(self):
+        """ Kills all threads and processes in DAQ."""
+        for key in self.instr:
+            for elem in self.instr[key]:
+                self.disconnect_instr(key, elem)
+             
+        del self.o_queue
+        del self.o_thread
+        '''
+        threads = threading.enumerate()
+        for _t in threads:
+          print( _t.name)
+          print( _t.isAlive())
+          print()
+        '''
+            
     def add_s_proc(self, serial):
         """ Start up the saving process. 
         
@@ -378,19 +397,24 @@ class Daq():
             print(str(sys.exc_info()[0]))
             raise
         
-    def end_dataset(self):
+    def save_meta(self):
         """Records meta data in txt file and then ends dataset
         """
         file.meta_TXT(self.desc, self.dataset)
         
-        ts = True
+        #ts = True
         for name in self.instr:
-            if self.instr[name]:
-                dType = self.INSTR[name]['dataType']
-                metaproc = getattr(file, 'meta_'+dType)
-                metaproc(self.dataset, self.instr[name], ts)
-                ts = False
-                #time.sleep(0)
+            if name != 'SRSDG645':
+                if self.instr[name]:
+                    dType = self.INSTR[name]['dataType']
+                    metaproc = getattr(file, 'meta_'+dType)
+                    metaproc(self.dataset, self.instr[name])
+                    #ts = False
+            elif name == 'SRSDG645':
+                if self.instr[name]:
+                    dType = self.INSTR[name]['dataType']
+                    metaproc = getattr(file, 'meta_'+dType)
+                    metaproc(self.dataset, self.instr[name])
         
     def adv_dataset(self):
         """Advances dataset number
@@ -404,6 +428,15 @@ class Daq():
         
         for key in self.command_queue:              
             self.send_command(self.command_queue[key], 'set_dataset', (self.dataset,))
+            
+    def waitQ(self, queue, delay=0.05):
+        Qsize = queue.qsize()
+        while Qsize != 0:
+            time.sleep(delay)
+            Qsize = queue.qsize()
+        time.sleep(delay)
+            
+    
 
 def do_measurement(instr, measure, shot, dataSet, attempts=10):
     """ Carry out a single measurement and save the data from it. 
