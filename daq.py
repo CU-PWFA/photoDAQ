@@ -13,73 +13,12 @@ import globalVAR as Gvar
 import time
 import threading
 import multiprocessing as mp
-import os
-from PIL import Image
-import base64
-import ast
 ###############################################################################
 #   
-#   The main DAQ loop that controls acquisiton and parameters
+#   The main DAQ class that controls acquisiton and parameters
 #   
 #   
 ###############################################################################
-
-def main(instrInit, instrAdr, mod, nShots, desc):
-    """ Runs the DAQ.
-    
-    Parameters
-    ----------
-    instrInit : list of strings
-        List of the names of instruments used, must be keys in INSTR.
-    instrAdr : list of ints
-        The addresses of the instruments, will be passed to the constructor.
-    mod : string
-        Name of the script to be used for setup and measurment
-    nShots : int
-        Number of shots for the DAQ
-    desc : string
-        Description of the data set.
-    """
-    arg = [instrInit, instrAdr, mod, nShots, desc]
-    daq = Daq() 
-    dataSet = Gvar.getDataSetNum()
-    file.add_to_log(dataSet)
-    file.make_dir_struct('META', dataSet)
-    
-    # Create all the instrument classes
-    instr = daq.instr
-    
-    for i in range(len(instrInit)):
-        name = instrInit[i]
-        daq.connect_instr(name, instrAdr[i])
-        try:
-            file.make_dir_struct(daq.INSTR[name]['dataType'], dataSet)
-        except:
-            print('The directory structure couldnt be made, instrument:', name)
-    
-    # Setup some statistics functions
-    failed = 0
-    # Take a series of measurements
-    script = importlib.import_module('scripts.' + mod)
-    getattr(script, 'setup')(instr)
-    startTime = time.clock()
-    measure = getattr(script, 'measure')
-    for i in range(nShots):
-        shot = i+1
-        failed += do_measurement(instr, measure, shot, dataSet)
-                
-    endTime = time.clock()
-    # Save the dataset metadata
-    meta = Gvar.create_metadata(arg, startTime)
-    file.save_meta(meta, dataSet)
-    
-    # Close all instruments to prepare for another dataset
-    for name in instr:
-        instr[name].close()
-    
-    daq.print_stat(shot, failed, startTime, endTime)
-    # Handle any post processing that needs to occur
-    post_process(instr, dataSet, shot)
 
 class Daq():
     """ Main daq class, handles instrument and thread/process managment. """
@@ -106,7 +45,7 @@ class Daq():
                             },
                 'HR4000'    : {
                             'IOtype'    : 'in',
-                            'dataType'  : 'TRACE'
+                            'dataType'  : 'SPEC'
                             },
                 'SRSDG645'  : {
                             'IOtype'    : 'in',
@@ -156,7 +95,6 @@ class Daq():
         #mp.set_start_method('spawn')
         # Set the save path for the data
         file.PATH = file.get_file_path()
-        # Create a new data set number
         file.check_log() # Make sure the log exists, if it doesn't, create it
         # Create the output queue for printing to stdout
         self.o_queue = mp.JoinableQueue(self.max_out_queue_size)
@@ -398,8 +336,7 @@ class Daq():
             raise
         
     def save_meta(self):
-        """Records meta data in txt file and then ends dataset
-        """
+        """Records the meta data in a text file and then ends the dataset."""
         file.meta_TXT(self.desc, self.dataset)
         
         #ts = True
@@ -417,8 +354,7 @@ class Daq():
                     metaproc(self.dataset, self.instr[name])
         
     def adv_dataset(self):
-        """Advances dataset number
-        """
+        """ Advances dataset number."""
         self.dataset += 1
         file.add_to_log(self.dataset)
         file.make_dir_struct('META', self.dataset)
@@ -430,14 +366,24 @@ class Daq():
             self.send_command(self.command_queue[key], 'set_dataset', (self.dataset,))
             
     def waitQ(self, queue, delay=0.05):
+        """ """
         Qsize = queue.qsize()
         while Qsize != 0:
             time.sleep(delay)
             Qsize = queue.qsize()
         time.sleep(delay)
+        
+    def get_available_instr(self):
+        """ Find and return all instruments that can be connected.
+        
+        Returns
+        -------
+        instr : array
+            Array of instruments available to be connected to the DAQ.
+        """
+        return []
             
     
-
 def do_measurement(instr, measure, shot, dataSet, attempts=10):
     """ Carry out a single measurement and save the data from it. 
     
@@ -483,32 +429,3 @@ def do_measurement(instr, measure, shot, dataSet, attempts=10):
                 break;
     return failed
 
-
-def post_process(instr, dataSet, shot):
-    """ Complete normal post processing on the dataset. 
-    
-    Parameters
-    ----------
-    arg : array-like
-        The arguments passed to main.
-    dataSet : int
-        The data set number.
-    shot : int
-        The number of shots.
-    """
-    print('Begin post processing')
-    startTime = time.clock()
-    # Run through every instrument and run any postprocessing necessary
-    for name in instr:
-        if instr[name].type == 'Camera':    
-            # Correct the images to remove the the 4 lsb (added to get 16bits)
-            serial = instr[name].serialNum
-            for i in range(shot):
-                file.convert_image(serial, dataSet, i+1)
-    endTime = time.clock()
-    elapsed = endTime - startTime
-    print('Total post processing time:              %0.3f s' % elapsed)
-    
-    
-if __name__ == "__main__":
-    main(sys.argv)

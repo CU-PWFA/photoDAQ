@@ -1,9 +1,9 @@
 import PyCapture2 as pc2
 import numpy as np
-import base_ui
 import daq
 import cv2
-from PyQt4 import QtCore, QtGui
+from PyQt4 import QtCore, QtGui, uic
+from PyQt4.QtCore import pyqtSlot
 import liveView as lv
 import file
 import globalVAR as Gvar
@@ -11,14 +11,25 @@ import time
 import importlib
 import passive_daq as pd
 # Dictionaries for the DAQ instruments
-instr_serials = {'2.2 micron camera':17571186, 
-                       '3.45 (2048x1536) micron camera':17583372,
-                       '3.75 micron camera':17570564,
-                       '3.45 (2448x2048) micron camera':17529184}
-instr_dict = {'2.2 micron camera': "Camera", 
-                       '3.45 (2048x1536) micron camera': "Camera",
-                       '3.75 micron camera': "Camera",
-                       '3.45 (2448x2048) micron camera': "Camera"}
+instr_dict = {
+    '2.2 micron camera' : 
+        {'serial' : 1234567,
+         'name' : 'Camera'},
+    '3.45 (2048x1536) micron camera' : 
+        {'serial' : 17583372,
+         'name' : 'Camera'},
+    '3.75 micron camera' : 
+        {'serial' : 17570564,
+         'name' : 'Camera'},
+    '3.45 (2448x2048) micron camera' : 
+        {'serial' : 17529184,
+         'name': 'Camera'}
+    }
+
+qtCreatorFile = "DAQGUI.ui"
+
+Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
+
 # Functions for the DAQ
 def getAvailableCameras():
     # Dictionary of available cameras
@@ -32,8 +43,7 @@ def getAvailableCameras():
         " micron camera"
     # convert to int
     return cam_list 
-def getSelectedCameras(ui):
-    selectedList = []
+
 def clearSelection(listWidget):
     for i in range(listWidget.count()):
         item = listWidget.item(i)
@@ -41,54 +51,77 @@ def clearSelection(listWidget):
 def passDAQFunc(self):
 	ui = self.PWFAui
     # Get number of shots to take
-	nShots = int(ui.nShotsLineEdit.text())
-	daq.setup_daq()
-	dataSet = Gvar.getDataSetNum()
-	file.add_to_log(dataSet)
-	file.make_dir_struct('META', dataSet)
-	# Create all the instrument classes
-	instrInit = []
-	instrAdr  = []
-	for i in range(ui.selectedListWidget.count()):
-		instrInit.append(self.instr_dict[ui.selectedListWidget.item(i).text()])
-		instrAdr.append(self.instr_serials[ui.selectedListWidget.item(i).text()])
-	for i in range(len(instrInit)):
-		name = instrInit[i]
-		try:
-			file.make_dir_struct(daq.INSTR[name]['dataType'], dataSet)
-		except:
-			print('The directory structure couldn\'t be made, instrument:', name)
-	failed = 0
-	pd.setupCam(self.instr)
-	startTime = time.clock()
-	for i in range(nShots):
-		shot = i + 1
-		failed += daq.do_measurement(self.instr, pd.measureCam, shot, dataSet)
-		ui.DAQProgress.setValue(shot/nShots * 100)
-	endTime = time.clock()
-	# Save the dataset metadata
-	arg = [instrInit, instrAdr, 'cam_test', nShots, ui.DescriptionEdit.toPlainText()]
-	meta = Gvar.create_metadata(arg, startTime)
-	file.save_meta(meta, dataSet)
-	attempts  = 'Total number of attempted measurements:  %d' % (shot+failed)
-	success   = 'Number of successful measurements:       %d' % shot
-	failedMes = 'Total number of failed measurements:     %d' % failed
-	elapsed   = endTime - startTime
-	timeMes   =  'Total measurement time:                 %0.3f s' % elapsed
-	message = [attempts, success, failedMes, timeMes]
-	for i in message:
-		ui.PassDAQTextBrowser.append("\n" + i)
-	daq.post_process(self.instr, dataSet, shot)
 	ui.DAQProgress.setValue(0)
+
 # DAQ UI classes
-class UI(base_ui.Ui_DAQWindow):
+class UI(QtGui.QMainWindow, Ui_MainWindow):
+    def __init__(self):
+        """ Create the parent UI classes and add event handlers. """
+        QtGui.QMainWindow.__init__(self)
+        Ui_MainWindow.__init__(self)
+        self.setupUi(self)
+        
+        # Add event handlers to all the buttons
+        self.connectButton.clicked.connect(self.connect_instrs)
+        self.refreshListButton.clicked.connect(self.refresh_list)
+        self.disconnectButton.clicked.connect(self.disconnect_instr)
+        self.detailButton.clicked.connect(self.open_detail_panel)
+        
+        # Define useful variables
+        self.connected_instr = {}
+        self.available_instr = {}
+        
     def center(self, DAQWindow):
         resolution = QtGui.QDesktopWidget().screenGeometry()
         DAQWindow.move((resolution.width() / 2) - \
                        (DAQWindow.frameSize().width() / 2),
                   (resolution.height() / 2) - \
                   (DAQWindow.frameSize().height() / 2)) 
+        
+    def print_output(self, msg):
+        """ Print a newline to the output text box. """
+        pass
     
+    # Event Handlers
+    ###########################################################################
+    @pyqtSlot()
+    def refresh_list(self):
+        """ Refresh the list of connected instruments. """
+        DAQ = self.DAQ
+        instr = DAQ.get_available_instr()
+        self.availableList.clear()
+        for i in range(len(instr)):
+            self.availableList.addItem(instr[i])
+    
+    @pyqtSlot()
+    def connect_instrs(self):
+        """ Connect the DAQ to the selected instruments. """
+        # Get current connected list to make sure there are no repeats
+        connectedInstr = []
+        for i in range(self.connectedList.count()):
+            connectedInstr.append(self.connectedList.item(i).text())
+        
+        add_list = self.availableList.selectedItems()
+        # If its not a repeat add it to the selected list widget
+        # XXX We should handle repeats when we refresh the list so we don't need to check here
+        for i in add_list:
+            if not i.text() in connectedInstr:
+                self.connectedList.addItem(i.text())
+                #self.instr = daq.connect_instr(self.instr_dict[i.text()], \
+                #                        self.instr_serials[i.text()], self.instr)
+        clearSelection(self.availableList)
+        
+    @pyqtSlot()
+    def disconnect_instr(self):
+        """ Disconnect the DAQ from the selected instrument. """
+        pass
+    
+    @pyqtSlot()
+    def open_detail_panel(self):
+        """ Open the detail panel for a given instrument. """
+        pass
+
+
 class DAQMainWindow(QtGui.QMainWindow):
     def addFunction(self):
         ui = self.PWFAui
@@ -106,7 +139,8 @@ class DAQMainWindow(QtGui.QMainWindow):
                 
                 self.instr = daq.connect_instr(self.instr_dict[i.text()], \
                                         self.instr_serials[i.text()], self.instr)
-        clearSelection(ui.availableListWidget)  
+        clearSelection(ui.availableListWidget)
+        
     def refreshListFunc(self):
         ui = self.PWFAui
         ui.availableListWidget.clear()
@@ -114,6 +148,7 @@ class DAQMainWindow(QtGui.QMainWindow):
         for i in cam_list:
             ui.availableListWidget.addItem(cam_list[i])
         ui.refreshListButton.setText("Refresh list")
+        
     def removeFunction(self):
         ui = self.PWFAui
         for i in ui.selectedListWidget.selectedItems():
@@ -123,6 +158,7 @@ class DAQMainWindow(QtGui.QMainWindow):
                                  self.instr[str(self.instr_serials[i.text()])])
             # delete from list
             ui.selectedListWidget.takeItem(ui.selectedListWidget.row(i))
+            
     def liveViewFunc(self):
         ui = self.PWFAui
         if len(ui.selectedListWidget.selectedItems()) > 1:
@@ -134,6 +170,7 @@ class DAQMainWindow(QtGui.QMainWindow):
             	                              self.instr[str(self.instr_serials[name])])
             self.instr = daq.connect_instr(self.instr_dict[name], self.instr_serials[name],\
                                            self.instr)
+            
     def startDAQFunc(self):
     	if self.PWFAui.PassDAQCheckBox.isChecked():
     		passDAQFunc(self)
@@ -141,13 +178,12 @@ class DAQMainWindow(QtGui.QMainWindow):
 if __name__ == "__main__":
     import sys
     app = QtGui.QApplication(sys.argv)
-    DAQWindow = DAQMainWindow()
+    #DAQWindow = DAQMainWindow()
     ui = UI()
-    DAQWindow.PWFAui = ui
-    DAQWindow.instr  = {}
-    DAQWindow.instr_serials = instr_serials
-    DAQWindow.instr_dict = instr_dict
-    ui.setupUi(DAQWindow)
-    ui.center(DAQWindow)
-    DAQWindow.show()
+    ui.DAQ = daq.Daq()
+    #DAQWindow.PWFAui = ui
+    #ui.setupUi(DAQWindow)
+    #ui.center(DAQWindow)
+    #DAQWindow.show()
+    ui.show()
     sys.exit(app.exec_())
