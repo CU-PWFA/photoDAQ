@@ -141,7 +141,10 @@ def make_dir_struct(root, dataSet):
     """
     dirName = get_dirName(root, dataSet)
     if not os.path.exists(dirName):
-        os.makedirs(dirName)
+        try: # Catch the threaded case
+            os.makedirs(dirName)
+        except FileExistsError:
+            print(dirName+' already exists, moving on.')
 
 # Save functions
 #------------------------------------------------------------------------------

@@ -10,21 +10,30 @@ import globalVAR as Gvar
 import time
 import importlib
 import passive_daq as pd
-# Dictionaries for the DAQ instruments
-instr_dict = {
-    '2.2 micron camera' : 
-        {'serial' : 1234567,
-         'name' : 'Camera'},
-    '3.45 (2048x1536) micron camera' : 
-        {'serial' : 17583372,
-         'name' : 'Camera'},
-    '3.75 micron camera' : 
-        {'serial' : 17570564,
-         'name' : 'Camera'},
-    '3.45 (2448x2048) micron camera' : 
-        {'serial' : 17529184,
-         'name': 'Camera'}
-    }
+# Display names for different instruments in terms of their model number
+instr_display = {
+        'Blackfly BFLY-PGE-31S4M' : 'Blackfly BFLY-PGE-31S4M',
+        'Blackfly BFLY-PGE-13S2M' : 'Blackfly BFLY-PGE-13S2M',
+        'Blackfly BFLY-PGE-50S5M' : 'Blackfly BFLY-PGE-50S5M',
+        'Blackfly BFLY-PGE-50A2M' : 'Blackfly BFLY-PGE-50A2M',
+        'TDS2024C' : 'TDS2024C Oscilloscope',
+        'KA3005P' : 'KA3005P DC Power Supply',
+        'HR4000' : 'HR4000 Spectrometer',
+        'SRSDG645' : 'SRSDG645 Signal Delay Generator',
+        }
+#    '2.2 micron camera' : 
+#        {'serial' : 1234567,
+#         'name' : 'Camera'},
+#    '3.45 (2048x1536) micron camera' : 
+#        {'serial' : 17583372,
+#         'name' : 'Camera'},
+#    '3.75 micron camera' : 
+#        {'serial' : 17570564,
+#         'name' : 'Camera'},
+#    '3.45 (2448x2048) micron camera' : 
+#        {'serial' : 17529184,
+#         'name': 'Camera'}
+#    }
 
 qtCreatorFile = "DAQGUI.ui"
 
@@ -82,44 +91,123 @@ class UI(QtGui.QMainWindow, Ui_MainWindow):
         """ Print a newline to the output text box. """
         pass
     
+    # List Manipulation
+    ###########################################################################
+    def create_item(self, key, instr_item, parent):
+        """ Create the item object for the lists. 
+        
+        Parameters
+        ----------
+        key : string
+            The unique key for the instrument, normally the serial number.
+        instr_item : dict
+            Dictionary for an instrument from DAQ.get_available_instr.
+        parent : QListWidget
+            The list to add the item to.
+        
+        Returns
+        -------
+        instr_item : dict
+            The instr dictionary with the QListWidgetItem added.
+        """
+        if instr_item['model'] in instr_display:
+            text = instr_display[instr_item['model']]+' ('+str(key)+')'
+        else:
+            text = instr_item['model']+' ('+str(key)+')'
+        item = QtGui.QListWidgetItem(text, parent=parent)
+        item.__key__ = key
+        instr_item['item'] = item
+        return instr_item
+    
+    def remove_item(self, instr_item, parent):
+        """ Remove an item from a list. 
+        
+        Parameters
+        ----------
+        instr_item : dict
+            Dictionary representing an item.
+        parent : QListWidget
+            The list to remove the item from.
+        """
+        item = instr_item['item']
+        row = parent.row(item)
+        parent.takeItem(row)
+        
+    def add_item(self, instr_item, parent):
+        """ Add an item to a list. 
+        
+        Parameters
+        ----------
+        instr_item : dict
+            Dictionary representing an item.
+        parent : QListWidget
+            The list to add the item to.
+        """
+        item = instr_item['item']
+        parent.addItem(item)
+    
     # Event Handlers
     ###########################################################################
     @pyqtSlot()
     def refresh_list(self):
         """ Refresh the list of connected instruments. """
-        DAQ = self.DAQ
-        instr = DAQ.get_available_instr()
-        self.availableList.clear()
-        for i in range(len(instr)):
-            self.availableList.addItem(instr[i])
+        available_instr = self.available_instr
+        connected_instr = self.connected_instr
+        instr = self.DAQ.get_available_instr()
+        for key in instr:
+            if key not in connected_instr and key not in available_instr:
+                item = self.create_item(key, instr[key], self.availableList)
+                available_instr[key] = item
+        
+        # Check to make sure available instruments are still available
+        for key in list(available_instr.keys()):
+            if key not in instr:
+                self.remove_item(available_instr[key], self.availableList)
+                del available_instr[key]
+        
+        # XXX might want to remove it from the connected instruments as well
     
     @pyqtSlot()
     def connect_instrs(self):
         """ Connect the DAQ to the selected instruments. """
-        # Get current connected list to make sure there are no repeats
-        connectedInstr = []
-        for i in range(self.connectedList.count()):
-            connectedInstr.append(self.connectedList.item(i).text())
-        
+        available_instr = self.available_instr
+        connected_instr = self.connected_instr
         add_list = self.availableList.selectedItems()
-        # If its not a repeat add it to the selected list widget
-        # XXX We should handle repeats when we refresh the list so we don't need to check here
-        for i in add_list:
-            if not i.text() in connectedInstr:
-                self.connectedList.addItem(i.text())
-                #self.instr = daq.connect_instr(self.instr_dict[i.text()], \
-                #                        self.instr_serials[i.text()], self.instr)
-        clearSelection(self.availableList)
+        for item in add_list:
+            key = item.__key__
+            instr = available_instr[key]
+            # Move things between the lists
+            self.remove_item(instr, self.availableList)
+            self.add_item(instr, self.connectedList)
+            connected_instr[key] = available_instr.pop(key)
+            # Connect the instrument within the DAQ
+            self.DAQ.connect_instr(instr['name'], instr['adr'])
         
     @pyqtSlot()
     def disconnect_instr(self):
         """ Disconnect the DAQ from the selected instrument. """
-        pass
+        available_instr = self.available_instr
+        connected_instr = self.connected_instr
+        remove_list = self.connectedList.selectedItems()
+        for item in remove_list:
+            key = item.__key__
+            instr = connected_instr[key]
+            # Move things between the lists
+            self.remove_item(instr, self.connectedList)
+            self.add_item(instr, self.availableList)
+            available_instr[key] = connected_instr.pop(key)
+            # Disconnect the instrument from the DAQ
+            self.DAQ.disconnect_instr(instr['name'], key)
     
     @pyqtSlot()
     def open_detail_panel(self):
         """ Open the detail panel for a given instrument. """
         pass
+    
+    def closeEvent(self, event):
+        """ Override the close method to disconnect all devices. """
+        self.DAQ.turn_off_daq()
+        event.accept()
 
 
 class DAQMainWindow(QtGui.QMainWindow):

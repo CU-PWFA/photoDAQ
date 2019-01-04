@@ -6,6 +6,7 @@ Created on Fri Jun  1 15:51:37 2018
 @author: robert
 """
 
+import os
 import sys
 import file
 import importlib
@@ -13,6 +14,11 @@ import globalVAR as Gvar
 import time
 import threading
 import multiprocessing as mp
+import PyCapture2 as pc2
+import visa
+import serial.tools.list_ports as prtlst
+import serial as ser
+import seabreeze.spectrometers as sb
 ###############################################################################
 #   
 #   The main DAQ class that controls acquisiton and parameters
@@ -199,14 +205,15 @@ class Daq():
             The serial number of the device, will be the key in self.threads.
         """
         self.send_command(self.command_queue[serial], 'close')
+        print('Disconnect', serial)
         self.instr[name].remove(serial)
         del self.command_queue[serial]
         del self.save_queue[serial]
         del self.response_queue[serial]
         #XXX This is dangerous if the proc is still doing something - also might corrupt o_queue
         self.procs[serial].terminate()
-        #self.s_procs[serial].terminate()
-        #self.p_procs[serial].terminate()
+        self.s_procs[serial].terminate()
+        self.p_procs[serial].terminate()
         del self.procs[serial]
         del self.s_procs[serial]
         del self.p_procs[serial]
@@ -226,9 +233,10 @@ class Daq():
             
     def turn_off_daq(self):
         """ Kills all threads and processes in DAQ."""
-        for key in self.instr:
-            for elem in self.instr[key]:
-                self.disconnect_instr(key, elem)
+        for key in list(self.instr.keys()):
+            N = len(self.instr[key])
+            for i in range(N):
+                self.disconnect_instr(key, self.instr[key][N-i-1])
              
         del self.o_queue
         del self.o_thread
@@ -381,7 +389,62 @@ class Daq():
         instr : array
             Array of instruments available to be connected to the DAQ.
         """
-        return []
+        instr = {}
+        # First scan for cameras
+        cams = pc2.BusManager().discoverGigECameras()
+        for cam in cams:
+            instr[cam.serialNumber] = {
+                    'name' : 'Camera',
+                    'adr' : cam.serialNumber,
+                    'model' : str(cam.modelName, 'utf-8')
+                    }
+        # Scan for USB devices using pyVisa
+        rm = visa.ResourceManager('@py')
+        visaDevices = rm.list_resources()
+        for name in visaDevices:
+            if name == 'USB0::1689::934::C046401::0::INSTR':
+                instr['C046401'] = {
+                    'name' : 'TDS2024C',
+                    'adr' : name,
+                    'model' : 'TDS2024C'
+                        }
+        # Find all serial over USB ports
+        pts = prtlst.comports()
+        for pt in pts:
+            if 'USB' in pt[1]: # check 'USB' string in device description
+                # Ping for the device ID to see what it is
+                dev = ser.Serial(pt[0],
+                                    baudrate=9600,
+                                    bytesize=8,
+                                    parity='N',
+                                    stopbits=1,
+                                    timeout=1)
+                dev.write(b"*IDN?")
+                ID = dev.read(16).decode("utf-8")
+                if ID == 'KORADKA3005PV2.0':
+                    adr = pt[0].split('/')[-1]
+                    instr[adr] = {
+                    'name' : 'KA3005P',
+                    'adr' : adr,
+                    'model' : 'KA3005P'
+                        }
+        # Find all the connected spectrometers
+        devices = sb.list_devices()
+        for dev in devices:
+            instr[dev.serial] = {
+                    'name' : dev.model,
+                    'adr' : dev.serial,
+                    'model' : dev.model
+                        }
+        # Ping the signal delay generator
+        ret = os.system("ping -c 1 169.254.248.180")
+        if ret == 0:
+            instr[5025] = {
+                    'name' : 'SRSDG645',
+                    'adr' : 5025,
+                    'model' : 'SRSDG645'
+                        }
+        return instr
             
     
 def do_measurement(instr, measure, shot, dataSet, attempts=10):
