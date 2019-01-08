@@ -10,6 +10,7 @@ import globalVAR as Gvar
 import time
 import importlib
 import passive_daq as pd
+from windows import camera
 # Display names for different instruments in terms of their model number
 instr_display = {
         'Blackfly BFLY-PGE-31S4M' : 'Blackfly BFLY-PGE-31S4M',
@@ -36,37 +37,17 @@ instr_display = {
 #    }
 
 qtCreatorFile = "DAQGUI.ui"
-
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
-# Functions for the DAQ
-def getAvailableCameras():
-    # Dictionary of available cameras
-    cam_dict = {17571186.0:'2.2', 17583372.0:'3.45 (2048x1536)', \
-                17570564.0:'3.75', 17529184.0:"3.45 (2448x2048)"}
-    bus   = pc2.BusManager()
-    nCams = bus.getNumOfCameras()
-    cam_list = {}
-    for i in range(nCams):
-        cam_list[i] = cam_dict[bus.getCameraSerialNumberFromIndex(i)]  + \
-        " micron camera"
-    # convert to int
-    return cam_list 
-
-def clearSelection(listWidget):
-    for i in range(listWidget.count()):
-        item = listWidget.item(i)
-        listWidget.setItemSelected(item, False) 
-def passDAQFunc(self):
-	ui = self.PWFAui
-    # Get number of shots to take
-	ui.DAQProgress.setValue(0)
+window_dict = {
+        'Camera' : camera.CameraWindow
+        }
 
 # DAQ UI classes
-class UI(QtGui.QMainWindow, Ui_MainWindow):
+class UI(QtBaseClass, Ui_MainWindow):
     def __init__(self):
         """ Create the parent UI classes and add event handlers. """
-        QtGui.QMainWindow.__init__(self)
+        QtBaseClass.__init__(self)
         Ui_MainWindow.__init__(self)
         self.setupUi(self)
         
@@ -75,10 +56,12 @@ class UI(QtGui.QMainWindow, Ui_MainWindow):
         self.refreshListButton.clicked.connect(self.refresh_list)
         self.disconnectButton.clicked.connect(self.disconnect_instr)
         self.detailButton.clicked.connect(self.open_detail_panel)
+        self.startDatasetButton.clicked.connect(self.start_dataset)
         
         # Define useful variables
         self.connected_instr = {}
         self.available_instr = {}
+        self.initial_dataset = True
         
     def center(self, DAQWindow):
         resolution = QtGui.QDesktopWidget().screenGeometry()
@@ -90,6 +73,18 @@ class UI(QtGui.QMainWindow, Ui_MainWindow):
     def print_output(self, msg):
         """ Print a newline to the output text box. """
         pass
+    
+    def set_dataset_num(self):
+        """ Set the dataset number to the DAQ's dataset. """
+        self.datasetNumber.setNum(self.DAQ.dataset)
+        
+    def set_shot_number(self, num):
+        """ Set the shot number. """
+        self.shotNumber.setNum(num)
+        
+    def set_totalshot_number(self, num):
+        """ Set the total number of shots for the dataset. """
+        self.totalshotNumber.setNum(num)
     
     # List Manipulation
     ###########################################################################
@@ -182,6 +177,8 @@ class UI(QtGui.QMainWindow, Ui_MainWindow):
             connected_instr[key] = available_instr.pop(key)
             # Connect the instrument within the DAQ
             self.DAQ.connect_instr(instr['name'], instr['adr'])
+            # Create the popup window for the instrument
+            instr['window'] = window_dict[instr['name']](self, self.DAQ, key)
         
     @pyqtSlot()
     def disconnect_instr(self):
@@ -201,8 +198,25 @@ class UI(QtGui.QMainWindow, Ui_MainWindow):
     
     @pyqtSlot()
     def open_detail_panel(self):
-        """ Open the detail panel for a given instrument. """
-        pass
+        """ Open the detail panel for the selected instruments. """
+        open_list = self.connectedList.selectedItems()
+        for item in open_list:
+            key = item.__key__
+            instr = self.connected_instr[key]
+            if instr['name'] == 'Camera':
+                instr['window'].show()
+    
+    @pyqtSlot()
+    def start_dataset(self):
+        """ Start a new dataset. """
+        DAQ = self.DAQ
+        # Don't create a new dataset if it is the initial dataset
+        if self.initial_dataset:
+            self.initial_dataset = False
+            DAQ.desc = self.DescriptionEdit.toPlainText()
+        else:
+            DAQ.adv_dataset(self.DescriptionEdit.toPlainText())
+            self.set_dataset_num()
     
     def closeEvent(self, event):
         """ Override the close method to disconnect all devices. """
@@ -269,6 +283,7 @@ if __name__ == "__main__":
     #DAQWindow = DAQMainWindow()
     ui = UI()
     ui.DAQ = daq.Daq()
+    ui.set_dataset_num()
     #DAQWindow.PWFAui = ui
     #ui.setupUi(DAQWindow)
     #ui.center(DAQWindow)

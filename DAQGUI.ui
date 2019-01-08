@@ -35,18 +35,18 @@
      <string>CU-PWFA DAQ</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="startDAQButton">
+   <widget class="QPushButton" name="startDatasetButton">
     <property name="geometry">
      <rect>
-      <x>250</x>
-      <y>710</y>
+      <x>10</x>
+      <y>830</y>
       <width>134</width>
-      <height>35</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="font">
      <font>
-      <pointsize>18</pointsize>
+      <pointsize>16</pointsize>
      </font>
     </property>
     <property name="autoFillBackground">
@@ -57,43 +57,15 @@
 color:white;</string>
     </property>
     <property name="text">
-     <string>START DAQ</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="abortDAQButton">
-    <property name="geometry">
-     <rect>
-      <x>50</x>
-      <y>710</y>
-      <width>143</width>
-      <height>35</height>
-     </rect>
-    </property>
-    <property name="sizePolicy">
-     <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-      <horstretch>0</horstretch>
-      <verstretch>0</verstretch>
-     </sizepolicy>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>18</pointsize>
-     </font>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">background-color: rgb(255, 0, 0);
-color:white;</string>
-    </property>
-    <property name="text">
-     <string>ABORT DAQ</string>
+     <string>Start dataset</string>
     </property>
    </widget>
    <widget class="QProgressBar" name="DAQProgress">
     <property name="geometry">
      <rect>
-      <x>1281</x>
-      <y>997</y>
-      <width>95</width>
+      <x>40</x>
+      <y>530</y>
+      <width>291</width>
       <height>25</height>
      </rect>
     </property>
@@ -107,30 +79,33 @@ color:white;</string>
    <widget class="QLabel" name="datasetSectionLabel">
     <property name="geometry">
      <rect>
-      <x>9</x>
-      <y>422</y>
-      <width>198</width>
-      <height>32</height>
+      <x>7</x>
+      <y>610</y>
+      <width>361</width>
+      <height>41</height>
      </rect>
     </property>
     <property name="font">
      <font>
-      <pointsize>22</pointsize>
-      <weight>75</weight>
-      <bold>true</bold>
-      <underline>false</underline>
+      <pointsize>16</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+      <underline>true</underline>
      </font>
     </property>
     <property name="text">
      <string>Dataset Setup</string>
     </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
    </widget>
    <widget class="QPlainTextEdit" name="DescriptionEdit">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>510</y>
-      <width>701</width>
+      <x>10</x>
+      <y>670</y>
+      <width>361</width>
       <height>81</height>
      </rect>
     </property>
@@ -140,21 +115,21 @@ color:white;</string>
      </font>
     </property>
     <property name="plainText">
-     <string>This dataset is just a test. Laser is off; no plasma. Recording 100 shots.</string>
+     <string>Dataset description</string>
     </property>
    </widget>
    <widget class="QLabel" name="descriptionLabel">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>480</y>
+      <x>10</x>
+      <y>650</y>
       <width>271</width>
       <height>21</height>
      </rect>
     </property>
     <property name="font">
      <font>
-      <pointsize>16</pointsize>
+      <pointsize>12</pointsize>
      </font>
     </property>
     <property name="text">
@@ -281,21 +256,211 @@ color:white;</string>
      </item>
     </layout>
    </widget>
-   <widget class="QTextBrowser" name="output">
+   <widget class="QLabel" name="currentDatasetTitle">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>960</y>
-      <width>1001</width>
-      <height>51</height>
+      <x>40</x>
+      <y>430</y>
+      <width>291</width>
+      <height>41</height>
      </rect>
     </property>
-    <property name="html">
-     <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:11pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    <property name="font">
+     <font>
+      <pointsize>16</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+      <underline>true</underline>
+     </font>
+    </property>
+    <property name="text">
+     <string>Current dataset</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="dataSetNumberLabel">
+    <property name="geometry">
+     <rect>
+      <x>40</x>
+      <y>470</y>
+      <width>161</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Dataset number:</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="datasetNumber">
+    <property name="geometry">
+     <rect>
+      <x>240</x>
+      <y>470</y>
+      <width>91</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+     </font>
+    </property>
+    <property name="layoutDirection">
+     <enum>Qt::LeftToRight</enum>
+    </property>
+    <property name="text">
+     <string>00000000</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="shotNumber">
+    <property name="geometry">
+     <rect>
+      <x>240</x>
+      <y>490</y>
+      <width>91</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>0</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="shotNumberLabel">
+    <property name="geometry">
+     <rect>
+      <x>40</x>
+      <y>490</y>
+      <width>161</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Shot number:</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="abortDAQButton_2">
+    <property name="geometry">
+     <rect>
+      <x>210</x>
+      <y>560</y>
+      <width>101</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>16</pointsize>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(255, 0, 0);
+color:white;</string>
+    </property>
+    <property name="text">
+     <string>Pause</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="resumeDAQButton">
+    <property name="geometry">
+     <rect>
+      <x>60</x>
+      <y>560</y>
+      <width>101</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>16</pointsize>
+     </font>
+    </property>
+    <property name="autoFillBackground">
+     <bool>false</bool>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(0, 170, 0);
+color:white;</string>
+    </property>
+    <property name="text">
+     <string>Resume</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="totalshotNumber">
+    <property name="geometry">
+     <rect>
+      <x>240</x>
+      <y>510</y>
+      <width>91</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>0</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="totalshotNumberLabel">
+    <property name="geometry">
+     <rect>
+      <x>40</x>
+      <y>510</y>
+      <width>161</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Total shots:</string>
+    </property>
+   </widget>
+   <widget class="QMdiArea" name="deviceContainer">
+    <property name="geometry">
+     <rect>
+      <x>750</x>
+      <y>60</y>
+      <width>1161</width>
+      <height>951</height>
+     </rect>
     </property>
    </widget>
   </widget>

@@ -61,7 +61,6 @@ class Daq():
         self.instr = {}
         self.procs = {}
         self.s_procs = {}
-        self.p_procs = {}
         self.command_queue = {}
         self.save_queue = {}
         self.response_queue = {}
@@ -136,11 +135,8 @@ class Daq():
             args = (r_queue, s_queue, self.o_queue)
             s_proc = mp.Process(target=self.save_process, args=args)
             
-            args = (s_queue, self.o_queue)
-            p_proc = mp.Process(target=self.post_process, args=args)
-            
             # Create a thread to handle the response once the instrument connects
-            args = (c_queue, r_queue, s_queue, proc, s_proc, p_proc)
+            args = (c_queue, r_queue, s_queue, proc, s_proc)
             rthread = threading.Thread(target=self.init_response, args=args)
             rthread.setDaemon(True)
             rthread.start()
@@ -188,13 +184,6 @@ class Daq():
                     o_queue.put(msg)
             out_queue.put(data)
             in_queue.task_done()
-    
-    @staticmethod
-    def post_process(in_queue, o_queue):
-        """ Base post process, clears queue. """
-        while True:
-            in_queue.get()
-            in_queue.task_done()
 
     def disconnect_instr(self, name, serial):
         """ Deletes an object for a passed instrument type and address.
@@ -213,10 +202,8 @@ class Daq():
         #XXX This is dangerous if the proc is still doing something - also might corrupt o_queue
         self.procs[serial].terminate()
         self.s_procs[serial].terminate()
-        self.p_procs[serial].terminate()
         del self.procs[serial]
         del self.s_procs[serial]
-        del self.p_procs[serial]
     
     def print_out(self, o_queue):
         """ Print outputs from the output queue. 
@@ -263,22 +250,8 @@ class Daq():
         self.save_queue[serial] = save_queue
         self.s_procs[serial] = proc
         proc.start()
-        
-    def add_p_proc(self, serial):
-        """ Start up the saving process. 
-        
-        Parameters
-        ----------
-        serial : str
-            The serial number of the device.
-        """
-        in_queue = self.save_queue[serial]
-        args = (in_queue, self.o_queue)
-        proc = mp.Process(target=self.post_process, args=args)
-        self.p_procs[serial] = proc
-        proc.start()
     
-    def init_response(self, c_queue, r_queue, s_queue, proc, s_proc, p_proc):
+    def init_response(self, c_queue, r_queue, s_queue, proc, s_proc):
         """ Initial response function for an instrument, adds queues to dict. 
         
         Parameters
@@ -293,8 +266,6 @@ class Daq():
             The process itself. 
         s_proc : queue
             The save process. 
-        p_proc : queue
-            The post process. 
         """
         response = r_queue.get()
         serial = response[0]
@@ -308,13 +279,11 @@ class Daq():
             self.instr[name] = [serial]
         # Need to start them here so init_response catches the first response
         s_proc.start()
-        p_proc.start()
         # Send the inital dataset number to the device and create the folders
         file.make_dir_struct(self.INSTR[name]['dataType'], self.dataset)
         self.send_command(c_queue, 'set_dataset', (self.dataset,))
         self.procs[serial] = proc
         self.s_procs[serial] = s_proc
-        self.p_procs[serial] = p_proc
         self.command_queue[serial] = c_queue
         self.response_queue[serial] = r_queue
         self.save_queue[serial] = s_queue
@@ -344,7 +313,7 @@ class Daq():
             raise
         
     def save_meta(self):
-        """Records the meta data in a text file and then ends the dataset."""
+        """Records the meta data in a text file."""
         file.meta_TXT(self.desc, self.dataset)
         
         #ts = True
@@ -361,9 +330,10 @@ class Daq():
                     metaproc = getattr(file, 'meta_'+dType)
                     metaproc(self.dataset, self.instr[name])
         
-    def adv_dataset(self):
+    def adv_dataset(self, desc=None):
         """ Advances dataset number."""
-        self.dataset += 1
+        self.desc = desc
+        self.dataset = Gvar.getDataSetNum()
         file.add_to_log(self.dataset)
         file.make_dir_struct('META', self.dataset)
         
