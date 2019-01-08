@@ -13,64 +13,57 @@ import numpy as np
 import cv2
 import cv2
 import numpy as np
+import threading
 
 class Camera(Process):
     """ Process class for a camera. """
-    def save_stream(self, numShots=None):
-        """ Save images from the camera as they come in. """        
-        cam = self.device
-        cam.start_capture(self.save_image, numShots)
+    def __init__(self, name, adr, c_queue, r_queue, o_queue):
+        """ init method. """
+        self.streaming = False
+        self.shot = 0
+        self.numShots = 0
+        self.lock = threading.Lock()
+        # Needs to ocur last, starts infinite queue loop
+        super().__init__(name, adr, c_queue, r_queue, o_queue)
+    
+    def start_stream(self, save=False):
+        """ Start streaming images into the save and post process. 
         
-    def live_stream(self):
-        """Stream images from the camera in a live feed."""
+        Parameters
+        ----------
+        save : bool, optional
+            Set if the stream should be saved or not, defaults to False.
+        """
         cam = self.device
-        width, height = self.device.imageINFO.maxWidth, self.device.imageINFO.maxHeight
-        cam.start_capture()
-        while True:
-            image = cam.retrieve_buffer()
-            if image:
-                cv_image = np.frombuffer(bytes(image.getData()), dtype=np.uint16).reshape( (height, width) )
-                cv2.imshow('frame',cv_image)
-                c = cv2.waitKey(1)
-                #dynamic Range Printout (adjusting factor from 16 to 12bit)
-                minpixel=np.amin(cv_image)*(1/16)
-                maxpixel=np.amax(cv_image)*(1/16)
-                pixelrange=maxpixel-minpixel
-                self.o_queue.put(pixelrange)
-                if c == 13:
-                    self.save_image(image)
-                elif c == 27:
-                    cam.stop_capture()
-                    cam.close()
-                    break
-                else:
-                    continue
-            else:
-                continue
-    '''
-    def live_stream(self, dr_option=False,):
-        """sets up a livestream with dynamic range printout (T/F)"""
+        if not self.streaming:
+            self.save = save
+            cam.start_capture()
+            self.streaming = True
+            #self.create_capture_thread()
+        
+    def stop_stream(self):
+        """ Stop streaming images into the save and post process. """
         cam = self.device
-        cam.start_capture()
-        while True:
-            try:
-                image = cam.retrieve_buffer()
-            except:
-                image = False
-            if image:
-                cv_image = np.frombuffer(bytes(image.getData()), dtype=np.uint16)
-                cv_image = cv_image.reshape( (cam.imageINFO.maxHeight, cam.imageINFO.maxWidth) )
-                cv2.imshow('frame',cv_image)
-                cv2.waitKey(1)
-                #dynamic Range Printout (adjusting factor from 16 to 12bit)
-                if dr_option==True:
-                    minpixel=np.amin(cv_image)*(1/16)
-                    maxpixel=np.amax(cv_image)*(1/16)
-                    pixelrange=maxpixel-minpixel
-                    print(pixelrange)
-            else:
-                continue
-    '''
+        if self.streaming:
+            self.lock.acquire()
+            cam.stop_capture()
+            self.streaming = False
+            self.lock.release()
+    
+    def save_stream(self, numShots):
+        """ Save the specified number of shots from the stream. 
+        
+        Parameters
+        ----------
+        numShots : int
+            The number of shots to save. 
+        """
+        self.shot = 0
+        self.numShots = numShots
+        if self.streaming:
+            self.save = True
+        else:
+            self.start_stream(True)    
         
     def take_photo(self):
         """ Start capturing and retrieve an image from the buffer.
@@ -96,32 +89,18 @@ class Camera(Process):
         """
         # XXX for some reason the image object doesn't like being passed through
         # a queue so we have to save it directly here
-        if args:
-            if self.shot < args:
-                
-                meta = self.create_meta()
-                raw = image.getData()
-                
-                data = {'raw' : raw,
-                        'meta' : meta,
-                        'save' : True}
-                self.shot += 1
-                self.r_queue.put(data)                
-            else:
-                while True:
-                    if self.r_queue.qsize() == 0:
-                        print('\nStream Finished')
-                        self.device.stop_capture()   
-                        break
-        else:
-            meta = self.create_meta()
-            raw = image.getData()
+        self.lock.aquire()
+        meta = self.create_meta()
+        raw = image.getData()
             
-            data = {'raw' : raw,
-                    'meta' : meta,
-                    'save' : True}
-            self.shot += 1
-            self.r_queue.put(data)   
+        data = {'raw' : raw,
+                'meta' : meta,
+                'save' : self.save}
+        self.shot += 1
+        self.r_queue.put(data)
+        if self.shot == self.numShots:
+            self.save = False
+        self.lock.release()
             
         # Note we have the option to directly save the image here using 
         # image.save and it runs at 10 Hz but only on an ssd

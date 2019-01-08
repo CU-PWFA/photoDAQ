@@ -36,7 +36,8 @@ class Process():
         self.r_queue = r_queue
         self.o_queue = o_queue
         self.connect_instr(name, adr)
-        self.create_save_thread()
+        # XXX we tried a seperate thread for saving things, left here for reference
+        #self.create_save_thread()
         self.command_loop()
         # Internal shot tracker
         self.shot = 0
