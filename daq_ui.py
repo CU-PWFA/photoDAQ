@@ -1,16 +1,16 @@
-import PyCapture2 as pc2
-import numpy as np
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+
+
+@author: robert
+"""
+
 import daq
-import cv2
 from PyQt4 import QtCore, QtGui, uic
 from PyQt4.QtCore import pyqtSlot
-import liveView as lv
-import file
-import globalVAR as Gvar
-import time
-import importlib
-import passive_daq as pd
 from windows import camera
+from windows import HR4000
 # Display names for different instruments in terms of their model number
 instr_display = {
         'Blackfly BFLY-PGE-31S4M' : 'Blackfly BFLY-PGE-31S4M',
@@ -40,7 +40,8 @@ qtCreatorFile = "DAQGUI.ui"
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 window_dict = {
-        'Camera' : camera.CameraWindow
+        'Camera' : camera.CameraWindow,
+        'HR4000' : HR4000.SpecWindow
         }
 
 # DAQ UI classes
@@ -176,9 +177,10 @@ class UI(QtBaseClass, Ui_MainWindow):
             self.add_item(instr, self.connectedList)
             connected_instr[key] = available_instr.pop(key)
             # Connect the instrument within the DAQ
-            self.DAQ.connect_instr(instr['name'], instr['adr'])
-            # Create the popup window for the instrument
-            instr['window'] = window_dict[instr['name']](self, self.DAQ, key)
+            queue = self.DAQ.connect_instr(instr['name'], instr['adr'])
+            if queue is not None:
+                # Create the popup window for the instrument
+                instr['window'] = window_dict[instr['name']](self, self.DAQ, key, queue)
         
     @pyqtSlot()
     def disconnect_instr(self):
@@ -205,6 +207,8 @@ class UI(QtBaseClass, Ui_MainWindow):
             instr = self.connected_instr[key]
             if instr['name'] == 'Camera':
                 instr['window'].show()
+            elif instr['name'] == 'HR4000':
+                instr['window'].show()
     
     @pyqtSlot()
     def start_dataset(self):
@@ -222,60 +226,6 @@ class UI(QtBaseClass, Ui_MainWindow):
         """ Override the close method to disconnect all devices. """
         self.DAQ.turn_off_daq()
         event.accept()
-
-
-class DAQMainWindow(QtGui.QMainWindow):
-    def addFunction(self):
-        ui = self.PWFAui
-        # Get current selected list to make sure there are no repeats
-        selectedList = []
-        for index in range(ui.selectedListWidget.count()):
-            selectedList.append(ui.selectedListWidget.item(index).text())
-        
-        add_list = ui.availableListWidget.selectedItems()
-        # If its not a repeat add it to the selected list widget
-        for i in add_list:
-            if not i.text() in selectedList:
-                ui.selectedListWidget.addItem(i.text())
-                # Add item as a daq instrument
-                
-                self.instr = daq.connect_instr(self.instr_dict[i.text()], \
-                                        self.instr_serials[i.text()], self.instr)
-        clearSelection(ui.availableListWidget)
-        
-    def refreshListFunc(self):
-        ui = self.PWFAui
-        ui.availableListWidget.clear()
-        cam_list = getAvailableCameras()
-        for i in cam_list:
-            ui.availableListWidget.addItem(cam_list[i])
-        ui.refreshListButton.setText("Refresh list")
-        
-    def removeFunction(self):
-        ui = self.PWFAui
-        for i in ui.selectedListWidget.selectedItems():
-            # Disconnect  in daq
-            self.instr = daq.disconnect_instr(self.instr_dict[i.text()], \
-                                 self.instr, \
-                                 self.instr[str(self.instr_serials[i.text()])])
-            # delete from list
-            ui.selectedListWidget.takeItem(ui.selectedListWidget.row(i))
-            
-    def liveViewFunc(self):
-        ui = self.PWFAui
-        if len(ui.selectedListWidget.selectedItems()) > 1:
-            QtGui.QMessageBox.question(self, 'Error', 'May only select one camera.')
-        else:
-            name = ui.selectedListWidget.selectedItems()[0].text()
-            lv.streamCam(self.instr[str(self.instr_serials[name])], name)
-            self.instr = daq.disconnect_instr(self.instr_dict[name], self.instr, \
-            	                              self.instr[str(self.instr_serials[name])])
-            self.instr = daq.connect_instr(self.instr_dict[name], self.instr_serials[name],\
-                                           self.instr)
-            
-    def startDAQFunc(self):
-    	if self.PWFAui.PassDAQCheckBox.isChecked():
-    		passDAQFunc(self)
         
 if __name__ == "__main__":
     import sys

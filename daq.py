@@ -94,7 +94,7 @@ class Daq():
     def setup_daq(self):
         """ Setup everything necessary to run the daq. """
         # It isn't safe to fork multithreaded processes
-        # However you can't spawn if threads are already created - we'll live on the edge
+        # However you can't spawn if threads are already created
         # Apparently forking a multithreaded process can cause deadlock because a process can get a lock and then die with it...
         # If the code starts freezing when instruments are disconnected - this might be the problem
         #mp.set_start_method('spawn')
@@ -105,7 +105,8 @@ class Daq():
         self.o_queue = mp.JoinableQueue(self.max_out_queue_size)
         # Start the output thread for printing output
         self.o_thread = threading.Thread(target=self.print_out, 
-                                         args=(self.o_queue,))
+                                         args=(self.o_queue,),
+                                         name='OutputThread')
         self.o_thread.setDaemon(True)
         self.o_thread.start()
         # Setup an initial dataset number
@@ -123,6 +124,12 @@ class Daq():
             The name of the instrument, must be a key in INSTR.
         adr : string
             The address of the instrument, will be passed to the constructor.
+            
+        Returns
+        -------
+        s_queue : queue
+            The broadcast queue of the instrument, connected is sent when the 
+            instrument is successfully connected.
         """
         if name in self.INSTR:
             c_queue = mp.JoinableQueue(self.max_command_queue_size)
@@ -140,9 +147,11 @@ class Daq():
             rthread = threading.Thread(target=self.init_response, args=args)
             rthread.setDaemon(True)
             rthread.start()
+            return s_queue
         else:
             msg = name + " is not a valid instrument name, see INSTR."
             self.o_queue.put(msg)
+            return None
     
     @staticmethod
     def start_process(name, adr, c_queue, r_queue, o_queue):
@@ -176,8 +185,13 @@ class Daq():
         """
         while True:
             data = in_queue.get()
+            if data == '__exit__':
+                out_queue.put(data)
+                break
+            meta = data['meta']
+            if meta["Data type"] == 'IMAGE':
+                data['raw'] = file.prep_IMAGE(data)
             if data['save']:
-                meta = data['meta']
                 save = getattr(file, 'save_' + meta["Data type"])
                 if save(data, meta['Data set'], meta['Shot number']) == False:
                     msg = "Failed to save datafrom " + meta['Serial number']
@@ -196,12 +210,13 @@ class Daq():
         self.send_command(self.command_queue[serial], 'close')
         print('Disconnect', serial)
         self.instr[name].remove(serial)
+        # Delete all the references to the processes, they should all shutdown on their own
         del self.command_queue[serial]
         del self.save_queue[serial]
         del self.response_queue[serial]
         #XXX This is dangerous if the proc is still doing something - also might corrupt o_queue
-        self.procs[serial].terminate()
-        self.s_procs[serial].terminate()
+        #self.procs[serial].terminate()
+        #self.s_procs[serial].terminate()
         del self.procs[serial]
         del self.s_procs[serial]
     
@@ -214,8 +229,12 @@ class Daq():
             The output queue which contains strings.
         """
         while True:
-            print(o_queue.get())
-            time.sleep(.09)
+            msg = o_queue.get()
+            if msg == '__exit__':
+                break # Provides a way for the thread to complete.
+            else:
+                print(msg)
+            time.sleep(0.01)
             o_queue.task_done()
             
     def turn_off_daq(self):
@@ -224,16 +243,16 @@ class Daq():
             N = len(self.instr[key])
             for i in range(N):
                 self.disconnect_instr(key, self.instr[key][N-i-1])
-             
-        del self.o_queue
-        del self.o_thread
-        '''
-        threads = threading.enumerate()
-        for _t in threads:
-          print( _t.name)
-          print( _t.isAlive())
-          print()
-        '''
+        
+        # Terminate the output thread, although daemon is true so it should be killed
+        self.o_queue.put('__exit__')
+        
+#        threads = threading.enumerate()
+#        for _t in threads:
+#          print( _t.name)
+#          print( _t.isAlive())
+#          print()
+        
             
     def add_s_proc(self, serial):
         """ Start up the saving process. 
@@ -288,8 +307,10 @@ class Daq():
         self.response_queue[serial] = r_queue
         self.save_queue[serial] = s_queue
         r_queue.task_done()
+        s_queue.put("__Connected__")
     
-    def send_command(self, c_queue, command, args=None):
+    # This is the wrong way to use args and kwargs, it remains for backward compatibility
+    def send_command(self, c_queue, command, args=None, kwargs=None):
         """ Send a command object to a c_queue. 
         
         Parameters
@@ -305,6 +326,9 @@ class Daq():
         com["args"] = ()
         if args is not None:
             com["args"] = args
+        com["kwargs"] = {}
+        if kwargs is not None:
+            com["kwargs"] = kwargs
         # If its not picklable, it should raise an error here
         try:
             c_queue.put(com)

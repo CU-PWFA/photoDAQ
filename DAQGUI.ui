@@ -160,6 +160,9 @@ color:white;</string>
      </item>
      <item>
       <widget class="QListWidget" name="availableList">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
        <property name="font">
         <font>
          <pointsize>12</pointsize>
