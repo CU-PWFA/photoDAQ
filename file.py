@@ -163,6 +163,25 @@ def save_meta(meta, dataSet):
     dirName = get_dirName('META', dataSet)
     fileName = 'meta' + '_' + str(dataSet)
     np.save(dirName + fileName, meta)
+
+def prep_IMAGE(data):
+    """ Convert the image data from a buffer to an array. 
+    
+    Parameters
+    ----------
+    data : dict
+        The dictionary with image and meta dict.
+        
+    Returns
+    -------
+    image : array-like
+        The image array.
+    """
+    meta = data['meta'] 
+    raw = data['raw']
+    width, height = meta['pixel']
+
+    return np.frombuffer(bytes(raw), dtype=np.uint16).reshape(height, width) 
     
 def save_IMAGE(data, dataSet, shot):
     """ Save an image to a tiff file with LZW compression. 
@@ -170,7 +189,7 @@ def save_IMAGE(data, dataSet, shot):
     Parameters
     ----------
     data : dict
-        The dictionary with image (PyCapture2.Image object) and meta dict.
+        The dictionary with image and meta dict.
     dataSet : int
         The data set number.
     shot : int
@@ -181,14 +200,9 @@ def save_IMAGE(data, dataSet, shot):
     serial = meta['Serial number']
     fileName = get_fileName(serial, dataSet, shot)
     name = dirName + fileName + '.tiff' 
-    
-    raw = data['raw']
-    width, height = meta['pixel']
-
-    imageArray = np.frombuffer(bytes(raw), dtype=np.uint16).reshape(height, width) 
 
     tiff = libtiff.TIFF.open(name, mode='w')
-    tiff.write_image(imageArray)
+    tiff.write_image(data['raw'])
     tiff.close()  
     
     add_image_meta(name, meta)
@@ -285,6 +299,27 @@ def save_DELAY(data, dataSet, shot):
     
     else:
         print("Saving Error: DELAY does not have the correct structure.")
+        return False
+    
+def save_SPEC(data, dataSet, shot):
+    """ Save a spectrum to a numpy file. 
+    
+    Parameters
+    ----------
+    data : dict
+        The dictionary with an lambda array, I array, and meta dictionary.
+    dataSet : int
+        The data set number.
+    shot : int
+        The shot number.
+    """
+    if 'lambda' in data and 'I' in data and 'meta' in data:
+        dirName = get_dirName('SPEC', dataSet)
+        fileName = get_fileName(data['meta']['INSTR'], dataSet, shot)
+        np.save(dirName + fileName, data)
+        return True
+    else:
+        print('Saving Error: Spec data does not have the correct structure.')
         return False
     
 def meta_IMAGE(dataset, serial):
