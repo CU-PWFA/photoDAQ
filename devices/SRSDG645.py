@@ -13,7 +13,7 @@ class SRSDG645():
     """ Class to control Signal Delay Generator. """
     
     def __init__(self, serial, set_default=True):
-        """ Create the pyCapture Camera object fo the camera. """
+        """ Create the object for the signal delay generator. """
         self.channels = {'0' : 'T0',
                          '1' : 'T1',
                          '2' : 'A',
