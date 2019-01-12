@@ -38,9 +38,9 @@ class Process():
         self.connect_instr(name, adr)
         # XXX we tried a seperate thread for saving things, left here for reference
         #self.create_save_thread()
-        self.command_loop()
         # Internal shot tracker
         self.shot = 0
+        self.command_loop()
     
     def connect_instr(self, name, adr):
         """ Create the instrument class and connect to the instrument. 
@@ -66,12 +66,14 @@ class Process():
             # Always check process class first to allow overrides to be placed there
             if hasattr(self, com['command']):
                 func = getattr(self, com['command'])
-                func(*com['args'])
+                func(*com['args'], **com['kwargs'])
             elif hasattr(self.device, com['command']):
                 func = getattr(self.device, com['command'])
-                func(*com['args'])
+                func(*com['args'], **com['kwargs'])
             self.c_queue.task_done()
             time.sleep(self.delay)
+            if com['command'] == 'close':
+                break
     
     def create_save_thread(self):
         """ Create a dedicated thread to handle data saving. """
@@ -137,4 +139,9 @@ class Process():
         """
         self.dataset = dataset
         self.shot = 0
+        
+    def close(self):
+        """" Close the device and send an exit code to the response queue. """
+        self.device.close()
+        self.r_queue.put('__exit__')
         

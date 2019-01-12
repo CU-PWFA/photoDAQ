@@ -37,7 +37,7 @@ class Camera(Process):
         cam = self.device
         if not self.streaming:
             self.save = save
-            cam.start_capture()
+            cam.start_capture(self.save_image)
             self.streaming = True
             #self.create_capture_thread()
         
@@ -89,7 +89,7 @@ class Camera(Process):
         """
         # XXX for some reason the image object doesn't like being passed through
         # a queue so we have to save it directly here
-        self.lock.aquire()
+        self.lock.acquire()
         meta = self.create_meta()
         raw = image.getData()
             
