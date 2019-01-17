@@ -36,6 +36,8 @@ class Daq():
         desc : str
             Description of data set
         """
+        # TODO I don't think IOtype is used at all anymore
+        # SET saves an arbitrary dictionary, good for simple stuff
         self.INSTR = {
                 'KA3005P'   : {
                             'IOtype'    : 'out',
@@ -56,6 +58,10 @@ class Daq():
                 'SRSDG645'  : {
                             'IOtype'    : 'in',
                             'dataType'  : 'DELAY'
+                            },
+                'FRG700'    : {
+                            'IOtype'    : 'in',
+                            'dataType'  : 'SET'
                             }
                 }
         self.instr = {}
@@ -421,6 +427,22 @@ class Daq():
                     'name' : 'KA3005P',
                     'adr' : adr,
                     'model' : 'KA3005P'
+                        }
+            if 'ACM' in pt[1]: # check for non-usb devices
+                dev = ser.Serial(pt[0],
+                                    baudrate=9600,
+                                    bytesize=8,
+                                    parity='N',
+                                    stopbits=1,
+                                    timeout=4)
+                dev.write(b"*IDN?")
+                ID = dev.readline(7).decode("utf-8").strip()
+                if ID == 'FRG700':
+                    adr = pt[0].split('/')[-1]
+                    instr[adr] = {
+                    'name' : 'FRG700',
+                    'adr' : adr,
+                    'model' : 'FRG700'
                         }
         # Find all the connected spectrometers
         devices = sb.list_devices()

@@ -11,6 +11,7 @@ from PyQt4 import QtCore, QtGui, uic
 from PyQt4.QtCore import pyqtSlot
 from windows import camera
 from windows import HR4000
+from windows import FRG700
 # Display names for different instruments in terms of their model number
 instr_display = {
         'Blackfly BFLY-PGE-31S4M' : 'Blackfly BFLY-PGE-31S4M',
@@ -21,6 +22,7 @@ instr_display = {
         'KA3005P' : 'KA3005P DC Power Supply',
         'HR4000' : 'HR4000 Spectrometer',
         'SRSDG645' : 'SRSDG645 Signal Delay Generator',
+        'FRG700' : 'FRG700 Vacuum Gauge',
         }
 #    '2.2 micron camera' : 
 #        {'serial' : 1234567,
@@ -41,7 +43,8 @@ Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 window_dict = {
         'Camera' : camera.CameraWindow,
-        'HR4000' : HR4000.SpecWindow
+        'HR4000' : HR4000.SpecWindow,
+        'FRG700' : FRG700.GaugeWindow,
         }
 
 # DAQ UI classes
@@ -205,10 +208,7 @@ class UI(QtBaseClass, Ui_MainWindow):
         for item in open_list:
             key = item.__key__
             instr = self.connected_instr[key]
-            if instr['name'] == 'Camera':
-                instr['window'].show()
-            elif instr['name'] == 'HR4000':
-                instr['window'].show()
+            instr['window'].show()
     
     @pyqtSlot()
     def start_dataset(self):
