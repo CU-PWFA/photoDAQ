@@ -161,6 +161,7 @@ def save_meta(meta, dataSet):
     dirName = get_dirName('META', dataSet)
     fileName = 'meta' + '_' + str(dataSet)
     np.save(dirName + fileName, meta)
+    
 
 def prep_IMAGE(data):
     """ Convert the image data from a buffer to an array. 
@@ -180,6 +181,7 @@ def prep_IMAGE(data):
     width, height = meta['pixel']
 
     return np.frombuffer(bytes(raw), dtype=np.uint16).reshape(height, width) 
+
     
 def save_IMAGE(data, dataSet, shot):
     """ Save an image to a tiff file with LZW compression. 
@@ -204,6 +206,7 @@ def save_IMAGE(data, dataSet, shot):
     tiff.close()  
     
     add_image_meta(name, meta)
+    
 
 def add_image_meta(fileName, meta):
     """ Save metadata into an existing tiff files description tag. 
@@ -218,6 +221,7 @@ def add_image_meta(fileName, meta):
     metaBYTE = str(meta).encode()
     metaBASE = str(base64.b64encode(metaBYTE), 'ascii')
     subprocess.call('tiffset -s 270 ' + metaBASE + ' ' + fileName, shell=True)
+    
 
 def save_TRACE(data, dataSet, shot):
     """ Save an oscilloscope trace to a numpy file. 
@@ -263,41 +267,6 @@ def save_SET(data, dataSet, shot):
         print('Saving Error: Settings have no metadata.')
         return False
     
-def save_DELAY(data, dataSet, shot):
-    """ Save the settings of an instrument as a numpy file. 
-    
-    Parameters
-    ----------
-    data : dict
-        The dictionary with the delay and output voltage of each SDG output.
-    dataSet : int
-        The data set number.
-    shot : int
-        The shot number.
-    """
-    if data['saveType'] == 'settings':
-        dirName = get_dirName('DELAY', dataSet)
-        serial = data['meta']['Serial number']
-        fileName = get_fileName(serial, dataSet, shot)
-        np.save(dirName + fileName, data['data'])
-        return True
-    
-    elif data['saveType'] == 'trigger':
-        metaName = get_dirName('META', dataSet)+'meta_{}.txt'.format(dataSet)
-        f = open(metaName, 'r')
-        contents = f.readlines()
-        f.close()
-        
-        contents.append(data['data']['shot']+data['data']['Time Stamp']+'\n')
-        f = open(metaName, 'w')
-        contents = ''.join(contents)
-        f.write(contents)
-        f.close()
-        return True
-    
-    else:
-        print("Saving Error: DELAY does not have the correct structure.")
-        return False
     
 def save_SPEC(data, dataSet, shot):
     """ Save a spectrum to a numpy file. 
@@ -319,6 +288,7 @@ def save_SPEC(data, dataSet, shot):
     else:
         print('Saving Error: Spec data does not have the correct structure.')
         return False
+    
     
 def meta_IMAGE(dataset, serial):
     """ Save the image meta data in a txt file. 
@@ -681,23 +651,9 @@ def load_SET(instr, dataSet, shot):
         settings = np.load(dirName + fileName)
         return settings.item()
     except:
-        print('Loading Error: The PS settings file could not be opened.')
+        print('Loading Error: The settings file could not be opened.')
         return False
-    
-def load_DELAY(fileName):
-    """Load settings for SDG.
 
-    Parameters
-    ----------
-    fileName : str
-        Directory path and file name to be loaded.
-    """    
-    try:
-        settings = np.load(fileName)
-        return settings.item()
-    except:
-        print('Loading Error: The SDG settings file could not be opened.')
-        return False
 
 def decode_image_meta(image):
     """ Return the metadata dictionary from a pillow image object.

@@ -12,7 +12,7 @@ import quantities as pq
 class SRSDG645():
     """ Class to control Signal Delay Generator. """
     
-    def __init__(self, serial, set_default=True):
+    def __init__(self, ip, set_default=True):
         """ Create the object for the signal delay generator. """
         self.channels = {'0' : 'T0',
                          '1' : 'T1',
@@ -31,23 +31,25 @@ class SRSDG645():
                         '3' : 'EF',
                         '4' : 'GH'}
         
-        self.connectSRSDG(serial)
+        self.connectSRSDG(ip)
         
-    def connectSRSDG(self, serial):
+    def connectSRSDG(self, ip):
         """Connect to the Signal Delay Generator.
         
         Parameters
         ----------
-        serial : int
-            the ethernet port number the SDG is connected to
+        ip : string
+            The ip address of the SDG.
         """
         try:
-            self.srs = ik.srs.SRSDG645.open_tcpip('169.254.248.180', serial)
-            self.serialNum = serial
+            self.srs = ik.srs.SRSDG645.open_tcpip(ip, 5025)
             self.ID = self.srs.query('*IDN?')
+            self.serialNum = ip
         except:
             print('Ethernet error: could not connect to Signal Delay Generator.')
             
+    # Set delay generator parameters
+    #--------------------------------------------------------------------------            
     def set_trigger_threshold(self, threshold):
         """Set the trigger threshold for SDG.
         
@@ -82,11 +84,11 @@ class SRSDG645():
         settings : list
             [ref_chan, set_chan, delay]
         ref_chan : str
-            the channel which the delay is set from
+            The channel which the delay is set from
         set_chan : str
-            the channel whose delay is being set
-        delay : int
-            the time delay between channels in sec.
+            The channel whose delay is being set
+        delay : float
+            The time delay between channels in sec.
         """
         ref_chan, set_chan, delay = settings
         self.srs.channel[set_chan].delay = (self.srs.channel[ref_chan], pq.Quantity(delay, 's'))
@@ -99,17 +101,64 @@ class SRSDG645():
         settings : list
             [output, level]
         output : str
-            the output channels to be set
+            The output channels to be set.
         level : int
-            output value in volts, must be between 0.5 and 5
+            Output value in volts, must be between 0.5 and 5.
         pol : int
-            polarity of output, 0 in negative 1 is positive (default is 1).
+            Polarity of output, 0 in negative 1 is positive (default is 1).
         """
         output, level = settings
         self.srs.output[output].level_amplitude = pq.Quantity(level, 'V')
         if pol is not None:
             self.srs.output[output].polarity = self.srs.LevelPolarity(pol)
+        
+    # Request delay generator parameters
+    #--------------------------------------------------------------------------    
+    def get_status(self):
+        """ Queries the SDG for its current status."""
+        resp = self.srs.query('INSR?')
+        return resp
+    
+    def get_delay(self, channel):
+        """ Return the delay of the passed channel.
+        
+        Parameters
+        ----------
+        channel : int
+            The integer identifying the channel to get the delay of.
             
+        Returns
+        -------
+        ref_chan : int
+            The reference channel.
+        delay : float
+            The delay with respect to the reference channel.
+        """
+        delay = self.srs.query('DLAY?'+str(channel)).split(',')
+        return int(delay[0]), float(delay[1].strip())
+    
+    def get_output(self, channel):
+        """ Return the output voltage of the given channel.
+        
+        Parameters
+        ----------
+        channel : int
+            The integer identifying the channel, only T0, AB, CD, EF, GH, are valid.
+        """
+        return float(self.srs.query('LAMP?'+str(channel)))
+    
+    def get_polarity(self, channel):
+        """ Return the polarity of the given channel.
+        
+        Parameters
+        ----------
+        channel : int
+            The integer identifying the channel, only T0, AB, CD, EF, GH, are valid.
+        """
+        return int(self.srs.query('LPOL?'+str(channel)))
+    
+    # Control the delay generator
+    #--------------------------------------------------------------------------
     def save_settings_SDG(self, i):
         """Save instrument settings on SDG.
         
@@ -134,12 +183,7 @@ class SRSDG645():
         """Recall default instrument settings."""
         self.srs.sendcomd('*RST')
         
-    def get_status(self):
-        """ Queries the SDG for its current status."""
-        resp = self.srs.query('INSR?')
-        return resp
-        
-    def send_comd(self, code):
+    def send_command(self, code):
         """Send a command directly to SRSDG645. 
         
         Parameters
@@ -147,7 +191,7 @@ class SRSDG645():
         code : str
             ASCII code for the command.  Found in Operation Manuel (pg. 48-59).
         """
-        self.srs.sendcomd(code)
+        self.srs.sendcmd(code)
         
     def send_query(self, code):
         """Send a query directly to SRSDG645.
@@ -157,5 +201,9 @@ class SRSDG645():
         code : str
             ASCII code for the query. Found in Operation Manuel (pg. 48-59).
         """
-        resp = self.query(code) 
-        print(resp)
+        return self.srs.query(code) 
+    
+    def close(self):
+        """ Close the instrument. """
+        # InstrumentKit doesn't seem to have any close methods implemented
+        pass
