@@ -76,7 +76,12 @@ class FRG700():
             The pressure read by the gauge.
         """
         self.Gauge.write(b"PRESSURE?")
-        return float(self.Gauge.readline())
+        # If the device list is refreshed, the arduino will reset and send an ID
+        # This can't be parsed to a float and the device will fail
+        try:
+            return float(self.Gauge.readline())
+        except ValueError:
+            return 0.0
     
     def close(self):
         """ Close method, doesn't do anything for a serial instrument. """

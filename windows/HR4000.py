@@ -117,7 +117,7 @@ class SpecWindow(QtBaseClass, Ui_SpecWindow):
             queue.task_done()
             
     def setup_window(self):
-        """ Perform setup after the camera connects. """
+        """ Perform setup after the spectrometer connects. """
         self.startStreamButton.setEnabled(True)
         self.stopStreamButton.setEnabled(True)
         self.intField.setEnabled(True)

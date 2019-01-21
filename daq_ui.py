@@ -12,6 +12,7 @@ from PyQt4.QtCore import pyqtSlot
 from windows import camera
 from windows import HR4000
 from windows import FRG700
+from windows import SRSDG645
 # Display names for different instruments in terms of their model number
 instr_display = {
         'Blackfly BFLY-PGE-31S4M' : 'Blackfly BFLY-PGE-31S4M',
@@ -45,6 +46,7 @@ window_dict = {
         'Camera' : camera.CameraWindow,
         'HR4000' : HR4000.SpecWindow,
         'FRG700' : FRG700.GaugeWindow,
+        'SRSDG645' : SRSDG645.DGWindow,
         }
 
 # DAQ UI classes

@@ -57,7 +57,7 @@ class Daq():
                             },
                 'SRSDG645'  : {
                             'IOtype'    : 'in',
-                            'dataType'  : 'DELAY'
+                            'dataType'  : 'SET'
                             },
                 'FRG700'    : {
                             'IOtype'    : 'in',
@@ -455,9 +455,9 @@ class Daq():
         # Ping the signal delay generator
         ret = os.system("ping -c 1 169.254.248.180")
         if ret == 0:
-            instr[5025] = {
+            instr['169.254.248.180'] = {
                     'name' : 'SRSDG645',
-                    'adr' : 5025,
+                    'adr' : '169.254.248.180',
                     'model' : 'SRSDG645'
                         }
         return instr

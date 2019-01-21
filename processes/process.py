@@ -36,8 +36,6 @@ class Process():
         self.r_queue = r_queue
         self.o_queue = o_queue
         self.connect_instr(name, adr)
-        # XXX we tried a seperate thread for saving things, left here for reference
-        #self.create_save_thread()
         # Internal shot tracker
         self.shot = 0
         self.command_loop()
@@ -74,38 +72,6 @@ class Process():
             time.sleep(self.delay)
             if com['command'] == 'close':
                 break
-    
-    def create_save_thread(self):
-        """ Create a dedicated thread to handle data saving. """
-        self.s_queue = queue.Queue(1000)
-        args = (self.s_queue, self.r_queue)
-        self.s_thread = threading.Thread(target=self.save_thread, args=args)
-        self.s_thread.setDaemon(True)
-        self.s_thread.start()
-        
-    def save_thread(self, s_queue, r_queue):
-        """ Waits for data to be saved, should be overwritten in most cases. 
-        
-        Parameters
-        ----------
-        s_queue : queue.Queue
-            Queue to recieve the save data in.
-        r_queue : mp.Queue
-            The response queue to place responses in.
-        """
-        while True:
-            ret = s_queue.get()
-            meta = self.create_meta()
-
-            data = {'data' : ret,
-                    'meta' : meta}
-            save = getattr(file, 'save_' + self.get_datatype())
-            if save(data, self.dataset, self.shot) == False:
-                msg = "Failed to save datafrom " + meta['Serial number']
-                self.o_queue.put(msg)
-            self.r_queue.put(data)
-            self.shot += 1
-            s_queue.task_done()
                 
     def create_meta(self):
         """ Create the meta data object for the current shot. 
