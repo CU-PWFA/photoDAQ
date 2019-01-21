@@ -9,13 +9,11 @@ Created on Fri Jun  1 16:04:44 2018
 import os
 import globalVAR as Gvar
 import numpy as np
-import PyCapture2 as pc2
 import base64
 import subprocess
 from PIL import Image
 import ast
 import libtiff
-import time
 
 
 PATH = ''
