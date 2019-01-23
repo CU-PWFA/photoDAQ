@@ -6,7 +6,7 @@ Created on Wed Jul 11 18:03:07 2018
 @author: robert
 """
 
-from processes.srtreamProcess import StreamProcess
+from processes.streamProcess import StreamProcess
 
 class HR4000(StreamProcess):
     """ Process class for the HR4000 spectrometer. """       

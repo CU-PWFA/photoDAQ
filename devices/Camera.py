@@ -240,11 +240,15 @@ class Camera():
         self.cam.setProperty(shut)
         return info
         
-    def set_trigger_settings(self):
+    def set_trigger_settings(self, enable):
         """ Set the trigger mode of the camera.
+        
+        Parameters
+        ----------
+        enable : bool
+            Enable or disable the trigger.
         """
-        # TODO implement triggering of the camera.
-        pass
+        self.cam.setTriggerMode(TriggerMode=0, onOff=enable, source=0, polarity=1)
     
     # Control the camera
     #--------------------------------------------------------------------------

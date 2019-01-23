@@ -53,6 +53,7 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         self.brightnessField.valueChanged.connect(self.set_brightness)
         self.data_acquired.connect(self.update_canvas)
         self.data_acquired.connect(self.update_info)
+        self.triggerCheck.stateChanged.connect(self.set_trigger)
         
         # Grab references for controlling the camera
         self.DAQ = DAQ
@@ -112,6 +113,7 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         self.gainField.setEnabled(True)
         self.framerateField.setEnabled(True)
         self.brightnessField.setEnabled(True)
+        self.triggerCheck.setEnabled(True)
         
     def set_field_range(self):
         """ Set the range of the spinbox fields based on the camera serial. """
@@ -212,6 +214,17 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         serial = self.serial
         self.r_queueNum.setNum(DAQ.response_queue[serial].qsize())
         self.s_queueNum.setNum(DAQ.save_queue[serial].qsize())
+        
+    @pyqtSlot(int)
+    def set_trigger(self, trigger):
+        """ Set the external trigger on or off. """
+        print(trigger)
+        if trigger==0:
+            self.framerateField.setEnabled(True)
+            self.send_command('set_trigger_settings', (False,))
+        else:
+            self.framerateField.setEnabled(False)
+            self.send_command('set_trigger_settings', (True,))
 
 # For testing the window directly
 if __name__ == "__main__":
