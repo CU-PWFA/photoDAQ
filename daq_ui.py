@@ -223,6 +223,8 @@ class UI(QtBaseClass, Ui_MainWindow):
         else:
             DAQ.adv_dataset(self.DescriptionEdit.toPlainText())
             self.set_dataset_num()
+            shots = self.shotsField.value()
+            DAQ.save_stream(shots)
     
     def closeEvent(self, event):
         """ Override the close method to disconnect all devices. """

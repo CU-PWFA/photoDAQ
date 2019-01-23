@@ -263,6 +263,22 @@ color:white;</string>
          <double>10.000000000000000</double>
         </property>
        </widget>
+       <widget class="QCheckBox" name="triggerCheck">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>200</y>
+          <width>181</width>
+          <height>23</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>External Trigger</string>
+        </property>
+       </widget>
       </widget>
       <widget class="QWidget" name="postPage">
        <property name="geometry">
@@ -278,6 +294,14 @@ color:white;</string>
        </attribute>
       </widget>
       <widget class="QWidget" name="page">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>200</width>
+         <height>445</height>
+        </rect>
+       </property>
        <attribute name="label">
         <string>Image Info</string>
        </attribute>

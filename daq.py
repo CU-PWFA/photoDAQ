@@ -373,6 +373,22 @@ class Daq():
         for key in self.command_queue:              
             self.send_command(self.command_queue[key], 'set_dataset', (self.dataset,))
             
+    def save_stream(self, shots):
+        """ Save the stream from all connected instruments. 
+        
+        Parameters
+        ----------
+        shots : int
+            The number of shots to take.
+        """
+        for key in list(self.instr.keys()):
+            N = len(self.instr[key])
+            for i in range(N):
+                serial = self.instr[key][N-i-1]
+                self.send_command(self.command_queue[serial], 'save_stream', (shots,))
+            
+    #XXX I don't think this function is a good idea, the main DAQ process should 
+    # never block, any delay or waiting should occur in the device process
     def waitQ(self, queue, delay=0.05):
         """ """
         Qsize = queue.qsize()

@@ -106,6 +106,10 @@ class Process():
         self.dataset = dataset
         self.shot = 0
         
+    def save_stream(self):
+        """ Base function to be overwritten by classes that need to save data. """
+        pass
+        
     def close(self):
         """" Close the device and send an exit code to the response queue. """
         self.device.close()

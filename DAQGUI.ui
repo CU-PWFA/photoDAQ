@@ -39,7 +39,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>830</y>
+      <y>790</y>
       <width>134</width>
       <height>31</height>
      </rect>
@@ -464,6 +464,35 @@ color:white;</string>
       <width>1161</width>
       <height>951</height>
      </rect>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="shotsField">
+    <property name="geometry">
+     <rect>
+      <x>140</x>
+      <y>760</y>
+      <width>48</width>
+      <height>26</height>
+     </rect>
+    </property>
+    <property name="maximum">
+     <number>10000</number>
+    </property>
+    <property name="value">
+     <number>10</number>
+    </property>
+   </widget>
+   <widget class="QLabel" name="shotsLabel">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>760</y>
+      <width>121</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Number of shots</string>
     </property>
    </widget>
   </widget>
