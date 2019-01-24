@@ -7,6 +7,7 @@ Created on Wed Jul 11 18:03:07 2018
 """
 
 from processes.streamProcess import StreamProcess
+import time
 
 class HR4000(StreamProcess):
     """ Process class for the HR4000 spectrometer. """       
@@ -47,9 +48,15 @@ class HR4000(StreamProcess):
     
     def get_datatype(self):
         """ Return the type of data. """
-        return "TRACE"
+        return "SPEC"
     
     def get_type(self):
         """ Return the instrument type. """
         return "HR4000"
-
+    
+    def close(self):
+        """ Close the instrument, ensure that the data stream stops first. """
+        self.stop_stream()
+        # XXX this might still break if the integration time is long
+        time.sleep(0.1)
+        super().close()

@@ -9,7 +9,10 @@ Created on Thu Jun 28 13:34:57 2018
 import seabreeze.spectrometers as sb
 
 class HR4000():
-    
+    """ Notes about the spectrometer:
+        If it doesn't connect almost immediatly, it probably won't return data.
+        If it is disconnected while streaming data, it will break.
+    """
     def __init__(self, serial):
         self.connectSP(serial)
         

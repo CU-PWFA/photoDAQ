@@ -36,33 +36,14 @@ class Daq():
         desc : str
             Description of data set
         """
-        # TODO I don't think IOtype is used at all anymore
         # SET saves an arbitrary dictionary, good for simple stuff
         self.INSTR = {
-                'KA3005P'   : {
-                            'IOtype'    : 'out',
-                            'dataType'  : 'SET'
-                            },
-                'TDS2024C'  : {
-                            'IOtype'    : 'in',
-                            'dataType'  : 'TRACE'
-                            },
-                'Camera'    : {
-                            'IOtype'    : 'in',
-                            'dataType'  : 'IMAGE'
-                            },
-                'HR4000'    : {
-                            'IOtype'    : 'in',
-                            'dataType'  : 'SPEC'
-                            },
-                'SRSDG645'  : {
-                            'IOtype'    : 'in',
-                            'dataType'  : 'SET'
-                            },
-                'FRG700'    : {
-                            'IOtype'    : 'in',
-                            'dataType'  : 'SET'
-                            }
+                'KA3005P'   : {'dataType'  : 'SET'},
+                'TDS2024C'  : {'dataType'  : 'TRACE'},
+                'Camera'    : {'dataType'  : 'IMAGE'},
+                'HR4000'    : {'dataType'  : 'SPEC'},
+                'SRSDG645'  : {'dataType'  : 'SET'},
+                'FRG700'    : {'dataType'  : 'SET'}
                 }
         self.instr = {}
         self.procs = {}
@@ -76,26 +57,6 @@ class Daq():
         self.desc = desc
         # Setup the daq
         self.setup_daq()
-        
-    def print_stat(self, i, failed, startTime, endTime):
-        """ Print some information about the data set run.
-    
-        Parameters
-        ----------
-        shot : int
-            The number of shots.
-        failed : int
-            The number of measurements that had to be retried.
-        startTime : float
-            The time measurement taking started.
-        endTime : float
-            The time the measurements stopped taking.
-        """
-        print('Total number of attempted measurements:  %d' % (i+failed))
-        print('Number of successful measurements:       %d' % i)
-        print('Total number of failed measurements:     %d' % failed)
-        elapsed = endTime - startTime
-        print('Total measurement time:                  %0.3f s' % elapsed)
     
     def setup_daq(self):
         """ Setup everything necessary to run the daq. """
@@ -220,9 +181,6 @@ class Daq():
         del self.command_queue[serial]
         del self.save_queue[serial]
         del self.response_queue[serial]
-        #XXX This is dangerous if the proc is still doing something - also might corrupt o_queue
-        #self.procs[serial].terminate()
-        #self.s_procs[serial].terminate()
         del self.procs[serial]
         del self.s_procs[serial]
     
@@ -346,19 +304,11 @@ class Daq():
         """Records the meta data in a text file."""
         file.meta_TXT(self.desc, self.dataset)
         
-        #ts = True
         for name in self.instr:
-            if name != 'SRSDG645':
-                if self.instr[name]:
-                    dType = self.INSTR[name]['dataType']
-                    metaproc = getattr(file, 'meta_'+dType)
-                    metaproc(self.dataset, self.instr[name])
-                    #ts = False
-            elif name == 'SRSDG645':
-                if self.instr[name]:
-                    dType = self.INSTR[name]['dataType']
-                    metaproc = getattr(file, 'meta_'+dType)
-                    metaproc(self.dataset, self.instr[name])
+            if self.instr[name]:
+                dType = self.INSTR[name]['dataType']
+                metaproc = getattr(file, 'meta_'+dType)
+                metaproc(self.dataset, self.instr[name])
         
     def adv_dataset(self, desc=None):
         """ Advances dataset number."""
@@ -386,6 +336,7 @@ class Daq():
             for i in range(N):
                 serial = self.instr[key][N-i-1]
                 self.send_command(self.command_queue[serial], 'save_stream', (shots,))
+        self.save_meta()
             
     #XXX I don't think this function is a good idea, the main DAQ process should 
     # never block, any delay or waiting should occur in the device process
@@ -477,50 +428,4 @@ class Daq():
                     'model' : 'SRSDG645'
                         }
         return instr
-            
-    
-def do_measurement(instr, measure, shot, dataSet, attempts=10):
-    """ Carry out a single measurement and save the data from it. 
-    
-    Parameter
-    ---------
-    instr : dict
-        The instrument dictionary.
-    measure : func
-        The function to call each measurement.
-    shot : int
-        The shot number.
-    dataSet : int
-        The data set number.
-    attempts : int, optional
-        The number of times to attempt each measurement.
-        
-    Returns
-    -------
-    failed : int
-        The number of failed measurements.
-    """
-    failed = 0
-    for attempt in range(attempts):
-        try:
-            ret = measure(shot)
-        except: 
-            print('Attempt', attempt, 'of measurement', shot, 'failed.')
-            failed += 1
-            continue
-        break
-        
-    if ret:
-        for name in instr:
-            meta = ret[name]['meta']
-            meta['INSTR'] = instr[name].type
-            meta['ID'] = instr[name].ID
-            meta['Serial number'] = instr[name].serialNum
-            meta['Timestamp'] = Gvar.get_timestamp()
-            meta['Data set'] = dataSet
-            meta['Shot number'] = shot
-            save = getattr(file, 'save_' + INSTR[instr[name].type]['dataType'])
-            if save(ret[name], dataSet, shot) == False:
-                break;
-    return failed
 

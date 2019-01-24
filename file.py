@@ -411,6 +411,33 @@ def meta_TRACE(dataset, serial):
     f.write(contents)      
     f.close()
     '''
+    
+def meta_SPEC(dataset, serial):
+    """Save the trace meta data in a txt file.
+    
+    Parameters
+    ----------
+    dataset : int
+        The data set number
+    serial : int
+        List of O-scopes used in dataset by serial number
+    ts : bool
+        Records time stamp of each shot if True. 
+        Does nothing if False.
+    """
+    metaName = get_dirName('META', dataset)+'meta_{}.txt'.format(dataset)
+    f = open(metaName, 'r')
+    contents = f.readlines()
+    f.close()
+
+    contents.append('\n\tSpectrometer : %s' % serial[0])
+    contents.append('\n')
+    
+    f = open(metaName, 'w')
+    contents = ''.join(contents)
+    f.write(contents)      
+    f.close()
+    
 def meta_SET(dataset, serial):
     """Save the trace meta data in a txt file.
     
