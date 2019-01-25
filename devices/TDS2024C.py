@@ -16,9 +16,9 @@ class TDS2024C():
     The oscilloscope must be set to Rear USB Port = "Computer" for this code to
     connect to it, this is found in Utility->Options. Auto will not work.
     """
-    def __init__(self, port=0):
+    def __init__(self, adr):
         """ Create the serial object for the oscilloscope. """
-        self.connectOS(port)
+        self.connectOS(adr)
         self.setupOS()
         self.pre_fields = [
                 "Byte number",      #BYT_Nr bytes per data point (byte width)
@@ -42,7 +42,7 @@ class TDS2024C():
                            "str", "float", "float", "float", "str", "float",
                            "float", "float", "str"]
     
-    def connectOS(self, port):
+    def connectOS(self, adr):
         """ Connect to the oscilloscope and verify the connection. 
         
         Parameters
@@ -54,7 +54,7 @@ class TDS2024C():
         rm = visa.ResourceManager('@py')
         # I'm not sure where the port comes in, I think it is USBX
         try:
-            self.OS = rm.open_resource('USB0::1689::934::C046401::0::INSTR')
+            self.OS = rm.open_resource(adr)
         except:
             print("USB error: Could not connect to the oscilloscope.")
         self.ID = self.get_ID()

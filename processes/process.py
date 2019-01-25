@@ -36,10 +36,9 @@ class Process():
         self.r_queue = r_queue
         self.o_queue = o_queue
         self.connect_instr(name, adr)
-        self.create_save_thread()
-        self.command_loop()
         # Internal shot tracker
         self.shot = 0
+        self.command_loop()
     
     def connect_instr(self, name, adr):
         """ Create the instrument class and connect to the instrument. 
@@ -65,44 +64,14 @@ class Process():
             # Always check process class first to allow overrides to be placed there
             if hasattr(self, com['command']):
                 func = getattr(self, com['command'])
-                func(*com['args'])
+                func(*com['args'], **com['kwargs'])
             elif hasattr(self.device, com['command']):
                 func = getattr(self.device, com['command'])
-                func(*com['args'])
+                func(*com['args'], **com['kwargs'])
             self.c_queue.task_done()
             time.sleep(self.delay)
-    
-    def create_save_thread(self):
-        """ Create a dedicated thread to handle data saving. """
-        self.s_queue = queue.Queue(1000)
-        args = (self.s_queue, self.r_queue)
-        self.s_thread = threading.Thread(target=self.save_thread, args=args)
-        self.s_thread.setDaemon(True)
-        self.s_thread.start()
-        
-    def save_thread(self, s_queue, r_queue):
-        """ Waits for data to be saved, should be overwritten in most cases. 
-        
-        Parameters
-        ----------
-        s_queue : queue.Queue
-            Queue to recieve the save data in.
-        r_queue : mp.Queue
-            The response queue to place responses in.
-        """
-        while True:
-            ret = s_queue.get()
-            meta = self.create_meta()
-
-            data = {'data' : ret,
-                    'meta' : meta}
-            save = getattr(file, 'save_' + self.get_datatype())
-            if save(data, self.dataset, self.shot) == False:
-                msg = "Failed to save datafrom " + meta['Serial number']
-                self.o_queue.put(msg)
-            self.r_queue.put(data)
-            self.shot += 1
-            s_queue.task_done()
+            if com['command'] == 'close':
+                break
                 
     def create_meta(self):
         """ Create the meta data object for the current shot. 
@@ -112,7 +81,7 @@ class Process():
         meta['INSTR'] = self.get_type()
         meta['ID'] = self.device.ID
         meta['Serial number'] = self.device.serialNum
-        meta['Timestamp'] = Gvar.get_timestamp()
+        #meta['Timestamp'] = Gvar.get_timestamp()
         meta['Data set'] = self.dataset
         meta['Shot number'] = self.shot
         meta['Data type'] = self.get_datatype()
@@ -136,4 +105,13 @@ class Process():
         """
         self.dataset = dataset
         self.shot = 0
+        
+    def save_stream(self):
+        """ Base function to be overwritten by classes that need to save data. """
+        pass
+        
+    def close(self):
+        """" Close the device and send an exit code to the response queue. """
+        self.device.close()
+        self.r_queue.put('__exit__')
         
