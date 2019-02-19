@@ -682,6 +682,32 @@ def load_SET(instr, dataSet, shot):
     except:
         print('Loading Error: The settings file could not be opened.')
         return False
+    
+    
+def load_SPEC(fileName):
+    """ Load a trace from a given data set.
+    
+    Parameters
+    ----------
+    instr : string
+        The instrument name.
+    dataSet : int
+        The data set number.
+    shot : int
+        The shot number.
+        
+    Returns
+    -------
+    trace : dict
+        The trace dictionary.
+    """
+    try:
+        trace = np.load(fileName)
+        return trace.item()
+    except:
+        print('Loading Error: The trace file could not be opened.')
+        print('Looking in: ' + fileName)
+        return False
 
 
 def decode_image_meta(image):
