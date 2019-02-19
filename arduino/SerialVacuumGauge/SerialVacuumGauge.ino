@@ -26,7 +26,7 @@ void loop() {
     }
     else if(command == "VOLTAGE") {
       sensorValue = analogRead(A0);
-      Serial.write(sensorValue);
+      Serial.println(sensorValue);
     }
     else if(command == "PRESSURE") {
       sensorValue = analogRead(A0);

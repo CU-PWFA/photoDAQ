@@ -26,7 +26,7 @@ from matplotlib.colors import LinearSegmentedColormap
 from scipy.optimize import leastsq
 
 class Camera():
-    def __init__(self, camIND, camPIXEL=16, camPixMONO=True, camGAIN=0, camSHUTTER=10):
+    def __init__(self, camIND, camPIXEL=16, camPixMONO=True, camGAIN=0, camSHUTTER=50):
         self.connectCam(camIND)
         if self.cam:
             self.prepareSettings(camPIXEL, camPixMONO, camGAIN, camSHUTTER)
@@ -74,6 +74,7 @@ class Camera():
         fmt7info = self.cam.getFormat7Info(0)[0]
         self.pixROW = fmt7info.maxHeight
         self.pixCOL = fmt7info.maxWidth
+        
         fmt7imgSet = pc2.Format7ImageSettings(0, 0, 0, self.pixCOL, self.pixROW,
                                               pixelFormat)
         fmt7pktInf, isValid = self.cam.validateFormat7Settings(fmt7imgSet)
