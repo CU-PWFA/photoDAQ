@@ -44,6 +44,7 @@ class SRSDG645():
         try:
             self.srs = ik.srs.SRSDG645.open_tcpip(ip, 5025)
             self.ID = self.srs.query('*IDN?')
+            print(self.ID.strip())
             self.serialNum = ip
         except:
             print('Ethernet error: could not connect to Signal Delay Generator.')

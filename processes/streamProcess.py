@@ -11,13 +11,13 @@ import threading
 
 class StreamProcess(Process):
     """ Process class for streaming devices. """
-    def __init__(self, name, adr, c_queue, r_queue, o_queue):
+    def __init__(self, instr):
         """ init method. """
         self.streaming = False
         self.shot = 0
         self.numShots = 0
         # Needs to ocur last, starts infinite queue loop
-        super().__init__(name, adr, c_queue, r_queue, o_queue)
+        super().__init__(instr)
         
     def start_stream(self, save=False): 
         """ Start streaming spectra to the save process. 

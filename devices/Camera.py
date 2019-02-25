@@ -12,8 +12,14 @@ class Camera():
     """ Class to control the FLIR cameras. """
     
     def __init__(self, serial):
-        """ Create the pyCapture Camera object fo the camera. """
-        self.connectCam(serial)
+        """ Create the pyCapture Camera object fo the camera. 
+        
+        Parameters
+        ----------
+        serial : str
+            The serial number of the camera.
+        """
+        self.connectCam(int(serial))
         self.setupCam(serial)
     
     def connectCam(self, serial):
@@ -49,7 +55,7 @@ class Camera():
         """ Set settings required for correct image acquisition. """
         width = self.imageINFO.maxWidth
         height = self.imageINFO.maxHeight
-        if serial == 17570564:
+        if serial == '17570564':
             pixelFormat = pc2.PIXEL_FORMAT.MONO16
         else:
             pixelFormat = pc2.PIXEL_FORMAT.RAW16

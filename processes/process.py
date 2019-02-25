@@ -6,71 +6,54 @@ Created on Wed Jul 11 14:48:25 2018
 @author: robert
 """
 
-import importlib
 import time
-import threading
-import queue
-import file
-import globalVAR as Gvar
+import daq
 
 class Process():
     """ A class that handles the main loop for an instrument. """
-    def __init__(self, name, adr, c_queue, r_queue, o_queue):
+    def __init__(self, instr):
         """ Initialize the instrument and start the main loop. 
         
         Parameters
         ----------
-        name : string
-            The name of the instrument, must be a key in INSTR.
-        adr : string
-            The address of the instrument, will be passed to the constructor.
-        c_queue : mp.Queue
-            The command queue to place commands in.
-        r_queue : mp.Queue
-            The response queue to place responses in.
-        o_queue : mp.Queue
-            The queue to place messages in.
+        instr : instr object
+            The object representing the instrument the process will control.
         """
         self.delay = 0.0
-        self.c_queue = c_queue
-        self.r_queue = r_queue
-        self.o_queue = o_queue
-        self.connect_instr(name, adr)
+        self.instr = instr
+        self.c_queue = instr.command_queue
+        self.r_queue = instr.response_queue
+        self.dataset = instr.dataset
+        self.connect_instr()
         # Internal shot tracker
         self.shot = 0
         self.command_loop()
     
-    def connect_instr(self, name, adr):
-        """ Create the instrument class and connect to the instrument. 
-        
-        Parameters
-        ----------
-        name : string
-            The name of the instrument, must be a key in INSTR.
-        adr : string
-            The address of the instrument, will be passed to the constructor.
-        """
-        module = importlib.import_module('devices.' + name)
-        instr_class = getattr(module, name)
-        device = instr_class(adr)
-        device.type = name
+    def connect_instr(self):
+        """ Create the instrument class and connect to the instrument. """
+        instr = self.instr
+        device = instr.device_cls(instr.address)
+        device.type = instr.device_type
         self.device = device
-        self.r_queue.put([device.serialNum, self.get_type()])
+        rsp = daq.Rsp('connected')
+        self.r_queue.put(rsp)
         
     def command_loop(self):
         """ Check the queue for commands and execute them. """
         while True:
-            com = self.c_queue.get()
+            cmd = self.c_queue.get()
+            command = cmd.command
             # Always check process class first to allow overrides to be placed there
-            if hasattr(self, com['command']):
-                func = getattr(self, com['command'])
-                func(*com['args'], **com['kwargs'])
-            elif hasattr(self.device, com['command']):
-                func = getattr(self.device, com['command'])
-                func(*com['args'], **com['kwargs'])
+            if hasattr(self, command):
+                func = getattr(self, command)
+                func(*cmd.args, **cmd.kwargs)
+            elif hasattr(self.device, command):
+                func = getattr(self.device, command)
+                func(*cmd.args, **cmd.kwargs)
             self.c_queue.task_done()
             time.sleep(self.delay)
-            if com['command'] == 'close':
+            # End the process when the device disconnects
+            if command == 'close':
                 break
                 
     def create_meta(self):
@@ -113,5 +96,6 @@ class Process():
     def close(self):
         """" Close the device and send an exit code to the response queue. """
         self.device.close()
-        self.r_queue.put('__exit__')
+        rsp = daq.Rsp('exit')
+        self.r_queue.put(rsp)
         

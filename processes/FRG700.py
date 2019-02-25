@@ -8,14 +8,20 @@ Created on Wed Jan 16 11:50:29 2019
 
 from processes.streamProcess import StreamProcess
 import time
+import daq
 
 class FRG700(StreamProcess):
     """ Process class for the KA3005P power supply. """
-    def __init__(self, name, adr, c_queue, r_queue, o_queue):
-        """ For parameters see the parent method. """
-        self.delay = 0.0
+    def __init__(self, instr):
+        """ For parameters see the parent method. 
+        
+        Parameters
+        ----------
+        instr : instr object
+            The object representing the instrument the process will control.
+        """
         self.sampleDelay = 0.05
-        super().__init__(name, adr, c_queue, r_queue, o_queue)
+        super().__init__(instr)
         
     def capture_thread(self, r_queue, streaming):
         """ Continually quieres the pressure gauge for the pressure. 
@@ -30,12 +36,12 @@ class FRG700(StreamProcess):
         while self.streaming:
             raw = self.device.get_pressure()
             meta = self.create_meta()
+            if self.save: response = 'save'
+            else: response = 'output'
+            rsp = daq.Rsp(response, raw, meta)
+            self.r_queue.put(rsp)
             
-            data = {'pressure' : raw,
-                    'meta' : meta,
-                    'save' : self.save}
             self.shot += 1
-            self.r_queue.put(data)
             if self.shot == self.numShots:
                 self.save = False
             time.sleep(self.sampleDelay)

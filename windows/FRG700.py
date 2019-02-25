@@ -17,14 +17,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 import threading
 from scipy.interpolate import interp1d
+import os
 
-qtCreatorFile = "windows/FRG700.ui"
+package_directory = os.path.dirname(os.path.abspath(__file__))
+
+qtCreatorFile = os.path.join(package_directory, "FRG700.ui")
 Ui_GaugeWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
-    data_acquired = pyqtSignal(dict)
+    data_acquired = pyqtSignal(object)
     
-    def __init__(self, parent, DAQ, serial, queue):
+    def __init__(self, parent, DAQ, instr):
         """ Create the parent class and add event handlers. 
         
         Parameters
@@ -33,10 +36,8 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
             The parent window that creates this window.
         DAQ : DAQ class
             The class representing the DAQ.
-        serial : string or int
-            The serial number or string of the device the window is for.
-        queue : queue
-            Queue with output from the DAQ.
+        instr : instr object
+            The object representing the instrument.
         """
         QtBaseClass.__init__(self)
         Ui_GaugeWindow.__init__(parent)
@@ -51,8 +52,9 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         
         # Grab references for controlling the spectrometer
         self.DAQ = DAQ
-        self.serial = serial
-        self.queue = queue
+        self.serial = instr.serial
+        self.queue = instr.output_queue
+        self.instr = instr
         
         # Large bacause it is a double array buffer
         self.bufferSize = self.lengthField.value()
@@ -63,7 +65,7 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         self.load_adjustments()
         self.create_image()
         self.create_update_thread()
-        self.setWindowTitle(str(serial))
+        self.setWindowTitle(self.serial)
         
     def create_image(self):
         """ Create the matplotlib canvas. """
@@ -72,7 +74,7 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         ax.set_yscale('log')
         ax.set_autoscale_on(False)
         ax.set_xbound(0, 1000)
-        ax.set_ybound(1e-6, 1000)
+        ax.set_ybound(1e-6, 4000)
         ax.set_ylabel('Pressure (mbar)')
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)
@@ -110,13 +112,14 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
             The signal.emit to call to update the plot. 
         """
         while True:
-            data = queue.get()
-            if data == '__exit__':
+            rsp = queue.get()
+            response = rsp.response
+            if response == 'exit':
                 break
-            elif data == '__Connected__':
+            elif response == 'connected':
                 self.setup_window()
             else:
-                callback(data)
+                callback(rsp)
             queue.task_done()
             
     def setup_window(self):
@@ -127,7 +130,7 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         self.speciesField.setEnabled(True)
         self.sampleField.setEnabled(True)
     
-    def send_command(self, command, args=None, kwargs=None):
+    def send_command(self, command, *args, **kwargs):
         """ Send commands to this windows instruments. 
         
         Parameters
@@ -138,7 +141,7 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
             Arguments to be sent to the command function.
         """
         DAQ = self.DAQ
-        DAQ.send_command(DAQ.command_queue[self.serial], command, args)
+        DAQ.send_command(self.instr, command, *args, **kwargs)
         
     def update_plot(self, pressure):
         """ Handle matplotlib updating. 
@@ -210,17 +213,17 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         self.send_command('stop_stream')
         self.streaming = False
         
-    @pyqtSlot(dict)
-    def update_canvas(self, data):
+    @pyqtSlot(object)
+    def update_canvas(self, rsp):
         """ Update the canvas with the new image. 
         
         Parameters
         ----------
-        data : dict
-            The dictionary with the image data and meta.
+        rsp : rsp object
+            The response object with the field settings
         """
-        self.update_buffer(data['pressure'])
-        self.update_plot(data['pressure'])
+        self.update_buffer(rsp.data)
+        self.update_plot(rsp.data)
         self.canvas.draw()
         
     @pyqtSlot(int)
@@ -256,5 +259,5 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         delay : int
             The sampling delay in ms. 
         """
-        self.send_command('set_sample_delay', (delay,))
+        self.send_command('set_sample_delay', delay)
 

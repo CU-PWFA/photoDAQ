@@ -19,14 +19,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 import threading
 import time
+import os
 
-qtCreatorFile = "windows/camera.ui"
+package_directory = os.path.dirname(os.path.abspath(__file__))
+
+qtCreatorFile = os.path.join(package_directory, "camera.ui")
 Ui_CameraWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 class CameraWindow(QtBaseClass, Ui_CameraWindow):
     data_acquired = pyqtSignal(dict)
     
-    def __init__(self, parent, DAQ, serial, queue):
+    def __init__(self, parent, DAQ, device):
         """ Create the parent class and add event handlers. 
         
         Parameters
@@ -35,10 +38,8 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
             The parent window that creates this window.
         DAQ : DAQ class
             The class representing the DAQ.
-        serial : string or int
-            The serial number or string of the device the window is for.
-        queue : queue
-            Queue with output from the DAQ.
+        device : deviceInfo object
+            Object for a device.
         """
         QtBaseClass.__init__(self)
         Ui_CameraWindow.__init__(parent)
@@ -57,13 +58,14 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         
         # Grab references for controlling the camera
         self.DAQ = DAQ
-        self.serial = serial
-        self.queue = queue
+        self.serial = device.serial
+        self.queue = device.output_queue
+        self.device = device
 
         # Create the container for the image
         self.create_image()
         self.create_update_thread()
-        self.setWindowTitle(str(serial))
+        self.setWindowTitle(self.serial)
         self.set_field_range()
         
     def create_image(self):
@@ -119,33 +121,33 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         """ Set the range of the spinbox fields based on the camera serial. """
         # TODO should probably just grab this from the cameras
         serial = self.serial
-        bounds = {17583372 : {'ShutterMin' : 0.0477,
+        bounds = {'17583372' : {'ShutterMin' : 0.0477,
                               'GainMax' : 47.99,
                               'BrightnessMin' : 0.0,
                               'BrightnessMax' : 12.47},
-                  17571186 : {'ShutterMin' : 0.039,
+                  '17571186' : {'ShutterMin' : 0.039,
                               'GainMax' : 18,
                               'BrightnessMin' : 0.0,
                               'BrightnessMax' : 25},
-                  17529184 : {'ShutterMin' : 0.0596,
+                  '17529184' : {'ShutterMin' : 0.0596,
                               'GainMax' : 47.99,
                               'BrightnessMin' : 0.0,
                               'BrightnessMax' : 12.475},
-                  17570564 : {'ShutterMin' : 0.0456,
+                  '17570564' : {'ShutterMin' : 0.0456,
                               'GainMax' : 23.99,
                               'BrightnessMin' : 1.368,
                               'BrightnessMax' : 7.42}
                   }
         self.shutterField.setMinimum(bounds[serial]['ShutterMin'])
         self.gainField.setMaximum(bounds[serial]['GainMax'])
-        # The device is connected yet so we can't update it's parameters
+        # The device isn't connected yet so we can't update it's parameters
         self.brightnessField.blockSignals(True)
         self.brightnessField.setRange(bounds[serial]['BrightnessMin'], 
                                       bounds[serial]['BrightnessMax'])
         self.brightnessField.setValue(bounds[serial]['BrightnessMin'])
         self.brightnessField.blockSignals(False)
         
-    def send_command(self, command, args=None, kwargs=None):
+    def send_command(self, command, *args, **kwargs):
         """ Send commands to this windows instruments. 
         
         Parameters
@@ -156,7 +158,7 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
             Arguments to be sent to the command function.
         """
         DAQ = self.DAQ
-        DAQ.send_command(DAQ.command_queue[self.serial], command, args)
+        DAQ.send_command(self.device, command, *args, **kwargs)
         
     # Event Handlers
     ###########################################################################

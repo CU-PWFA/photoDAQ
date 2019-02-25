@@ -17,14 +17,14 @@ import threading
 
 class Camera(Process):
     """ Process class for a camera. """
-    def __init__(self, name, adr, c_queue, r_queue, o_queue):
+    def __init__(self, device):
         """ init method. """
         self.streaming = False
         self.shot = 0
         self.numShots = 0
         self.lock = threading.Lock()
         # Needs to ocur last, starts infinite queue loop
-        super().__init__(name, adr, c_queue, r_queue, o_queue)
+        super().__init__(device)
     
     def start_stream(self, save=False):
         """ Start streaming images into the save and post process. 

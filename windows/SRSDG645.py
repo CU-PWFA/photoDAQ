@@ -9,22 +9,19 @@ Created on Thu Jan 17 13:51:25 2019
 from PyQt4 import QtCore, QtGui, uic
 from PyQt4.QtCore import (pyqtSlot, QThread, pyqtSignal)
 from PyQt4.QtGui import (QPixmap, QImage, QLabel)
-from matplotlib.backends.backend_qt4agg import (
-    FigureCanvasQTAgg as FigureCanvas,
-    NavigationToolbar2QT as NavigationToolbar)
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
 import numpy as np
 import threading
-from scipy.interpolate import interp1d
+import os
 
-qtCreatorFile = "windows/SRSDG645.ui"
+package_directory = os.path.dirname(os.path.abspath(__file__))
+
+qtCreatorFile = os.path.join(package_directory, "SRSDG645.ui")
 Ui_DGWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 class DGWindow(QtBaseClass, Ui_DGWindow):
-    data_acquired = pyqtSignal(dict)
+    data_acquired = pyqtSignal(object)
     
-    def __init__(self, parent, DAQ, serial, queue):
+    def __init__(self, parent, DAQ, instr):
         """ Create the parent class and add event handlers. 
         
         Parameters
@@ -35,8 +32,8 @@ class DGWindow(QtBaseClass, Ui_DGWindow):
             The class representing the DAQ.
         serial : string or int
             The serial number or string of the device the window is for.
-        queue : queue
-            Queue with output from the DAQ.
+        instr : instr object
+            Object for an instrument.
         """
         QtBaseClass.__init__(self)
         Ui_DGWindow.__init__(parent)
@@ -57,10 +54,12 @@ class DGWindow(QtBaseClass, Ui_DGWindow):
         self.saveButton.clicked.connect(self.save_settings)
         self.recallButton.clicked.connect(self.recall_settings)
         
-        # Grab references for controlling the spectrometer
+        # Grab references for controlling the delay generator
         self.DAQ = DAQ
-        self.serial = serial
-        self.queue = queue
+        self.serial = instr.serial
+        self.queue = instr.output_queue
+        self.instr = instr
+        self.updating = False
         
         # Define some useful enumerations
         self.channels = ['T0', 'T1', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
@@ -68,7 +67,7 @@ class DGWindow(QtBaseClass, Ui_DGWindow):
                       'G':8, 'H':9}
         
         self.create_update_thread()
-        self.setWindowTitle(str(serial))
+        self.setWindowTitle(self.serial)
         
     def create_update_thread(self):
         """ Create a thread to poll the response queue and update the fields. """
@@ -88,13 +87,14 @@ class DGWindow(QtBaseClass, Ui_DGWindow):
             The signal.emit to call to update the fields. 
         """
         while True:
-            data = queue.get()
-            if data == '__exit__':
+            rsp = queue.get()
+            response = rsp.response
+            if response == 'exit':
                 break
-            elif data == '__Connected__':
+            elif response == 'connected':
                 self.setup_window()
             else:
-                callback(data)
+                callback(rsp)
             queue.task_done()
             
     def setup_window(self):
@@ -118,7 +118,7 @@ class DGWindow(QtBaseClass, Ui_DGWindow):
         # Get the initial settings
         self.send_command("get_settings")
     
-    def send_command(self, command, args=None, kwargs=None):
+    def send_command(self, command, *args, **kwargs):
         """ Send commands to this windows instruments. 
         
         Parameters
@@ -129,7 +129,7 @@ class DGWindow(QtBaseClass, Ui_DGWindow):
             Arguments to be sent to the command function.
         """
         DAQ = self.DAQ
-        DAQ.send_command(DAQ.command_queue[self.serial], command, args)
+        DAQ.send_command(self.instr, command, *args, **kwargs)
         
     def set_delay_fields(self, channel):
         """ Set the delay fields to the delay for the current channel. 
@@ -164,7 +164,11 @@ class DGWindow(QtBaseClass, Ui_DGWindow):
             Identifier for the channel, either T0, T1, or A-H.
         """
         ref = self.settings[channel]['ref']
-        self.referenceField.setCurrentIndex(self.index[ref])
+        # T1 isn't a reference field so we have to shift the indices
+        ind = self.index[ref]
+        if ind > 0:
+            ind -= 1
+        self.referenceField.setCurrentIndex(ind)
         
     def set_output_field(self, channel):
         """ Set the voltage field for the passed channel. 
@@ -196,18 +200,19 @@ class DGWindow(QtBaseClass, Ui_DGWindow):
         channel : string
             Identifier for the channel, either T0, T1, or A-H.
         """
-        delay = self.build_delay()
-        ref = self.referenceField.currentText()
-        output = self.voltageField.value()
-        polarity = self.polarityField.currentIndex()
-        settings = {
-                    'delay' : delay,
-                    'output' : output,
-                    'ref' : ref,
-                    'polarity' : polarity
-                    }
-        self.settings[channel] = settings
-        self.send_command('set_settings', ({channel : settings},))
+        if not self.updating:
+            delay = self.build_delay()
+            ref = self.referenceField.currentText()
+            output = self.voltageField.value()
+            polarity = self.polarityField.currentIndex()
+            settings = {
+                        'delay' : delay,
+                        'output' : output,
+                        'ref' : ref,
+                        'polarity' : polarity
+                        }
+            self.settings[channel] = settings
+            self.send_command('set_settings', {channel : settings})
     
     def build_delay(self):
         """ Build the delay from the delay combo boxes. 
@@ -227,20 +232,24 @@ class DGWindow(QtBaseClass, Ui_DGWindow):
     
     # Event Handlers
     ###########################################################################
-    @pyqtSlot(dict)
-    def update_fields(self, data):
+    @pyqtSlot(object)
+    def update_fields(self, rsp):
         """ Update the fields with current settings. 
         
         Parameters
         ----------
-        data : dict
-            The dictionary with the field settings.
+        rsp : rsp object
+            The response object with the field settings
         """
-        self.settings = data['data']
-        self.set_delay_fields('T0')
-        self.set_reference_field('T0')
-        self.set_output_field('T0')
-        self.set_polarity_field('T0')
+        channel = self.channelField.currentText()
+        self.settings = rsp.data
+        # Stop the channel change from doing anythin
+        self.updating = True
+        self.set_delay_fields(channel)
+        self.set_reference_field(channel)
+        self.set_output_field(channel)
+        self.set_polarity_field(channel)
+        self.updating = False
     
     @pyqtSlot(int)
     def change_channel(self, ind):
@@ -252,6 +261,7 @@ class DGWindow(QtBaseClass, Ui_DGWindow):
             The index of the channel.
         """
         channel = self.channelField.currentText()
+        self.updating = True
         self.set_delay_fields(channel)
         self.set_reference_field(channel)
         self.set_output_field(channel)
@@ -262,6 +272,7 @@ class DGWindow(QtBaseClass, Ui_DGWindow):
         else:
             self.voltageField.setEnabled(True)
             self.polarityField.setEnabled(True)
+        self.updating = False
     
     @pyqtSlot(int)
     def change_settings(self, value):
@@ -276,25 +287,24 @@ class DGWindow(QtBaseClass, Ui_DGWindow):
             if ind == 0: ind = 5
             elif ind == 1: ind = 3
             elif ind == 2: ind = 4
-        self.send_command('set_trigger_source', (ind,))
+        self.send_command('set_trigger_source', ind)
         
     @pyqtSlot(float)
     def change_threshold(self, threshold):
         """ The trigger threshold changed, update the sdg. """
-        self.send_command('set_trigger_threshold', (threshold,))
+        self.send_command('set_trigger_threshold', threshold)
         
     @pyqtSlot()
     def save_settings(self):
         """ Save the settings internally on the sdg. """
         ind = self.locationField.value()
-        self.send_command('save_settings_SDG', (ind,))
+        self.send_command('save_settings_SDG', ind)
         
     @pyqtSlot()
     def recall_settings(self):
         """ Recall settings internally saved on the sdg. """
         ind = self.locationField.value()
-        self.send_command('recall_settings_SDG', (ind,))
+        self.send_command('recall_settings_SDG', ind)
         # Update the GUI with the new settings
         self.send_command("get_settings")
-        self.channelField.setCurrentIndex(0)
 

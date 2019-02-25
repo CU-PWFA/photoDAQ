@@ -21,23 +21,21 @@ class FRG700():
         Parameters
         ----------
         address : string
-            The port the device is connected to, "/dev/<address>" is the 
-            device name sent to pyserial.
+            The port the device is connected to, of the form "/dev/ttyACM2".
         """
-        name = "/dev/" + address
         try:
-            self.Gauge = serial.Serial(name,
+            self.Gauge = serial.Serial(address,
                                     baudrate=9600,
                                     bytesize=8,
                                     parity='N',
                                     stopbits=1,
                                     timeout=2)
         except:
-            print("USB error: Could not connect to the vacuum gauge.")   
+            print("USB error: Could not connect to the vacuum gauge.")
         self.ID = self.get_ID().decode("utf-8")
         # No way to get a serial number - address should be unique
         self.serialNum = address
-        print('Vacuum gauge ID:', self.ID)
+        print('Vacuum gauge ID: ' + self.ID)
         # The gauge sends the id on start up and sometime get id catches that
         # This clears the get ID response
         time.sleep(2)
@@ -85,5 +83,5 @@ class FRG700():
     
     def close(self):
         """ Close method, doesn't do anything for a serial instrument. """
-        pass
+        self.Gauge.close()
 

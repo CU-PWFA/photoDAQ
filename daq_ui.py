@@ -7,12 +7,11 @@
 """
 
 import daq
+import detect
+from PyQt4.QtCore import (pyqtSlot, QThread, pyqtSignal)
 from PyQt4 import QtCore, QtGui, uic
-from PyQt4.QtCore import pyqtSlot
-from windows import camera
-from windows import HR4000
-from windows import FRG700
-from windows import SRSDG645
+import threading
+
 # Display names for different instruments in terms of their model number
 instr_display = {
         'Blackfly BFLY-PGE-31S4M' : 'Blackfly BFLY-PGE-31S4M',
@@ -22,52 +21,50 @@ instr_display = {
         'TDS2024C' : 'TDS2024C Oscilloscope',
         'KA3005P' : 'KA3005P DC Power Supply',
         'HR4000' : 'HR4000 Spectrometer',
-        'SRSDG645' : 'SRSDG645 Signal Delay Generator',
+        'DG645' : 'SRSDG645 Signal Delay Generator',
         'FRG700' : 'FRG700 Vacuum Gauge',
         }
-#    '2.2 micron camera' : 
-#        {'serial' : 1234567,
-#         'name' : 'Camera'},
-#    '3.45 (2048x1536) micron camera' : 
-#        {'serial' : 17583372,
-#         'name' : 'Camera'},
-#    '3.75 micron camera' : 
-#        {'serial' : 17570564,
-#         'name' : 'Camera'},
-#    '3.45 (2448x2048) micron camera' : 
-#        {'serial' : 17529184,
-#         'name': 'Camera'}
-#    }
 
 qtCreatorFile = "DAQGUI.ui"
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
-window_dict = {
-        'Camera' : camera.CameraWindow,
-        'HR4000' : HR4000.SpecWindow,
-        'FRG700' : FRG700.GaugeWindow,
-        'SRSDG645' : SRSDG645.DGWindow,
-        }
-
 # DAQ UI classes
 class UI(QtBaseClass, Ui_MainWindow):
-    def __init__(self):
-        """ Create the parent UI classes and add event handlers. """
+    message_acquired = pyqtSignal(str)
+    
+    def __init__(self, DAQ):
+        """ Create the parent UI classes and add event handlers. 
+        
+        Parameters
+        ----------
+        DAQ : Daq object
+            The main daq object controlling the daq.
+        """
         QtBaseClass.__init__(self)
         Ui_MainWindow.__init__(self)
         self.setupUi(self)
+        self.DAQ = DAQ
         
         # Add event handlers to all the buttons
+        self.message_acquired.connect(self.print_log)
         self.connectButton.clicked.connect(self.connect_instrs)
         self.refreshListButton.clicked.connect(self.refresh_list)
         self.disconnectButton.clicked.connect(self.disconnect_instr)
         self.detailButton.clicked.connect(self.open_detail_panel)
         self.startDatasetButton.clicked.connect(self.start_dataset)
+        self.detectSerialButton.clicked.connect(self.detect_serial)
+        self.detectSpecButton.clicked.connect(self.detect_spectrometer)
+        self.detectVisaButton.clicked.connect(self.detect_visa)
+        self.detectSDGButton.clicked.connect(self.detect_SDG)
+        self.detectCamerasButton.clicked.connect(self.detect_camera)
         
         # Define useful variables
-        self.connected_instr = {}
-        self.available_instr = {}
+        self.connected_instr = {} # Tracks all connected instruments
+        self.available_instr = {} # Tracks all available unconnected instruments
         self.initial_dataset = True
+        
+        # Create the logging thread
+        self.create_logging_thread()
         
     def center(self, DAQWindow):
         resolution = QtGui.QDesktopWidget().screenGeometry()
@@ -76,9 +73,30 @@ class UI(QtBaseClass, Ui_MainWindow):
                   (resolution.height() / 2) - \
                   (DAQWindow.frameSize().height() / 2)) 
         
-    def print_output(self, msg):
-        """ Print a newline to the output text box. """
-        pass
+    def create_logging_thread(self):
+        """ Create a thread to pull from stdout. """
+        args = (self.DAQ.p_queue, self.message_acquired.emit)
+        thread = threading.Thread(target=self.logging_thread, args=args)
+        thread.setDaemon(True)
+        thread.start()
+        
+    def logging_thread(self, queue, callback):
+        """ Wait for data to be printed to stdout. 
+        
+        Parameters
+        ----------
+        queue : queue
+            The queue that the data is arriving on.
+        callback : func
+            The signal.emit to call to update the field. 
+        """
+        while True:
+            text = queue.get()
+            if text == '__exit__':
+                break
+            else:
+                callback(text)
+            queue.task_done()
     
     def set_dataset_num(self):
         """ Set the dataset number to the DAQ's dataset. """
@@ -92,81 +110,122 @@ class UI(QtBaseClass, Ui_MainWindow):
         """ Set the total number of shots for the dataset. """
         self.totalshotNumber.setNum(num)
     
+    # TODO should update this so a instrument can be in more than one list
     # List Manipulation
     ###########################################################################
-    def create_item(self, key, instr_item, parent):
-        """ Create the item object for the lists. 
+    def create_item(self, serial, instr, parent):
+        """ Adds the QListWidgetItem to the instrument and adds it to a list. 
         
         Parameters
         ----------
-        key : string
-            The unique key for the instrument, normally the serial number.
-        instr_item : dict
-            Dictionary for an instrument from DAQ.get_available_instr.
+        serial : string
+            The serial number for the instrument.
+        instr : instr object
+            Object for a instrument.
         parent : QListWidget
             The list to add the item to.
-        
-        Returns
-        -------
-        instr_item : dict
-            The instr dictionary with the QListWidgetItem added.
         """
-        if instr_item['model'] in instr_display:
-            text = instr_display[instr_item['model']]+' ('+str(key)+')'
+        if instr.model in instr_display:
+            text = instr_display[instr.model]+' ('+instr.serial+')'
         else:
-            text = instr_item['model']+' ('+str(key)+')'
+            text = instr.model+' ('+instr.serial+')'
         item = QtGui.QListWidgetItem(text, parent=parent)
-        item.__key__ = key
-        instr_item['item'] = item
-        return instr_item
+        item.__key__ = serial
+        instr.item = item
     
-    def remove_item(self, instr_item, parent):
-        """ Remove an item from a list. 
+    def remove_item(self, instr, parent):
+        """ Remove a instrument from a list. 
         
         Parameters
         ----------
-        instr_item : dict
-            Dictionary representing an item.
+        instr : instr object
+            Object for a instrument.
         parent : QListWidget
             The list to remove the item from.
         """
-        item = instr_item['item']
+        item = instr.item
         row = parent.row(item)
         parent.takeItem(row)
         
-    def add_item(self, instr_item, parent):
+    def add_item(self, instr, parent):
         """ Add an item to a list. 
         
         Parameters
         ----------
-        instr_item : dict
-            Dictionary representing an item.
+        instr : instr object
+            Object for a instrument.
         parent : QListWidget
             The list to add the item to.
         """
-        item = instr_item['item']
+        item = instr.item
         parent.addItem(item)
+        
+    def add_instrs(self, instrs):
+        """ Add the passed instruments to the available list. 
+        
+        Parameters
+        ----------
+        instr : dictionary
+            Dictionary with serial number keys and instr object items.
+        """
+        available_instr = self.available_instr
+        connected_instr = self.connected_instr
+        for serial, instr in instrs.items():
+            if serial not in connected_instr and serial not in available_instr:
+                self.create_item(serial, instr, self.availableList)
+                available_instr[serial] = instr
     
     # Event Handlers
     ###########################################################################
+    @pyqtSlot(str)
+    def print_log(self, text):
+        self.logBrowser.moveCursor(QtGui.QTextCursor.End)
+        self.logBrowser.insertPlainText( text )
+    
     @pyqtSlot()
     def refresh_list(self):
-        """ Refresh the list of connected instruments. """
+        """ Refresh the list of available instruments. """
         available_instr = self.available_instr
-        connected_instr = self.connected_instr
-        instr = self.DAQ.get_available_instr()
-        for key in instr:
-            if key not in connected_instr and key not in available_instr:
-                item = self.create_item(key, instr[key], self.availableList)
-                available_instr[key] = item
+        instrs = detect.all_instrs()
+        self.add_instrs(instrs)
         
         # Check to make sure available instruments are still available
-        for key in list(available_instr.keys()):
-            if key not in instr:
-                self.remove_item(available_instr[key], self.availableList)
-                del available_instr[key]
+        for serial in list(available_instr.keys()):
+            if serial not in instrs:
+                self.remove_item(available_instr[serial], self.availableList)
+                del available_instr[serial]
         
         # XXX might want to remove it from the connected instruments as well
+        
+    @pyqtSlot()
+    def detect_serial(self):
+        """ Detect and add serial device to the available instruments. """
+        instrs = detect.serial_ports()
+        self.add_instrs(instrs)
+        
+    @pyqtSlot()
+    def detect_spectrometer(self):
+        """ Detect and add spectrometers to the available instruments. """
+        instrs = detect.spectrometer()
+        self.add_instrs(instrs)
+        
+    @pyqtSlot()
+    def detect_visa(self):
+        """ Detect and add visa instruments to the available instruments. """
+        instrs = detect.pyvisa()
+        self.add_instrs(instrs)
+        
+    @pyqtSlot()
+    def detect_SDG(self):
+        """ Detect and add the SDG to the available instruments. """
+        instrs = detect.SRSDG645()
+        self.add_instrs(instrs)
+        
+    @pyqtSlot()
+    def detect_camera(self):
+        """ Detect and add cameras to the available instruments. """
+        instrs = detect.camera()
+        self.add_instrs(instrs)
     
     @pyqtSlot()
     def connect_instrs(self):
@@ -175,17 +234,16 @@ class UI(QtBaseClass, Ui_MainWindow):
         connected_instr = self.connected_instr
         add_list = self.availableList.selectedItems()
         for item in add_list:
-            key = item.__key__
-            instr = available_instr[key]
+            serial = item.__key__
+            instr = available_instr[serial]
             # Move things between the lists
             self.remove_item(instr, self.availableList)
             self.add_item(instr, self.connectedList)
-            connected_instr[key] = available_instr.pop(key)
+            connected_instr[serial] = available_instr.pop(serial)
             # Connect the instrument within the DAQ
-            queue = self.DAQ.connect_instr(instr['name'], instr['adr'])
-            if queue is not None:
-                # Create the popup window for the instrument
-                instr['window'] = window_dict[instr['name']](self, self.DAQ, key, queue)
+            self.DAQ.connect_instr(instr)
+            if instr.window_cls is not None:
+                instr.window = instr.window_cls(self, self.DAQ, instr)
         
     @pyqtSlot()
     def disconnect_instr(self):
@@ -194,23 +252,23 @@ class UI(QtBaseClass, Ui_MainWindow):
         connected_instr = self.connected_instr
         remove_list = self.connectedList.selectedItems()
         for item in remove_list:
-            key = item.__key__
-            instr = connected_instr[key]
+            serial = item.__key__
+            instr = connected_instr[serial]
             # Move things between the lists
             self.remove_item(instr, self.connectedList)
             self.add_item(instr, self.availableList)
-            available_instr[key] = connected_instr.pop(key)
+            available_instr[serial] = connected_instr.pop(serial)
             # Disconnect the instrument from the DAQ
-            self.DAQ.disconnect_instr(instr['name'], key)
+            self.DAQ.disconnect_instr(instr)
     
     @pyqtSlot()
     def open_detail_panel(self):
         """ Open the detail panel for the selected instruments. """
         open_list = self.connectedList.selectedItems()
         for item in open_list:
-            key = item.__key__
-            instr = self.connected_instr[key]
-            instr['window'].show()
+            serial = item.__key__
+            instr = self.connected_instr[serial]
+            instr.window.show()
     
     @pyqtSlot()
     def start_dataset(self):
@@ -227,20 +285,17 @@ class UI(QtBaseClass, Ui_MainWindow):
         DAQ.save_stream(shots)
     
     def closeEvent(self, event):
-        """ Override the close method to disconnect all devices. """
-        self.DAQ.turn_off_daq()
+        """ Override the close method to disconnect all instruments. """
+        self.DAQ.close_daq()
+        # Cause the logging thread to end
+        print('__exit__')
         event.accept()
         
 if __name__ == "__main__":
     import sys
     app = QtGui.QApplication(sys.argv)
-    #DAQWindow = DAQMainWindow()
-    ui = UI()
-    ui.DAQ = daq.Daq()
+    DAQ = daq.Daq(broadcast=True)
+    ui = UI(DAQ)
     ui.set_dataset_num()
-    #DAQWindow.PWFAui = ui
-    #ui.setupUi(DAQWindow)
-    #ui.center(DAQWindow)
-    #DAQWindow.show()
     ui.show()
     sys.exit(app.exec_())

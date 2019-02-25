@@ -10,10 +10,10 @@ from processes.process import Process
 
 class KA3005P(Process):
     """ Process class for the KA3005P power supply. """
-    def __init__(self, name, adr, c_queue, r_queue, o_queue):
+    def __init__(self, device, p_queue):
         """ For parameters see the parent method. """
+        super().__init__(device, p_queue)
         self.delay = 0.05
-        super().__init__(name, adr, c_queue, r_queue, o_queue)
     
     def get_datatype(self):
         """ Return the type of data. """

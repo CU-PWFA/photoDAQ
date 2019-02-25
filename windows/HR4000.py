@@ -16,14 +16,17 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import numpy as np
 import threading
+import os
 
-qtCreatorFile = "windows/HR4000.ui"
+package_directory = os.path.dirname(os.path.abspath(__file__))
+
+qtCreatorFile = os.path.join(package_directory, "HR4000.ui")
 Ui_SpecWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 class SpecWindow(QtBaseClass, Ui_SpecWindow):
     data_acquired = pyqtSignal(dict)
     
-    def __init__(self, parent, DAQ, serial, queue):
+    def __init__(self, parent, DAQ, device):
         """ Create the parent class and add event handlers. 
         
         Parameters
@@ -54,13 +57,14 @@ class SpecWindow(QtBaseClass, Ui_SpecWindow):
         
         # Grab references for controlling the spectrometer
         self.DAQ = DAQ
-        self.serial = serial
-        self.queue = queue
+        self.serial = device.serial
+        self.queue = device.queue
+        self.device = device
 
         # Create the container for the image
         self.create_image()
         self.create_update_thread()
-        self.setWindowTitle(str(serial))
+        self.setWindowTitle(self.serial)
         self.initial_update = True
         
         # Setup everything for taking backgrounds

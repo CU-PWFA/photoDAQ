@@ -7,15 +7,22 @@ Created on Fri Nov  9 16:45:39 2018
 """
 
 from processes.process import Process
+import daq
 
 class SRSDG645(Process):
-    def __init__(self, name, adr, c_queue, r_queue, o_queue):
-        """ Setup the conversion array. """
+    def __init__(self, instr):
+        """ Setup the conversion array. 
+        
+        Parameters
+        ----------
+        instr : instr object
+            The object representing the instrument the process will control.
+        """
         self.channels = ['T0', 'T1', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
         self.index = {'T0':0, 'T1':1, 'A':2, 'B':3, 'C':4, 'D':5, 'E':6, 'F':7,
                       'G':8, 'H':9}
         self.save = False
-        super().__init__(name, adr, c_queue, r_queue, o_queue)
+        super().__init__(instr)
         
     def get_settings(self):
         """Place the current settings on the SDG into the response queue."""
@@ -31,10 +38,10 @@ class SRSDG645(Process):
                     'polarity' : sdg.get_polarity(int(i/2))
                     }
         meta = self.create_meta()
-        data = {'save' : self.save,
-                'meta' : meta,
-                'data' : settings }
-        self.r_queue.put(data)
+        if self.save: response = 'save'
+        else: response = 'output'
+        rsp = daq.Rsp(response, settings, meta)
+        self.r_queue.put(rsp)
         
     def save_settings(self):
         """ Set save to true and place the settings in the response queue. """
@@ -43,6 +50,15 @@ class SRSDG645(Process):
         self.save = False
         
     def set_settings(self, settings, save=False):
+        """ Set the delay settings for a one or more channels.
+        
+        Parameters
+        ----------
+        settings : dict
+            The dictionary containing the settings.
+        save : bool, optional
+            Specify if the new settings should be saved to file.
+        """
         sdg = self.device
         for key in settings:
             delay = settings[key]['delay']
@@ -63,10 +79,8 @@ class SRSDG645(Process):
         
         if save:
             meta = self.create_meta()
-            data = {'save' : True,
-                    'meta' : meta,
-                    'data' : settings } 
-            self.r_queue.put(data)
+            rsp = daq.Rsp('save', settings, meta)
+            self.r_queue.put(rsp)
                
     def get_datatype(self):
         """Return the type of data. """

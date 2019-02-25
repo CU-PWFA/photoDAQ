@@ -61,16 +61,6 @@
      </property>
      <item>
       <property name="text">
-       <string>T0</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>T1</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
        <string>A</string>
       </property>
      </item>
