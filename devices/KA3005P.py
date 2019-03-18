@@ -27,9 +27,8 @@ class KA3005P():
             The port the device is connected to, "/dev/<address>" is the 
             device name sent to pyserial.
         """
-        name = "/dev/" + address
         try:
-            self.PS = serial.Serial(name,
+            self.PS = serial.Serial(address,
                                     baudrate=9600,
                                     bytesize=8,
                                     parity='N',

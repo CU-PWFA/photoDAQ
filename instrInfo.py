@@ -180,3 +180,26 @@ class FRG700(Instr):
         self.process_cls = processes.FRG700.FRG700
         self.window_cls = windows.FRG700.GaugeWindow
         self.model = 'FRG700'
+
+
+class FS304(Instr):
+    """ Class for the 304FS turbomolecular pump. """
+    def __init__(self, address):
+        """ Initialize all the object attributes. 
+        
+        Parameters
+        ----------
+        address : string
+            The serial address of the turbo pump.
+        """
+        super().__init__(address)
+        import processes.FS304
+        import devices.FS304
+        import windows.FS304
+        
+        self.device_type = 'FS304'
+        self.data_type = 'SET'
+        self.device_cls = devices.FS304.FS304
+        self.process_cls = processes.FS304.FS304
+        self.window_cls = windows.FS304.PumpWindow
+        self.model = 'FS304'

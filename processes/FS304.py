@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Jan 16 11:50:29 2019
+Created on Fri Mar 15 15:24:24 2019
 
 @author: robert
 """
@@ -10,8 +10,8 @@ from processes.streamProcess import StreamProcess
 import time
 import daq
 
-class FRG700(StreamProcess):
-    """ Process class for the FRG700 vacuum gauge. """
+class FS304(StreamProcess):
+    """ Process class for the 304 FS TMP. """
     def __init__(self, instr):
         """ For parameters see the parent method. 
         
@@ -20,11 +20,12 @@ class FRG700(StreamProcess):
         instr : instr object
             The object representing the instrument the process will control.
         """
-        self.sampleDelay = 0.05
+        self.sampleDelay = 0.2
         super().__init__(instr)
+        self.delay = 0.05
         
     def capture_thread(self, r_queue, streaming):
-        """ Continually quieres the pressure gauge for the pressure. 
+        """ Continually quieres the turbo molecular pump for power. 
         
         Parameters
         ----------
@@ -34,7 +35,12 @@ class FRG700(StreamProcess):
             Thread exit flag, exits if False.
         """
         while self.streaming:
-            raw = self.device.get_pressure()
+            raw = {}
+            raw['status'] = self.device.get_status()
+            raw['power'] = self.device.get_power()
+            raw['frequency'] = self.device.get_driving_frequency()
+            raw['temperature'] = self.device.get_temperature()
+            raw['error'] = self.device.get_error()
             meta = self.create_meta()
             if self.save: response = 'save'
             else: response = 'output'
@@ -62,5 +68,4 @@ class FRG700(StreamProcess):
     
     def get_type(self):
         """ Return the instrument type. """
-        return "FRG700"
-
+        return "FS304"

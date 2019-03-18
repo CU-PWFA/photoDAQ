@@ -1103,6 +1103,37 @@ color:white;</string>
       <string>120 W</string>
      </property>
     </widget>
+    <widget class="QLabel" name="turboStatusLabel">
+     <property name="geometry">
+      <rect>
+       <x>440</x>
+       <y>270</y>
+       <width>171</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Turbo pump status:</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="turboStatus">
+     <property name="geometry">
+      <rect>
+       <x>450</x>
+       <y>290</y>
+       <width>211</width>
+       <height>61</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>40</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>None</string>
+     </property>
+    </widget>
    </widget>
    <widget class="QFrame" name="laserSystemFrame">
     <property name="geometry">
@@ -1184,7 +1215,7 @@ color:white;</string>
      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
     </property>
    </widget>
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>410</x>

@@ -59,27 +59,35 @@ class FRG700():
         
         Returns
         -------
-        voltage : int
+        voltage : int array
             The integer read by the ADC.
         """
         self.Gauge.write(b"VOLTAGE?")
-        return int.from_bytes(self.Gauge.read(1), byteorder='big')
+        v0 = int(self.Gauge.readline())
+        v1 = int(self.Gauge.readline())
+        v2 = int(self.Gauge.readline())
+        v3 = int(self.Gauge.readline())
+        return [v0, v1, v2, v3]
     
     def get_pressure(self):
         """ Get the pressure reading of the gauge. 
         
         Returns
         -------
-        pressure : double
-            The pressure read by the gauge.
+        pressure : double array
+            The pressure read by the gauge for each channel.
         """
         self.Gauge.write(b"PRESSURE?")
         # If the device list is refreshed, the arduino will reset and send an ID
         # This can't be parsed to a float and the device will fail
         try:
-            return float(self.Gauge.readline())
+            p0 = float(self.Gauge.readline())
+            p1 = float(self.Gauge.readline())
+            p2 = float(self.Gauge.readline())
+            p3 = float(self.Gauge.readline())
+            return [p0, p1, p2, p3]
         except ValueError:
-            return 0.0
+            return [0.0, 0.0, 0.0, 0.0]
     
     def close(self):
         """ Close method, doesn't do anything for a serial instrument. """

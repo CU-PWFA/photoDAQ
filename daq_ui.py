@@ -23,6 +23,7 @@ instr_display = {
         'HR4000' : 'HR4000 Spectrometer',
         'DG645' : 'SRSDG645 Signal Delay Generator',
         'FRG700' : 'FRG700 Vacuum Gauge',
+        'FS304' : '304 FS Turbomolecular Pump',
         }
 
 qtCreatorFile = "DAQGUI.ui"
@@ -110,7 +111,7 @@ class UI(QtBaseClass, Ui_MainWindow):
         """ Set the total number of shots for the dataset. """
         self.totalshotNumber.setNum(num)
     
-    # TODO should update this so a instrument can be in more than one list
+    # TODO should update this so an instrument can be in more than one list
     # List Manipulation
     ###########################################################################
     def create_item(self, serial, instr, parent):
@@ -153,7 +154,7 @@ class UI(QtBaseClass, Ui_MainWindow):
         Parameters
         ----------
         instr : instr object
-            Object for a instrument.
+            Object for an instrument.
         parent : QListWidget
             The list to add the item to.
         """
@@ -174,13 +175,23 @@ class UI(QtBaseClass, Ui_MainWindow):
             if serial not in connected_instr and serial not in available_instr:
                 self.create_item(serial, instr, self.availableList)
                 available_instr[serial] = instr
+                
+    def integrate_instr(self, instr):
+        """ Add an direct integration with the DAQ main panel. 
+        
+        Parmaeters
+        ----------
+        instr : instr object
+            Object for an instrument.
+        """
+        window = instr.window
     
     # Event Handlers
     ###########################################################################
     @pyqtSlot(str)
     def print_log(self, text):
         self.logBrowser.moveCursor(QtGui.QTextCursor.End)
-        self.logBrowser.insertPlainText( text )
+        self.logBrowser.insertPlainText(text)
     
     @pyqtSlot()
     def refresh_list(self):
@@ -244,6 +255,7 @@ class UI(QtBaseClass, Ui_MainWindow):
             self.DAQ.connect_instr(instr)
             if instr.window_cls is not None:
                 instr.window = instr.window_cls(self, self.DAQ, instr)
+                self.integrate_instr(instr)
         
     @pyqtSlot()
     def disconnect_instr(self):

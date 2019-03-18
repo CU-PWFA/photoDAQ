@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Jan 16 12:04:04 2019
+Created on Fri Mar 15 18:00:55 2019
 
 @author: robert
 """
@@ -18,13 +18,14 @@ import numpy as np
 import threading
 from scipy.interpolate import interp1d
 import os
+from time import sleep
 
 package_directory = os.path.dirname(os.path.abspath(__file__))
 
-qtCreatorFile = os.path.join(package_directory, "FRG700.ui")
-Ui_GaugeWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
+qtCreatorFile = os.path.join(package_directory, "FS304.ui")
+Ui_PumpWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
-class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
+class PumpWindow(QtBaseClass, Ui_PumpWindow):
     data_acquired = pyqtSignal(object)
     
     def __init__(self, parent, DAQ, instr):
@@ -40,7 +41,7 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
             The object representing the instrument.
         """
         QtBaseClass.__init__(self)
-        Ui_GaugeWindow.__init__(parent)
+        Ui_PumpWindow.__init__(parent)
         self.setupUi(self)
         
         # Add event handlers to all the buttons
@@ -49,10 +50,8 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         self.data_acquired.connect(self.update_canvas)
         self.lengthField.valueChanged.connect(self.change_buffer)
         self.sampleField.valueChanged.connect(self.change_delay)
-        self.gaugeCheck_0.stateChanged.connect(self.toggle_plot)
-        self.gaugeCheck_1.stateChanged.connect(self.toggle_plot)
-        self.gaugeCheck_2.stateChanged.connect(self.toggle_plot)
-        self.gaugeCheck_3.stateChanged.connect(self.toggle_plot)
+        self.startTurboButton.clicked.connect(self.start_turbo)
+        self.stopTurboButton.clicked.connect(self.stop_turbo)
         
         # Grab references for controlling the spectrometer
         self.DAQ = DAQ
@@ -62,11 +61,10 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         
         # Large bacause it is a double array buffer
         self.bufferSize = self.lengthField.value()
-        self.pressure = np.zeros((4, 2*self.bufferSize))
+        self.status = np.zeros((3, 2*self.bufferSize))
         self.i = 0
         
         # Create the container for the image
-        self.load_adjustments()
         self.create_image()
         self.create_update_thread()
         self.setWindowTitle(self.serial)
@@ -75,21 +73,22 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         """ Create the matplotlib canvas. """
         self.fig = fig = Figure()
         self.pr_ax = ax = fig.add_subplot(111)
-        ax.set_yscale('log')
         ax.set_autoscale_on(False)
         ax.set_xbound(0, 1000)
-        ax.set_ybound(1e-6, 5000)
-        ax.set_ylabel('Pressure (mbar)')
+        ax.set_ybound(0, 155)
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)
         fig.tight_layout()
         data = self.prep_data()
         self.pr_plot0, = ax.plot(data[0])
         self.pr_plot1, = ax.plot(data[1])
-        self.pr_plot2, = ax.plot(data[2])
-        self.pr_plot3, = ax.plot(data[3])
-        self.pr_display = ax.text(0.3, 0.8, '%.2E mbar' % 0.0,
-                                  transform=ax.transAxes, fontsize=42)
+        ax.legend(['Power (W)', 'Temperature (C)'], loc=2)
+        self.pr_ax1 = ax1 = ax.twinx()
+        ax1.set_autoscale_on(False)
+        ax1.set_ybound(0, 1200)
+        ax1.set_ylabel('Drive frequency (Hz)')
+        ax1.spines['top'].set_visible(False)
+        self.pr_plot2, = ax1.plot(data[2], 'g')
         #self.pr_ax = plt.Axes(fig, rect=[0, 0, 1, 1])
         #fig.add_axes(self.pr_ax)
         
@@ -134,8 +133,9 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         self.startStreamButton.setEnabled(True)
         self.stopStreamButton.setEnabled(True)
         self.lengthField.setEnabled(True)
-        self.speciesField.setEnabled(True)
         self.sampleField.setEnabled(True)
+        self.startTurboButton.setEnabled(True)
+        self.stopTurboButton.setEnabled(True)
     
     def send_command(self, command, *args, **kwargs):
         """ Send commands to this windows instruments. 
@@ -150,65 +150,49 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         DAQ = self.DAQ
         DAQ.send_command(self.instr, command, *args, **kwargs)
         
-    def update_plot(self, pressure):
-        """ Handle matplotlib updating. 
-        
-        Parmaeters
-        ----------
-        pressure : double
-            The most recent pressure measurement.
-        """
+    def update_plot(self):
+        """ Handle matplotlib updating. """
         data = self.prep_data()
         self.pr_plot0.set_ydata(data[0])
         self.pr_plot1.set_ydata(data[1])
         self.pr_plot2.set_ydata(data[2])
-        self.pr_plot3.set_ydata(data[3])
-        ind = self.gaugeDisplayField.currentIndex()
-        self.pr_display.set_text('%.2E mbar' % self.prep_data(pressure[ind]))
         
-    def update_buffer(self, pressure):
+    def update_buffer(self, status):
         """ Update the rolling buffer. 
         
         Parameters
         ----------
-        pressure : double
-            The pressure to add to the buffer. 
+        status : double
+            The array of power, temperature and speed to add to the buffer. 
         """
-        buffer = self.pressure
+        buffer = self.status
         size = self.bufferSize
         i = self.i
-        buffer[:, i] = buffer[:, i+size] = pressure
+        buffer[:, i] = buffer[:, i+size] = status
         self.i = (i+1)%size
         
-    def prep_data(self, data=None):
-        """ Prepare the pressure data for plotting. 
-        
-        Parameters
-        ----------
-        data : double, optional
-            If pressure data is passed it will be converted for the current gas.
+    def prep_data(self):
+        """ Prepare the pump status for plotting. 
         
         Returns
         -------
         data : array-like
-            The pressure data for plotting.
+            The pump parameters ready for plotting.
         """
         i = self.i
-        if data is None:
-            data = self.pressure[:, i:i+self.bufferSize]
-        species = self.speciesField.currentText()
-        if species == 'Ar':
-            data = self.Ar(data)
-        if species == 'He':
-            data = self.He(data)
+        data = self.status[:, i:i+self.bufferSize]
         return data
     
-    def load_adjustments(self):
-        """ Load in the CSV data for adjusting the curves for different gases. """
-        Ar = np.genfromtxt("adjustments/Ar.csv", delimiter=',')
-        He = np.genfromtxt("adjustments/He.csv", delimiter=',')
-        self.Ar = interp1d(Ar[:, 1], Ar[:, 0], fill_value='extrapolate')
-        self.He = interp1d(He[:, 1], He[:, 0], fill_value='extrapolate')
+    def update_status(self, data):
+        """ Update the status and error text. 
+        
+        Parmaeters
+        ----------
+        data : dict
+            The data dictionary from the device response queue.
+        """
+        self.statusDisplay.setText(data['status'])
+        self.errorDisplay.setText(data['error'])
         
     # Event Handlers
     ###########################################################################
@@ -233,9 +217,11 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         rsp : rsp object
             The response object with the field settings
         """
-        self.update_buffer(rsp.data)
-        self.update_plot(rsp.data)
+        status = [rsp.data['power'], rsp.data['temperature'], rsp.data['frequency']]
+        self.update_buffer(status)
+        self.update_plot()
         self.canvas.draw()
+        self.update_status(rsp.data)
         
     @pyqtSlot(int)
     def change_buffer(self, length):
@@ -247,22 +233,22 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
             The new length of the buffer. 
         """
         oldLength = self.bufferSize
-        newBuffer = np.zeros((4, 2*length))
+        newBuffer = np.zeros((3, 2*length))
         i = self.i
         if length >= oldLength:
-            newBuffer[:, length-oldLength:length] = self.pressure[:, i:i+oldLength]
+            newBuffer[:, length-oldLength:length] = self.status[:, i:i+oldLength]
         else:
-            newBuffer[:, :length] = self.pressure[:, i+oldLength-length:i+oldLength]
-        self.pressure = newBuffer
+            newBuffer[:, :length] = self.status[:, i+oldLength-length:i+oldLength]
+        self.status = newBuffer
         self.bufferSize = length
         self.i = 0
         # We also need to update the plot 
-        self.update_plot(self.pressure[:, length])
+        #self.update_plot(self.status[:, length])
         self.pr_plot0.set_xdata(range(length))
         self.pr_plot1.set_xdata(range(length))
         self.pr_plot2.set_xdata(range(length))
-        self.pr_plot3.set_xdata(range(length))
         self.pr_ax.set_xbound(0, length)
+        self.pr_ax1.set_xbound(0, length)
     
     @pyqtSlot(int)
     def change_delay(self, delay):
@@ -275,33 +261,20 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         """
         self.send_command('set_sample_delay', delay)
         
-    @pyqtSlot(int)
-    def toggle_plot(self, check):
-        """ Set the plots visible or invisible based on the current check boxs.
+    @pyqtSlot()
+    def start_turbo(self):
+        """ Start the turbo pump. """
+        self.stop_stream()
+        sleep(0.5)
+        self.send_command('turn_on')
+        sleep(0.5)
+        self.start_stream()
         
-        Parameters
-        ----------
-        check : int
-            The value of the checkbox that was checked. 
-        """
-        # Gauge 0
-        if self.gaugeCheck_0.isChecked():
-            self.pr_plot0.set_visible(True)
-        else:
-            self.pr_plot0.set_visible(False)
-        # Gauge 1
-        if self.gaugeCheck_1.isChecked():
-            self.pr_plot1.set_visible(True)
-        else:
-            self.pr_plot1.set_visible(False)
-        # Gauge 2
-        if self.gaugeCheck_2.isChecked():
-            self.pr_plot2.set_visible(True)
-        else:
-            self.pr_plot2.set_visible(False)
-        # Gauge 3
-        if self.gaugeCheck_3.isChecked():
-            self.pr_plot3.set_visible(True)
-        else:
-            self.pr_plot3.set_visible(False)
-
+    @pyqtSlot()
+    def stop_turbo(self):
+        """ Stop the turbo pump. """
+        self.stop_stream()
+        sleep(0.5)
+        self.send_command('turn_off')
+        sleep(0.5)
+        self.start_stream()

@@ -118,6 +118,8 @@ def serial_ports():
     pts = prtlst.comports()
     for pt in pts:
         serial = pt.serial_number
+        vid = pt.vid
+        pid = pt.pid
         if serial == '55736313338351603181':
             instr = instrInfo.FRG700(pt.device)
             instr.serial = serial
@@ -125,6 +127,10 @@ def serial_ports():
         if serial == 'NT2009101400' or serial == 'A02014090305':
             instr = instrInfo.KA3005P(pt.device)
             instr.serial = serial
+            instrs[instr.serial] = instr
+        if vid == 1659 and pid == 8963:
+            instr = instrInfo.FS304(pt.device)
+            instr.serial = pt.device
             instrs[instr.serial] = instr
     return instrs
 
