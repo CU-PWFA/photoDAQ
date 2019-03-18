@@ -184,7 +184,74 @@ class UI(QtBaseClass, Ui_MainWindow):
         instr : instr object
             Object for an instrument.
         """
-        window = instr.window
+        # Turbomolecular pump integration
+        if instr.device_type == 'FS304':
+            self.integrate_turbo(instr)
+        elif instr.device_type == 'FRG700':
+            self.integrate_gauge(instr)
+    
+    # Vacuum system integration
+    ###########################################################################
+    # Turbo molecular pump
+    #--------------------------------------------------------------------------
+    def integrate_turbo(self, instr):
+        """ Add connections with the turbo molecular pump. 
+        
+        Parmaeters
+        ----------
+        instr : instr object
+            Object for the turbo pump.
+        """
+        win = instr.window
+        win.data_acquired.connect(self.update_turbo_status)
+        win.device_connected.connect(win.start_stream)
+        win.device_connected.connect(self.setup_turbo)
+        self.startTurboButton.clicked.connect(win.start_turbo)
+        self.stopTurboButton.clicked.connect(win.stop_turbo)
+        
+    @pyqtSlot(object)
+    def update_turbo_status(self, rsp):
+        """ Update the turbo information pages. 
+        
+        Parameters
+        ----------
+        rsp : rsp object
+            The response object with the pump status.
+        """
+        self.turboPower.setText(str(rsp.data['power'])+' W')
+        self.turboStatus.setText(rsp.data['status'])
+        
+    @pyqtSlot()
+    def setup_turbo(self):
+        """ Eanble the turbo buttons once the pump is connected. """
+        self.startTurboButton.setEnabled(True)
+        self.stopTurboButton.setEnabled(True)
+        
+    # Vacuum gauge
+    #--------------------------------------------------------------------------
+    def integrate_gauge(self, instr):
+        """ Add connections with the vacuum gauge controller. 
+        
+        Parmaeters
+        ----------
+        instr : instr object
+            Object for the turbo pump.
+        """
+        win = instr.window
+        win.data_acquired.connect(self.update_chamber_pressure)
+        win.device_connected.connect(win.start_stream)
+    
+    @pyqtSlot(object)
+    def update_chamber_pressure(self, rsp):
+        """ Update the chamber pressure readouts. 
+        
+        Parameters
+        ----------
+        rsp : rsp object
+            The response object with the gauge pressures.
+        """
+        self.APressure.setText('%0.2E' % rsp.data[0])
+        self.BPressure.setText('%0.2E' % rsp.data[3])
     
     # Event Handlers
     ###########################################################################
@@ -302,6 +369,7 @@ class UI(QtBaseClass, Ui_MainWindow):
         # Cause the logging thread to end
         print('__exit__')
         event.accept()
+    
         
 if __name__ == "__main__":
     import sys

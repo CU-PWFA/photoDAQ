@@ -81,10 +81,13 @@ class FRG700():
         # If the device list is refreshed, the arduino will reset and send an ID
         # This can't be parsed to a float and the device will fail
         try:
-            p0 = float(self.Gauge.readline())
-            p1 = float(self.Gauge.readline())
-            p2 = float(self.Gauge.readline())
-            p3 = float(self.Gauge.readline())
+            p = self.Gauge.readline().decode("utf-8")
+            p.strip()
+            p = p.split(',')
+            p0 = float(p[0])
+            p1 = float(p[1])
+            p2 = float(p[2])
+            p3 = float(p[3])
             return [p0, p1, p2, p3]
         except ValueError:
             return [0.0, 0.0, 0.0, 0.0]

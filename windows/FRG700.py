@@ -26,6 +26,7 @@ Ui_GaugeWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
     data_acquired = pyqtSignal(object)
+    device_connected = pyqtSignal()
     
     def __init__(self, parent, DAQ, instr):
         """ Create the parent class and add event handlers. 
@@ -47,6 +48,7 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         self.startStreamButton.clicked.connect(self.start_stream)
         self.stopStreamButton.clicked.connect(self.stop_stream)
         self.data_acquired.connect(self.update_canvas)
+        self.device_connected.connect(self.setup_window)
         self.lengthField.valueChanged.connect(self.change_buffer)
         self.sampleField.valueChanged.connect(self.change_delay)
         self.gaugeCheck_0.stateChanged.connect(self.toggle_plot)
@@ -103,12 +105,12 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         
     def create_update_thread(self):
         """ Create a thread to poll the response queue and update the image. """
-        args = (self.queue, self.data_acquired.emit)
+        args = (self.queue, self.data_acquired.emit, self.device_connected.emit)
         thread = threading.Thread(target=self.update_thread, args=args)
         thread.setDaemon(True)
         thread.start()
         
-    def update_thread(self, queue, callback):
+    def update_thread(self, queue, callback, setup):
         """ Wait for updated data to display. 
         
         Parameters
@@ -117,6 +119,8 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
             The queue that the data is arriving on.
         callback : func
             The signal.emit to call to update the plot. 
+        setup : func
+            The signal.emit to call when the device is connected.
         """
         while True:
             rsp = queue.get()
@@ -124,18 +128,10 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
             if response == 'exit':
                 break
             elif response == 'connected':
-                self.setup_window()
+                setup()
             else:
                 callback(rsp)
             queue.task_done()
-            
-    def setup_window(self):
-        """ Perform setup after the gauge connects. """
-        self.startStreamButton.setEnabled(True)
-        self.stopStreamButton.setEnabled(True)
-        self.lengthField.setEnabled(True)
-        self.speciesField.setEnabled(True)
-        self.sampleField.setEnabled(True)
     
     def send_command(self, command, *args, **kwargs):
         """ Send commands to this windows instruments. 
@@ -212,6 +208,15 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         
     # Event Handlers
     ###########################################################################
+    @pyqtSlot()
+    def setup_window(self):
+        """ Perform setup after the gauge connects. """
+        self.startStreamButton.setEnabled(True)
+        self.stopStreamButton.setEnabled(True)
+        self.lengthField.setEnabled(True)
+        self.speciesField.setEnabled(True)
+        self.sampleField.setEnabled(True)
+        
     @pyqtSlot()
     def start_stream(self):
         """ Start the camera stream and display it. """

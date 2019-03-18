@@ -984,6 +984,9 @@ color:white;</string>
      </property>
     </widget>
     <widget class="QPushButton" name="startTurboButton">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="geometry">
       <rect>
        <x>10</x>
@@ -1009,6 +1012,9 @@ color:white;</string>
      </property>
     </widget>
     <widget class="QPushButton" name="stopTurboButton">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="geometry">
       <rect>
        <x>10</x>
@@ -1041,7 +1047,7 @@ color:white;</string>
       <rect>
        <x>20</x>
        <y>30</y>
-       <width>211</width>
+       <width>221</width>
        <height>61</height>
       </rect>
      </property>
@@ -1051,7 +1057,7 @@ color:white;</string>
       </font>
      </property>
      <property name="text">
-      <string>5.73e-4</string>
+      <string>0.00E-00</string>
      </property>
     </widget>
     <widget class="QLabel" name="BPressure">
@@ -1059,7 +1065,7 @@ color:white;</string>
       <rect>
        <x>420</x>
        <y>30</y>
-       <width>211</width>
+       <width>221</width>
        <height>61</height>
       </rect>
      </property>
@@ -1069,7 +1075,7 @@ color:white;</string>
       </font>
      </property>
      <property name="text">
-      <string>5.73e-4</string>
+      <string>0.00E-00</string>
      </property>
     </widget>
     <widget class="QLabel" name="turboPowerLabel">
@@ -1090,7 +1096,7 @@ color:white;</string>
       <rect>
        <x>190</x>
        <y>290</y>
-       <width>211</width>
+       <width>151</width>
        <height>61</height>
       </rect>
      </property>
@@ -1101,6 +1107,9 @@ color:white;</string>
      </property>
      <property name="text">
       <string>120 W</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
      </property>
     </widget>
     <widget class="QLabel" name="turboStatusLabel">
@@ -1132,6 +1141,42 @@ color:white;</string>
      </property>
      <property name="text">
       <string>None</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="AUnitsLabel">
+     <property name="geometry">
+      <rect>
+       <x>240</x>
+       <y>60</y>
+       <width>71</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>mbar</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="BUnitsLabel">
+     <property name="geometry">
+      <rect>
+       <x>640</x>
+       <y>60</y>
+       <width>71</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>mbar</string>
      </property>
     </widget>
    </widget>
