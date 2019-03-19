@@ -1047,7 +1047,7 @@ color:white;</string>
       <rect>
        <x>20</x>
        <y>30</y>
-       <width>221</width>
+       <width>231</width>
        <height>61</height>
       </rect>
      </property>
@@ -1065,7 +1065,7 @@ color:white;</string>
       <rect>
        <x>420</x>
        <y>30</y>
-       <width>221</width>
+       <width>231</width>
        <height>61</height>
       </rect>
      </property>
@@ -1106,7 +1106,7 @@ color:white;</string>
       </font>
      </property>
      <property name="text">
-      <string>120 W</string>
+      <string>0 W</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -1146,7 +1146,7 @@ color:white;</string>
     <widget class="QLabel" name="AUnitsLabel">
      <property name="geometry">
       <rect>
-       <x>240</x>
+       <x>250</x>
        <y>60</y>
        <width>71</width>
        <height>21</height>
@@ -1164,7 +1164,7 @@ color:white;</string>
     <widget class="QLabel" name="BUnitsLabel">
      <property name="geometry">
       <rect>
-       <x>640</x>
+       <x>650</x>
        <y>60</y>
        <width>71</width>
        <height>21</height>

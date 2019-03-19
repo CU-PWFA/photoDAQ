@@ -24,7 +24,7 @@ class KA3005P():
         Parameters
         ----------
         address : string
-            The port the device is connected to, "/dev/<address>" is the 
+            The port the device is connected to, "<address>" is the 
             device name sent to pyserial.
         """
         try:
@@ -35,7 +35,8 @@ class KA3005P():
                                     stopbits=1,
                                     timeout=1)
         except:
-            print("USB error: Could not connect to the power supply.")    
+            print("USB error: Could not connect to the power supply.")  
+            return
         self.ID = self.get_ID().decode("utf-8")
         # No way to get a serial number - address should be unique
         self.serialNum = address
@@ -87,7 +88,10 @@ class KA3005P():
             The actual output voltage of the power supply. 
         """
         self.PS.write(b"VOUT1?")
-        return float(self.PS.read(5))
+        try:
+            return float(self.PS.read(5))
+        except ValueError:
+            return 0.0
     
     def get_current(self):
         """ Get the actual output current of the power supply.
@@ -98,7 +102,10 @@ class KA3005P():
             The actual output current of the power supply. 
         """
         self.PS.write(b"IOUT1?")
-        return float(self.PS.read(5))
+        try:
+            return float(self.PS.read(5))
+        except ValueError:
+            return 0.0
     
     def get_set_voltage(self):
         """ Get the target voltage of the power supply.

@@ -23,7 +23,7 @@ def all_instrs():
         All of the detected instruments connected to the system.
     """
     instrs = camera()
-    # This syntax juast appends to the dictionary
+    # This syntax just appends to the dictionary
     instrs = {**instrs, **pyvisa()}
     instrs = {**instrs, **spectrometer()}
     instrs = {**instrs, **SRSDG645()}

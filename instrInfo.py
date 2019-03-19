@@ -80,12 +80,13 @@ class KA3005P(Instr):
         super().__init__(address)
         import processes.KA3005P
         import devices.KA3005P
+        import windows.KA3005P
         
         self.device_type = 'KA3005P'
         self.data_type = 'SET'
         self.device_cls = devices.KA3005P.KA3005P
         self.process_cls = processes.KA3005P.KA3005P
-        self.window_cls = None
+        self.window_cls = windows.KA3005P.PSWindow
         self.model = 'KA3005P'
 
 

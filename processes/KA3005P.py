@@ -7,13 +7,20 @@ Created on Wed Jul 11 18:02:27 2018
 """
 
 from processes.process import Process
+import daq
 
 class KA3005P(Process):
     """ Process class for the KA3005P power supply. """
-    def __init__(self, device, p_queue):
-        """ For parameters see the parent method. """
-        super().__init__(device, p_queue)
-        self.delay = 0.05
+    def __init__(self, instr):
+        """ For parameters see the parent method. 
+        
+        Parameters
+        ----------
+        instr : instr object
+            The object representing the instrument the process will control.
+        """
+        super().__init__(instr)
+        self.delay = 0.5
     
     def get_datatype(self):
         """ Return the type of data. """
@@ -33,8 +40,7 @@ class KA3005P(Process):
         """
         self.device.set_voltage(v)
         meta = self.create_meta()
-        response = {'save' : True,
-                    'meta' : meta,
-                    'voltage' : v}
+        rsp = daq.Rsp('save', {'voltage': v}, meta)
+        self.r_queue.put(rsp)
         self.shot += 1
-        self.r_queue.put(response)
+        
