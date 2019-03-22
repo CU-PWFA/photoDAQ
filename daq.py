@@ -215,11 +215,19 @@ class Daq():
                            + str(sys.exc_info()[0]))
             raise
         
-    def save_meta(self):
-        """Records the meta data in a text file."""
+    def save_meta(self, instrs):
+        """Records the meta data in a text file.
+        
+        Parameters
+        ----------
+        shots : int
+            The number of shots to take.
+        instrs : dict
+            Dictionary of instrument objects to take data with.
+        """
         file.meta_TXT(self.desc, self.dataset)
         
-        for serial, instr in self.instr.items():
+        for serial, instr in instrs:
             dType = instr.data_type
             # TODO, implement this function in more detail
 #            metaproc = getattr(file, 'meta_'+dType)
@@ -241,20 +249,25 @@ class Daq():
         for serial, instr in self.instr.items():
             file.make_dir_struct(instr.data_type, self.dataset)
             self.send_command(instr, 'set_dataset', self.dataset)
-            
-    def save_stream(self, shots):
-        """ Save the stream from all connected instruments. 
+        
+    def start_dataset(self, shots, instrs, sweep):
+        """ Save a specified number of shots from the passed instruments.
         
         Parameters
         ----------
         shots : int
             The number of shots to take.
+        instrs : dict
+            Dictionary of instrument objects to take data with.
+        sweep : dict
+            The dictionary containing the sweep parameters.
         """
-        for key in list(self.instr.keys()):
-            N = len(self.instr[key])
-            for i in range(N):
-                serial = self.instr[key][N-i-1]
-                self.send_command(self.command_queue[serial], 'save_stream', (shots,))
+        # First tell all the streaming instruments to start streaming
+        for key, instr in instrs.items():
+            self.send_command(self.command_queue[key], 'save_stream', (shots,))
+        
+        # Prep any sweep 
+        print(sweep)
         self.save_meta()
 
 

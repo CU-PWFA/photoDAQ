@@ -11,6 +11,7 @@ import detect
 from PyQt4.QtCore import (pyqtSlot, QThread, pyqtSignal)
 from PyQt4 import QtCore, QtGui, uic
 import threading
+from windows import datasetInstr
 
 # Display names for different instruments in terms of their model number
 instr_display = {
@@ -58,10 +59,13 @@ class UI(QtBaseClass, Ui_MainWindow):
         self.detectVisaButton.clicked.connect(self.detect_visa)
         self.detectSDGButton.clicked.connect(self.detect_SDG)
         self.detectCamerasButton.clicked.connect(self.detect_camera)
+        self.addToDatasetButton.clicked.connect(self.add_to_dataset)
+        self.updateTimingButton.clicked.connect(self.update_timing)
         
         # Define useful variables
         self.connected_instr = {} # Tracks all connected instruments
         self.available_instr = {} # Tracks all available unconnected instruments
+        self.current_instr = {} # Track all instruments in the current dataset
         self.initial_dataset = True
         
         # Create the logging thread
@@ -175,7 +179,9 @@ class UI(QtBaseClass, Ui_MainWindow):
             if serial not in connected_instr and serial not in available_instr:
                 self.create_item(serial, instr, self.availableList)
                 available_instr[serial] = instr
-                
+    
+     # Miscellaneous dqg and ui managment
+    ###########################################################################
     def integrate_instr(self, instr):
         """ Add an direct integration with the DAQ main panel. 
         
@@ -189,6 +195,44 @@ class UI(QtBaseClass, Ui_MainWindow):
             self.integrate_turbo(instr)
         elif instr.device_type == 'FRG700':
             self.integrate_gauge(instr)
+        elif instr.device_type == 'SRSDG645':
+            self.integrate_SDG(instr)
+            
+    def add_instr_widget(self, instr):
+        """ Create and add a widget for the passed instrument to the list. 
+        
+        Parmaeters
+        ----------
+        instr : instr object
+            Object for an instrument.
+        """
+        item = QtGui.QListWidgetItem(self.datasetList)
+        # We keep the widget around to preserve the settings
+        if hasattr(instr, 'dataset_widget') == False:
+            widget = datasetInstr.DatasetInstr(item, self.DAQ, instr)
+            instr.dataset_widget = widget
+        else:
+            widget = instr.dataset_widget
+        instr.dataset_item = item
+        self.datasetList.addItem(item)
+        item.setSizeHint(QtCore.QSize(widget.width(), widget.height()))
+        self.datasetList.setItemWidget(item, widget)
+        widget.remove.connect(self.remove_from_dataset)
+        
+    def get_sweep(self):
+        """ Get any sweep values from the connected instruments.
+        
+        Returns
+        -------
+        sweep : dict
+            The sweep parameters of all current instruments.
+        """
+        sweep = {}
+        for serial, instr in self.current_instr.items():
+            values = instr.dataset_widget.get_values()
+            if values['sweep'] == True:
+                sweep[serial] = values
+        return sweep
     
     # Vacuum system integration
     ###########################################################################
@@ -208,6 +252,11 @@ class UI(QtBaseClass, Ui_MainWindow):
         win.device_connected.connect(self.setup_turbo)
         self.startTurboButton.clicked.connect(win.start_turbo)
         self.stopTurboButton.clicked.connect(win.stop_turbo)
+        # Connected can fire before this function runs
+        if win.connected:
+            win.start_stream()
+            self.setup_turbo()
+            
         
     @pyqtSlot(object)
     def update_turbo_status(self, rsp):
@@ -240,6 +289,9 @@ class UI(QtBaseClass, Ui_MainWindow):
         win = instr.window
         win.data_acquired.connect(self.update_chamber_pressure)
         win.device_connected.connect(win.start_stream)
+        # Connected can fire before this function runs
+        if win.connected:
+            win.start_stream()
     
     @pyqtSlot(object)
     def update_chamber_pressure(self, rsp):
@@ -252,6 +304,35 @@ class UI(QtBaseClass, Ui_MainWindow):
         """
         self.APressure.setText('%0.2E' % rsp.data[0])
         self.BPressure.setText('%0.2E' % rsp.data[3])
+        
+    # Timing system integration
+    ###########################################################################
+    # Signal delay generator
+    #--------------------------------------------------------------------------
+    def integrate_SDG(self, instr):
+        """ Add interactions with the SDG. 
+        
+        Parmaeters
+        ----------
+        instr : instr object
+            Object for the SDG generator.
+        """
+        win = instr.window
+        win.device_connected.connect(self.connect_SDG)
+        win.destroyed.connect(self.disconnect_SDG)
+        # Connected can fire before this function runs
+        if win.connected:
+            self.connect_SDG()
+    
+    @pyqtSlot()
+    def connect_SDG(self):
+        """ Display that the SDG is connected. """
+        self.SDGBoolLabel.setText('Yes')
+        
+    @pyqtSlot()
+    def disconnect_SDG(self):
+        """ Display that the SDG is connected. """
+        self.SDGBoolLabel.setText('No')
     
     # Event Handlers
     ###########################################################################
@@ -339,6 +420,9 @@ class UI(QtBaseClass, Ui_MainWindow):
             available_instr[serial] = connected_instr.pop(serial)
             # Disconnect the instrument from the DAQ
             self.DAQ.disconnect_instr(instr)
+            instr.window.close()
+            del instr.window
+            self.remove_from_dataset(instr)
     
     @pyqtSlot()
     def open_detail_panel(self):
@@ -353,15 +437,72 @@ class UI(QtBaseClass, Ui_MainWindow):
     def start_dataset(self):
         """ Start a new dataset. """
         DAQ = self.DAQ
-        # Don't create a new dataset if it is the initial dataset
-        if self.initial_dataset:
-            self.initial_dataset = False
-            DAQ.desc = self.DescriptionEdit.toPlainText()
+        timing = self.update_timing()
+        if timing == True:
+            # Don't create a new dataset if it is the initial dataset
+            if self.initial_dataset:
+                self.initial_dataset = False
+                DAQ.desc = self.DescriptionEdit.toPlainText()
+            else:
+                DAQ.adv_dataset(self.DescriptionEdit.toPlainText())
+                self.set_dataset_num()
+            shots = self.shotsField.value()
+            sweep = self.get_sweep()
+            DAQ.start_dataset(shots, self.current_instr, sweep)
+    
+    @pyqtSlot()
+    def add_to_dataset(self):
+        """ Add the selected devices to the current dataset. """
+        connected_instr = self.connected_instr
+        current_instr = self.current_instr
+        add_list = self.connectedList.selectedItems()
+        for item in add_list:
+            serial = item.__key__
+            if serial not in current_instr:
+                instr = connected_instr[serial]
+                self.add_instr_widget(instr)
+                current_instr[serial] = instr
+                
+    @pyqtSlot(object)
+    def remove_from_dataset(self, instr):
+        """ Remove the device from the dataset. """
+        item = instr.dataset_item
+        row = self.datasetList.row(item)
+        self.datasetList.takeItem(row)
+        del instr.dataset_item
+        del instr.dataset_widget
+        self.current_instr.pop(instr.serial)
+        
+    @pyqtSlot()
+    def update_timing(self):
+        """ Check if the timint instruments are connected and update the text. 
+        
+        Returns
+        -------
+        timing : bool
+            True if both necessary timing devices are connected.
+        """
+        SDG = False
+        TC = False
+        if '006494' in self.connected_instr:
+            if self.connected_instr['006494'].window.connected:
+                self.SDGBoolLabel.setText('Yes')
+                SDG = True
+            else:
+                self.SDGBoolLabel.setText('No')
         else:
-            DAQ.adv_dataset(self.DescriptionEdit.toPlainText())
-            self.set_dataset_num()
-        shots = self.shotsField.value()
-        DAQ.save_stream(shots)
+            self.SDGBoolLabel.setText('No')
+            
+        if '5573631333835150F150' in self.connected_instr:
+            if self.connected_instr['5573631333835150F150'].window.connected:
+                self.TCBoolLabel.setText('Yes')
+                TC = True
+            else:
+                self.TCBoolLabel.setText('No')
+        else:
+            self.TCBoolLabel.setText('No')
+        # Return if we are ready to take a dataset
+        return SDG and TC
     
     def closeEvent(self, event):
         """ Override the close method to disconnect all instruments. """

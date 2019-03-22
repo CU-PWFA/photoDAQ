@@ -20,6 +20,7 @@ Ui_DGWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 class DGWindow(QtBaseClass, Ui_DGWindow):
     data_acquired = pyqtSignal(object)
+    device_connected = pyqtSignal()
     
     def __init__(self, parent, DAQ, instr):
         """ Create the parent class and add event handlers. 
@@ -41,6 +42,7 @@ class DGWindow(QtBaseClass, Ui_DGWindow):
         
         # Add event handlers to all the buttons
         self.data_acquired.connect(self.update_fields)
+        self.device_connected.connect(self.setup_window)
         self.channelField.activated.connect(self.change_channel)
         self.referenceField.activated.connect(self.change_settings)
         self.polarityField.activated.connect(self.change_settings)
@@ -60,6 +62,7 @@ class DGWindow(QtBaseClass, Ui_DGWindow):
         self.queue = instr.output_queue
         self.instr = instr
         self.updating = False
+        self.connected = False
         
         # Define some useful enumerations
         self.channels = ['T0', 'T1', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
@@ -71,12 +74,12 @@ class DGWindow(QtBaseClass, Ui_DGWindow):
         
     def create_update_thread(self):
         """ Create a thread to poll the response queue and update the fields. """
-        args = (self.queue, self.data_acquired.emit)
+        args = (self.queue, self.data_acquired.emit, self.device_connected.emit)
         thread = threading.Thread(target=self.update_thread, args=args)
         thread.setDaemon(True)
         thread.start()
         
-    def update_thread(self, queue, callback):
+    def update_thread(self, queue, callback, setup):
         """ Wait for updated data to display. 
         
         Parameters
@@ -85,6 +88,8 @@ class DGWindow(QtBaseClass, Ui_DGWindow):
             The queue that the data is arriving on.
         callback : func
             The signal.emit to call to update the fields. 
+        setup : func
+            The signal.emit to call when the device is connected.
         """
         while True:
             rsp = queue.get()
@@ -92,31 +97,10 @@ class DGWindow(QtBaseClass, Ui_DGWindow):
             if response == 'exit':
                 break
             elif response == 'connected':
-                self.setup_window()
+                setup()
             else:
                 callback(rsp)
             queue.task_done()
-            
-    def setup_window(self):
-        """ Perform setup after the gauge connects. """
-        # Eanble all the buttons and things
-        self.channelField.setEnabled(True)
-        self.sField.setEnabled(True)
-        self.msField.setEnabled(True)
-        self.usField.setEnabled(True)
-        self.nsField.setEnabled(True)
-        self.psField.setEnabled(True)
-        self.voltageField.setEnabled(True)
-        self.polarityField.setEnabled(True)
-        self.referenceField.setEnabled(True)
-        self.sourceField.setEnabled(True)
-        self.singleCheck.setEnabled(True)
-        self.thresholdField.setEnabled(True)
-        self.saveButton.setEnabled(True)
-        self.recallButton.setEnabled(True)
-        
-        # Get the initial settings
-        self.send_command("get_settings")
     
     def send_command(self, command, *args, **kwargs):
         """ Send commands to this windows instruments. 
@@ -232,6 +216,29 @@ class DGWindow(QtBaseClass, Ui_DGWindow):
     
     # Event Handlers
     ###########################################################################
+    @pyqtSlot()
+    def setup_window(self):
+        """ Perform setup after the gauge connects. """
+        # Eanble all the buttons and things
+        self.channelField.setEnabled(True)
+        self.sField.setEnabled(True)
+        self.msField.setEnabled(True)
+        self.usField.setEnabled(True)
+        self.nsField.setEnabled(True)
+        self.psField.setEnabled(True)
+        self.voltageField.setEnabled(True)
+        self.polarityField.setEnabled(True)
+        self.referenceField.setEnabled(True)
+        self.sourceField.setEnabled(True)
+        self.singleCheck.setEnabled(True)
+        self.thresholdField.setEnabled(True)
+        self.saveButton.setEnabled(True)
+        self.recallButton.setEnabled(True)
+        self.connected = True
+        
+        # Get the initial settings
+        self.send_command("get_settings")
+    
     @pyqtSlot(object)
     def update_fields(self, rsp):
         """ Update the fields with current settings. 

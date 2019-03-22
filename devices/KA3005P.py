@@ -155,7 +155,6 @@ class KA3005P():
         maxi = 5.000
         if i > maxi: i = maxi
         i = "%1.3f" % i
-        print(i)
         self.PS.write(b"ISET1:" + bytes(i, "utf-8"))
         
     def ovp_on(self):

@@ -60,6 +60,7 @@ class PumpWindow(QtBaseClass, Ui_PumpWindow):
         self.serial = instr.serial
         self.queue = instr.output_queue
         self.instr = instr
+        self.connected = False
         
         # Large bacause it is a double array buffer
         self.bufferSize = self.lengthField.value()
@@ -200,6 +201,7 @@ class PumpWindow(QtBaseClass, Ui_PumpWindow):
         self.sampleField.setEnabled(True)
         self.startTurboButton.setEnabled(True)
         self.stopTurboButton.setEnabled(True)
+        self.connected = True
     
     @pyqtSlot()
     def start_stream(self):

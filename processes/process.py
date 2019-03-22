@@ -90,7 +90,10 @@ class Process():
         self.shot = 0
         
     def save_stream(self):
-        """ Base function to be overwritten by classes that need to save data. """
+        """ Base function to be overwritten by classes that need to save data. 
+        
+        For streaming devices, use the StreamProcess class. For devices 
+        """
         pass
         
     def close(self):

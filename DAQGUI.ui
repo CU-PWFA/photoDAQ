@@ -448,7 +448,7 @@ color:white;</string>
       <string>Start dataset</string>
      </property>
     </widget>
-    <widget class="QListWidget" name="availableList_2">
+    <widget class="QListWidget" name="datasetList">
      <property name="enabled">
       <bool>true</bool>
      </property>
@@ -456,7 +456,7 @@ color:white;</string>
       <rect>
        <x>10</x>
        <y>180</y>
-       <width>359</width>
+       <width>371</width>
        <height>511</height>
       </rect>
      </property>
@@ -467,6 +467,9 @@ color:white;</string>
      </property>
      <property name="selectionMode">
       <enum>QAbstractItemView::ExtendedSelection</enum>
+     </property>
+     <property name="uniformItemSizes">
+      <bool>false</bool>
      </property>
     </widget>
     <widget class="QLabel" name="descriptionLabel_2">
@@ -485,83 +488,6 @@ color:white;</string>
      </property>
      <property name="text">
       <string>Instruments</string>
-     </property>
-    </widget>
-    <widget class="QLabel" name="label">
-     <property name="geometry">
-      <rect>
-       <x>20</x>
-       <y>190</y>
-       <width>331</width>
-       <height>17</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Power Supply</string>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="checkBox">
-     <property name="geometry">
-      <rect>
-       <x>260</x>
-       <y>190</y>
-       <width>92</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Sweep</string>
-     </property>
-    </widget>
-    <widget class="QComboBox" name="comboBox">
-     <property name="geometry">
-      <rect>
-       <x>40</x>
-       <y>210</y>
-       <width>86</width>
-       <height>25</height>
-      </rect>
-     </property>
-     <item>
-      <property name="text">
-       <string>Voltage</string>
-      </property>
-     </item>
-    </widget>
-    <widget class="QSpinBox" name="spinBox">
-     <property name="geometry">
-      <rect>
-       <x>160</x>
-       <y>210</y>
-       <width>48</width>
-       <height>26</height>
-      </rect>
-     </property>
-    </widget>
-    <widget class="QSpinBox" name="spinBox_2">
-     <property name="geometry">
-      <rect>
-       <x>230</x>
-       <y>210</y>
-       <width>48</width>
-       <height>26</height>
-      </rect>
-     </property>
-     <property name="value">
-      <number>5</number>
-     </property>
-    </widget>
-    <widget class="QSpinBox" name="spinBox_3">
-     <property name="geometry">
-      <rect>
-       <x>300</x>
-       <y>210</y>
-       <width>48</width>
-       <height>26</height>
-      </rect>
-     </property>
-     <property name="value">
-      <number>10</number>
      </property>
     </widget>
    </widget>
@@ -702,6 +628,24 @@ color:white;</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="updateTimingButton">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>100</y>
+       <width>161</width>
+       <height>32</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>16</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>Update</string>
      </property>
     </widget>
    </widget>
@@ -947,7 +891,7 @@ color:white;</string>
      <rect>
       <x>1150</x>
       <y>80</y>
-      <width>761</width>
+      <width>691</width>
       <height>361</height>
      </rect>
     </property>
@@ -973,7 +917,7 @@ color:white;</string>
     <widget class="QLabel" name="BPressureLabel">
      <property name="geometry">
       <rect>
-       <x>410</x>
+       <x>360</x>
        <y>10</y>
        <width>171</width>
        <height>17</height>
@@ -1063,7 +1007,7 @@ color:white;</string>
     <widget class="QLabel" name="BPressure">
      <property name="geometry">
       <rect>
-       <x>420</x>
+       <x>370</x>
        <y>30</y>
        <width>231</width>
        <height>61</height>
@@ -1164,7 +1108,7 @@ color:white;</string>
     <widget class="QLabel" name="BUnitsLabel">
      <property name="geometry">
       <rect>
-       <x>650</x>
+       <x>600</x>
        <y>60</y>
        <width>71</width>
        <height>21</height>
@@ -1185,7 +1129,7 @@ color:white;</string>
      <rect>
       <x>1150</x>
       <y>480</y>
-      <width>761</width>
+      <width>691</width>
       <height>361</height>
      </rect>
     </property>
@@ -1239,7 +1183,7 @@ color:white;</string>
    <widget class="QLabel" name="DAQLogLabel">
     <property name="geometry">
      <rect>
-      <x>410</x>
+      <x>420</x>
       <y>810</y>
       <width>341</width>
       <height>21</height>
@@ -1264,7 +1208,7 @@ color:white;</string>
     <property name="geometry">
      <rect>
       <x>410</x>
-      <y>81</y>
+      <y>80</y>
       <width>361</width>
       <height>471</height>
      </rect>

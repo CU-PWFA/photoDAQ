@@ -33,7 +33,9 @@ class Instr():
         self.device_cls = None      # Reference to the class for the device
         self.process_cls = None     # Reference to the class for the device process
         self.window_cls = None      # Reference to the GUI window class
-        self.model = None
+        self.model = None           # The model of the device
+        self.sweep_params = {}      # Parameters that can be swept on the device
+        self.stream = None          # Is the device a triggered data device
         
     def disconnect(self):
         """ Removes all references to the queues and processes. """
@@ -65,6 +67,7 @@ class Camera(Instr):
         self.device_cls = devices.Camera.Camera
         self.process_cls = processes.Camera.Camera
         self.window_cls = windows.camera.CameraWindow
+        self.stream = True
 
     
 class KA3005P(Instr):
@@ -88,6 +91,21 @@ class KA3005P(Instr):
         self.process_cls = processes.KA3005P.KA3005P
         self.window_cls = windows.KA3005P.PSWindow
         self.model = 'KA3005P'
+        self.stream = False
+        self.sweep_params = {
+                'voltage' : {
+                        'display' : 'Voltage',
+                        'min' : 0.0,
+                        'max' : 30.0,
+                        'command' : 'set_voltage'
+                        },
+                'current' : {
+                        'display' : 'Current',
+                        'min' : 0.0,
+                        'max' : 5.0,
+                        'command' : 'set_current'
+                        },
+                }
 
 
 class TDS2024C(Instr):
@@ -111,6 +129,7 @@ class TDS2024C(Instr):
         self.window_cls = None
         self.serial = address.split('::')[3]
         self.model = 'TDS2024C'
+        self.stream = False
 
 
 class HR4000(Instr):
@@ -135,6 +154,7 @@ class HR4000(Instr):
         self.process_cls = processes.HR4000.HR4000
         self.window_cls = windows.HR4000.SpecWindow
         self.model = 'HR4000'
+        self.stream = True
 
 
 class SRSDG645(Instr):
@@ -158,6 +178,37 @@ class SRSDG645(Instr):
         self.process_cls = processes.SRSDG645.SRSDG645
         self.window_cls = windows.SRSDG645.DGWindow
         self.model = 'SRSDG645'
+        self.stream = False
+        self.sweep_params = {
+                'chA' : {
+                        'display' : 'Ch A Delay',
+                        'min' : 0.0,
+                        'max' : 0.1,
+                        'command' : 'set_chA_delay',
+                        'decimals' : 12
+                        },
+                'chB' : {
+                        'display' : 'Ch B Delay',
+                        'min' : 0.0,
+                        'max' : 0.1,
+                        'command' : 'set_chB_delay',
+                        'decimals' : 12
+                        },
+                'chC' : {
+                        'display' : 'Ch C Delay',
+                        'min' : 0.0,
+                        'max' : 0.1,
+                        'command' : 'set_chC_delay',
+                        'decimals' : 12
+                        },
+                'chD' : {
+                        'display' : 'Ch D Delay',
+                        'min' : 0.0,
+                        'max' : 0.1,
+                        'command' : 'set_chD_delay',
+                        'decimals' : 12
+                        },
+                }
 
 
 class FRG700(Instr):
@@ -181,6 +232,7 @@ class FRG700(Instr):
         self.process_cls = processes.FRG700.FRG700
         self.window_cls = windows.FRG700.GaugeWindow
         self.model = 'FRG700'
+        self.stream = True
 
 
 class FS304(Instr):
@@ -204,3 +256,28 @@ class FS304(Instr):
         self.process_cls = processes.FS304.FS304
         self.window_cls = windows.FS304.PumpWindow
         self.model = 'FS304'
+        self.stream = False
+
+        
+class TC(Instr):
+    """ Class for arduino timing control unit. """
+    def __init__(self, address):
+        """ Initialize all the object attributes. 
+        
+        Parameters
+        ----------
+        address : string
+            The serial address of the arduino.
+        """
+        super().__init__(address)
+        import processes.TC
+        import devices.TC
+        import windows.TC
+        
+        self.device_type = 'TC'
+        self.data_type = 'SET'
+        self.device_cls = devices.TC.TC
+        self.process_cls = processes.TC.TC
+        self.window_cls = windows.TC.TCWindow
+        self.model = 'TC'
+        self.stream = True

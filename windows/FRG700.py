@@ -56,11 +56,12 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         self.gaugeCheck_2.stateChanged.connect(self.toggle_plot)
         self.gaugeCheck_3.stateChanged.connect(self.toggle_plot)
         
-        # Grab references for controlling the spectrometer
+        # Grab references for controlling the gauge
         self.DAQ = DAQ
         self.serial = instr.serial
         self.queue = instr.output_queue
         self.instr = instr
+        self.connected = False
         
         # Large bacause it is a double array buffer
         self.bufferSize = self.lengthField.value()
@@ -216,6 +217,7 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         self.lengthField.setEnabled(True)
         self.speciesField.setEnabled(True)
         self.sampleField.setEnabled(True)
+        self.connected = True
         
     @pyqtSlot()
     def start_stream(self):
