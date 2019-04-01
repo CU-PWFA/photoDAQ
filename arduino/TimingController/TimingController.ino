@@ -16,6 +16,7 @@ void setup() {
   Serial.setTimeout(10);
   Serial.println("TC");
   pinMode(8, OUTPUT); // SDG enable output
+  digitalWrite(8, HIGH);
   pinMode(3, INPUT); // SDG trigger input
   attachInterrupt(digitalPinToInterrupt(3), fire, RISING);
 }
@@ -26,14 +27,14 @@ void loop() {
     if(command == "*IDN?") {
       Serial.println("TC");
     }
-    else if(command == "ON") {
+    else if(command == "OFF") {
       digitalWrite(8, HIGH);
     }
-    else if(command == "OFF") {
+    else if(command == "ON") {
       digitalWrite(8, LOW);
     }
     else if(command == "RESET") {
-      value = "1";
+      value = "5";
       max_shots = value.toInt();
       shot = 0;
       Serial.println(value);
@@ -44,7 +45,7 @@ void loop() {
     new_shot = false;
     shot += 1;
     if (shot == max_shots) {
-    digitalWrite(8, LOW);
+    digitalWrite(8, HIGH);
   }
     Serial.println(shot);
   }
