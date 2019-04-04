@@ -183,26 +183,26 @@ def prep_IMAGE(data):
     return np.frombuffer(bytes(raw), dtype=np.uint16).reshape(height, width) 
 
     
-def save_IMAGE(data, dataSet, shot):
+def save_IMAGE(rsp, dataSet, shot):
     """ Save an image to a tiff file with LZW compression. 
     
     Parameters
     ----------
-    data : dict
-        The dictionary with image and meta dict.
+    rsp : rsp object
+        The response object with the image data.
     dataSet : int
         The data set number.
     shot : int
         The shot number.
     """
     dirName = get_dirName('IMAGE', dataSet)
-    meta = data['meta']
+    meta = rsp.meta
     serial = meta['Serial number']
     fileName = get_fileName(serial, dataSet, shot)
     name = dirName + fileName + '.tiff' 
 
     tiff = libtiff.TIFF.open(name, mode='w')
-    tiff.write_image(data['raw'])
+    tiff.write_image(rsp.data)
     tiff.close()  
     
     add_image_meta(name, meta)

@@ -6,9 +6,10 @@ Created on Wed Jun 13 16:32:45 2018
 @author: robert
 """
 
+from devices.device import Device
 import PyCapture2 as pc2
 
-class Camera():
+class Camera(Device):
     """ Class to control the FLIR cameras. """
     
     def __init__(self, serial):
@@ -43,6 +44,8 @@ class Camera():
                 self.cam.connect(self.guid)
             except:
                 print('Ethernet error: Could not connect to camera.')
+                self.connection_error = True
+                return
             self.camINFO = info = self.cam.getCameraInfo()
             self.imageINFO = self.cam.getGigEImageSettingsInfo()
             self.serialNum = info.serialNumber
@@ -59,13 +62,16 @@ class Camera():
             pixelFormat = pc2.PIXEL_FORMAT.MONO16
         else:
             pixelFormat = pc2.PIXEL_FORMAT.RAW16
-        self.set_image_settings(width, height, pixelFormat)
+        if self.set_image_settings(width, height, pixelFormat) == False:
+            self.connection_error = True
+            return # Bus error camera needs to be power cycled
         # Turning auto gain and shutter off turns auto exposure off
         self.gainINFO = self.set_gain_settings(False, 0)
         self.shutterINFO = self.set_shutter_settings(False, 10)
         self.frameINFO = self.set_frame_rate(False, 10)
         self.brightnessINFO = self.set_brightness_settings()
         self.set_brightness_settings(self.brightnessINFO.absMin)
+        self.set_trigger_settings(False)
         
         
     # Request camera parameters
@@ -115,6 +121,11 @@ class Camera():
             The height of the image in pixels.
         pixelFormat : int, optional
             Pass an atrribute of pc2.PIXEL_FORMAT for a valid integer.
+            
+        Returns
+        -------
+        success : bool
+            Was the operation successful or not.
         """
         settings = self.cam.getGigEImageSettings()
         if pixelFormat is not None:
@@ -133,7 +144,12 @@ class Camera():
             else:
                 settings.height = height
         #If none of the conditions are triggered this doesn't change the values
-        self.cam.setGigEImageSettings(settings)
+        try:
+            self.cam.setGigEImageSettings(settings)
+            return True
+        except pc2.Fc2error:
+            print("Camera bus error: power cycle camera and reconnect.")
+            return False
     
     def set_gain_settings(self, auto=None, value=None):
         """ Set the camera shutter settings. 
@@ -272,7 +288,7 @@ class Camera():
             pc2 image object as the first argument. 
         *args : tuple
             Arguments to be passed to the callback.
-        """            
+        """
         self.cam.startCapture(callback, args)
     
     def stop_capture(self):

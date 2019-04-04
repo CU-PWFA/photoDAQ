@@ -6,9 +6,10 @@ Created on Thu Jun 28 13:34:57 2018
 @author: cu-pwfa
 """
 
+from devices.device import Device
 import seabreeze.spectrometers as sb
 
-class HR4000():
+class HR4000(Device):
     """ Notes about the spectrometer:
         If it doesn't connect almost immediatly, it probably won't return data.
         If it is disconnected while streaming data, it will break.
@@ -28,6 +29,8 @@ class HR4000():
             self.SP = sb.Spectrometer.from_serial_number(serial)
         except:
             print("USB error: Could not connect to the spectrometer.")
+            self.connection_error = True
+            return
         self.ID = self.get_ID()
         self.serialNum = self.SP.serial_number
         print('Spectrometer ID:', self.ID)

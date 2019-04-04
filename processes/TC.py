@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Jan 16 11:50:29 2019
+Created on Mon Apr  1 14:33:21 2019
 
 @author: robert
 """
@@ -10,8 +10,8 @@ from processes.streamProcess import StreamProcess
 import time
 import daq
 
-class FRG700(StreamProcess):
-    """ Process class for the FRG700 vacuum gauge. """
+class TC(StreamProcess):
+    """ Process class for the timing controller. """
     def __init__(self, instr):
         """ For parameters see the parent method. 
         
@@ -24,35 +24,27 @@ class FRG700(StreamProcess):
         super().__init__(instr)
         
     def capture_thread(self, r_queue):
-        """ Continually quieres the pressure gauge for the pressure. 
+        """ Continually quieres the timing controller for the shot number. 
         
         Parameters
         ----------
         r_queue : mp.Queue
-            The response queue to place the pressure in.
+            The response queue to place the shot number in.
         """
         while self.streaming:
-            raw = self.device.get_pressure()
+            raw = self.device.get_shot()
+            if raw is None:
+                continue
             meta = self.create_meta()
-            if self.save: response = 'save'
-            else: response = 'output'
+            response = 'output'
             rsp = daq.Rsp(response, raw, meta)
             self.r_queue.put(rsp)
             
             self.shot += 1
-            if self.shot == self.numShots:
+            if self.shot == self.numShots and raw == self.numShots:
                 self.save = False
+                self.stop_stream()
             time.sleep(self.sampleDelay)
-    
-    def set_sample_delay(self, delay):
-        """ Set the sample delay. 
-        
-        Parameters
-        ----------
-        delay : double
-            The sample delay in ms.
-        """
-        self.sampleDelay = delay/1000.
     
     def get_datatype(self):
         """ Return the type of data. """
@@ -60,5 +52,5 @@ class FRG700(StreamProcess):
     
     def get_type(self):
         """ Return the instrument type. """
-        return "FRG700"
+        return "TC"
 

@@ -6,104 +6,77 @@ Created on Wed Jul 11 15:33:16 2018
 @author: robert
 """
 
-from processes.process import Process
-import PyCapture2 as pc2
-import datetime
+from processes.streamProcess import StreamProcess
 import numpy as np
-import cv2
-import cv2
-import numpy as np
-import threading
+import daq
+import time
 
-class Camera(Process):
+class Camera(StreamProcess):
     """ Process class for a camera. """
     def __init__(self, device):
         """ init method. """
-        self.streaming = False
-        self.shot = 0
-        self.numShots = 0
-        self.lock = threading.Lock()
-        # Needs to ocur last, starts infinite queue loop
         super().__init__(device)
     
     def start_stream(self, save=False):
-        """ Start streaming images into the save and post process. 
+        """ Start streaming images 
         
         Parameters
         ----------
         save : bool, optional
             Set if the stream should be saved or not, defaults to False.
         """
-        cam = self.device
         if not self.streaming:
+            self.device.start_capture()
             self.save = save
-            cam.start_capture(self.save_image)
             self.streaming = True
-            #self.create_capture_thread()
-        
-    def stop_stream(self):
-        """ Stop streaming images into the save and post process. """
-        cam = self.device
-        if self.streaming:
-            self.lock.acquire()
-            cam.stop_capture()
-            self.streaming = False
-            self.lock.release()
-    
-    def save_stream(self, numShots):
-        """ Save the specified number of shots from the stream. 
-        
-        Parameters
-        ----------
-        numShots : int
-            The number of shots to save. 
-        """
-        self.shot = 0
-        self.numShots = numShots
-        if self.streaming:
-            self.save = True
-        else:
-            self.start_stream(True)    
-        
-    def take_photo(self):
-        """ Start capturing and retrieve an image from the buffer.
-        
-        Returns
-        -------
-        image : obj
-            A PyCapture2.Image object which includes the image data.
-        """
-        cam = self.device
-        image = cam.take_photo()
-        self.save_image(image, [])
-        
-    def save_image(self, image, args=[]):
-        """ Callback from start_capture, saves the image.  
-        
-        Parameters
-        ----------
-        image : pc2.image
-            The image object.
-        args : tuple
-            This is just here because pc2 will pass it into the callback.
-        """
-        # XXX for some reason the image object doesn't like being passed through
-        # a queue so we have to save it directly here
-        self.lock.acquire()
-        meta = self.create_meta()
-        raw = image.getData()
+            self.create_capture_thread()
             
-        data = {'raw' : raw,
-                'meta' : meta,
-                'save' : self.save}
-        self.shot += 1
-        self.r_queue.put(data)
-        if self.shot == self.numShots:
-            self.save = False
-        self.lock.release()
+    def stop_stream(self):
+        """ Stop streaming from the camera. """
+        if self.streaming:
+            # stop_capture throws an error if the device isn't capturing
+            self.device.stop_capture() 
+        self.streaming = False
+    
+    def capture_thread(self, r_queue):
+        """ Contu=inually queries the camera for images.  
+        
+        Parameters
+        ----------
+        r_queue : mp.Queue
+            The response queue to place the pressure in.
+        """
+        # The image object doesn't like being passed through a queue
+        # we have to process it here
+        while self.streaming:
+            # This call blocks and does not release the GIL, no commands will
+            # make it through until a buffer is retrieved
+            # This is a problem with an external trigger, the save command
+            # wont make it through until after the first shot
+            image = self.device.retrieve_buffer()
+            raw = image.getData()
+            # TODO handle converting the picture to a useful form
+            data = np.random.randint(0, 256, size=(1024, 1024), dtype=np.uint16)
+            
+            meta = self.create_meta()
+            if self.save: response = 'save'
+            else: response = 'output'
+            rsp = daq.Rsp(response, data, meta)
+            self.r_queue.put(rsp)
+            
+            self.shot += 1
+            if self.shot == self.numShots:
+                self.save = False
+                self.stop_stream() # For releasing the GIL
+            time.sleep(0.01) # Guarantee the GIL is released
             
         # Note we have the option to directly save the image here using 
         # image.save and it runs at 10 Hz but only on an ssd
+
+    def set_trigger_settings(self, enable):
+        """ Override the device set trigger to stop streaming. """
+        self.stop_stream()
+        self.device.set_trigger_settings(enable)
 
     def get_datatype(self):
         """ Return the type of data. """

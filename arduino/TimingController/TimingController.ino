@@ -5,7 +5,6 @@
 */
 
 String command;
-String value;
 volatile int shot = 0;
 int max_shots = 0;
 bool new_shot = false;
@@ -19,6 +18,10 @@ void setup() {
   digitalWrite(8, HIGH);
   pinMode(3, INPUT); // SDG trigger input
   attachInterrupt(digitalPinToInterrupt(3), fire, RISING);
+  pinMode(2, OUTPUT); // output 1
+  digitalWrite(2, LOW);
+  pinMode(10, OUTPUT); // output 1
+  digitalWrite(10, LOW);
 }
 
 void loop() {
@@ -33,11 +36,22 @@ void loop() {
     else if(command == "ON") {
       digitalWrite(8, LOW);
     }
-    else if(command == "RESET") {
-      value = "5";
-      max_shots = value.toInt();
+    else if(command[0] == 'R') {
+      command.remove(0, 1);
+      max_shots = command.toInt();
       shot = 0;
-      Serial.println(value);
+    }
+    else if(command == "1ON") {
+      digitalWrite(2, HIGH);
+    }
+    else if(command == "1OFF") {
+      digitalWrite(2, LOW);
+    }
+    else if(command == "2ON") {
+      digitalWrite(10, HIGH);
+    }
+    else if(command == "2OFF") {
+      digitalWrite(10, LOW);
     }
     delay(1);
   }

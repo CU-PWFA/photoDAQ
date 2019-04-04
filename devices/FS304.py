@@ -6,10 +6,11 @@ Created on Tue Mar 12 17:21:21 2019
 @author: robert
 """
 
+from devices.device import Device
 import serial
 import time
 
-class FS304():
+class FS304(Device):
     """ Class to control the TwissTorr 304FS turbomolecular pump. """
     def __init__(self, address):
         """ Create the serial object for the turbo pump. """
@@ -33,7 +34,9 @@ class FS304():
                                     stopbits=1,
                                     timeout=2)
         except:
-            print("USB error: Could not connect to the turbomolecular pump.")    
+            print("USB error: Could not connect to the turbomolecular pump.")
+            self.connection_error = True
+            return
         self.ID = address
         # No way to get a serial number - address should be unique
         self.serialNum = address

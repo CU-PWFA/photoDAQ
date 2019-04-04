@@ -153,7 +153,10 @@
     <property name="frameShadow">
      <enum>QFrame::Raised</enum>
     </property>
-    <widget class="QPushButton" name="abortDAQButton">
+    <widget class="QPushButton" name="pauseDAQButton">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="geometry">
       <rect>
        <x>220</x>
@@ -237,6 +240,9 @@ color:white;</string>
      </property>
     </widget>
     <widget class="QPushButton" name="resumeDAQButton">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="geometry">
       <rect>
        <x>50</x>
@@ -424,6 +430,9 @@ color:white;</string>
      </property>
     </widget>
     <widget class="QPushButton" name="startDatasetButton">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
      <property name="geometry">
       <rect>
        <x>10</x>

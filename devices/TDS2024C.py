@@ -6,11 +6,12 @@ Created on Wed May 30 09:54:58 2018
 @author: robert
 """
 
+from devices.device import Device
 import visa
 import numpy as np
 import time
 
-class TDS2024C():
+class TDS2024C(Device):
     """ Class to control the Tektronix TDS2024C oscilloscope. 
     
     The oscilloscope must be set to Rear USB Port = "Computer" for this code to
@@ -57,6 +58,8 @@ class TDS2024C():
             self.OS = rm.open_resource(adr)
         except:
             print("USB error: Could not connect to the oscilloscope.")
+            self.connection_error = True
+            return
         self.ID = self.get_ID()
         self.serialNum = self.ID.split(',')[2]
         print('Oscilloscope ID:', self.ID)

@@ -65,6 +65,7 @@ class DatasetInstr(QtBaseClass, Ui_InstrWidget):
                 self.stopField.setMaximum(value['max'])
                 if 'decimals' in value:
                     self.startField.setDecimals(value['decimals'])
+                    self.stopField.setDecimals(value['decimals'])
                     
     def get_values(self):
         """ Get the values from the fields in the widget. 

@@ -25,6 +25,7 @@ instr_display = {
         'DG645' : 'SRSDG645 Signal Delay Generator',
         'FRG700' : 'FRG700 Vacuum Gauge',
         'FS304' : '304 FS Turbomolecular Pump',
+        'TC' : 'Timing Controller',
         }
 
 qtCreatorFile = "DAQGUI.ui"
@@ -197,6 +198,8 @@ class UI(QtBaseClass, Ui_MainWindow):
             self.integrate_gauge(instr)
         elif instr.device_type == 'SRSDG645':
             self.integrate_SDG(instr)
+        elif instr.device_type == 'TC':
+            self.integrate_TC(instr)
             
     def add_instr_widget(self, instr):
         """ Create and add a widget for the passed instrument to the list. 
@@ -333,6 +336,53 @@ class UI(QtBaseClass, Ui_MainWindow):
     def disconnect_SDG(self):
         """ Display that the SDG is connected. """
         self.SDGBoolLabel.setText('No')
+        
+    # Timing controller
+    #--------------------------------------------------------------------------
+    def integrate_TC(self, instr):
+        """ Add interactions with the TC. 
+        
+        Parmaeters
+        ----------
+        instr : instr object
+            Object for the timing controller.
+        """
+        win = instr.window
+        win.device_connected.connect(self.connect_TC)
+        win.destroyed.connect(self.disconnect_TC)
+        win.data_acquired.connect(self.update_shot)
+        self.pauseDAQButton.clicked.connect(win.stop)
+        self.resumeDAQButton.clicked.connect(win.start)
+        # Connected can fire before this function runs
+        if win.connected:
+            self.connect_TC()
+            
+    @pyqtSlot()
+    def connect_TC(self):
+        """ Display that the TC is connected. """
+        self.TCBoolLabel.setText('Yes')
+        
+    @pyqtSlot()
+    def disconnect_TC(self):
+        """ Display that the TC is connected. """
+        self.TCBoolLabel.setText('No')
+    
+    @pyqtSlot(object)
+    def update_shot(self, rsp):
+        """ Update the current dataset shot counter. 
+        
+        Parameters
+        ----------
+        rsp : rsp object
+            The response object with the shot count.
+        """
+        shot = self.DAQProgress.value() + 1
+        self.DAQProgress.setValue(shot)
+        self.shotNumber.setText(str(shot))
+        if shot == self.DAQProgress.maximum():
+            self.resumeDAQButton.setEnabled(False)
+            self.pauseDAQButton.setEnabled(False)
+        
     
     # Event Handlers
     ###########################################################################
@@ -422,7 +472,8 @@ class UI(QtBaseClass, Ui_MainWindow):
             self.DAQ.disconnect_instr(instr)
             instr.window.close()
             del instr.window
-            self.remove_from_dataset(instr)
+            if instr in self.current_instr:
+                self.remove_from_dataset(instr)
     
     @pyqtSlot()
     def open_detail_panel(self):
@@ -443,12 +494,21 @@ class UI(QtBaseClass, Ui_MainWindow):
             if self.initial_dataset:
                 self.initial_dataset = False
                 DAQ.desc = self.DescriptionEdit.toPlainText()
+                DAQ.create_dir_struct()
             else:
                 DAQ.adv_dataset(self.DescriptionEdit.toPlainText())
                 self.set_dataset_num()
             shots = self.shotsField.value()
+            self.set_totalshot_number(shots)
+            self.set_shot_number(0)
+            self.DAQProgress.setValue(0)
+            self.DAQProgress.setMaximum(shots)
+            self.resumeDAQButton.setEnabled(True)
+            self.pauseDAQButton.setEnabled(True)
             sweep = self.get_sweep()
             DAQ.start_dataset(shots, self.current_instr, sweep)
+        else:
+            print('Cannot start dataset: timing devices not connected.')
     
     @pyqtSlot()
     def add_to_dataset(self):
@@ -458,6 +518,10 @@ class UI(QtBaseClass, Ui_MainWindow):
         add_list = self.connectedList.selectedItems()
         for item in add_list:
             serial = item.__key__
+            if serial == '5573631333835150F150':
+                # Never add the timing controller to the dataset
+                print('Timing controller cannot be added to the dataset.')
+                continue
             if serial not in current_instr:
                 instr = connected_instr[serial]
                 self.add_instr_widget(instr)

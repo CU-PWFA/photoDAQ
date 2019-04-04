@@ -6,10 +6,11 @@ Created on Fri Nov  9 16:26:49 2018
 @author: cu-pwfa
 """
 
+from devices.device import Device
 import instruments as ik
 import quantities as pq
 
-class SRSDG645():
+class SRSDG645(Device):
     """ Class to control Signal Delay Generator. """
     
     def __init__(self, ip, set_default=True):
@@ -48,6 +49,7 @@ class SRSDG645():
             self.serialNum = ip
         except:
             print('Ethernet error: could not connect to Signal Delay Generator.')
+            self.connection_error = True
             
     # Set delay generator parameters
     #--------------------------------------------------------------------------            

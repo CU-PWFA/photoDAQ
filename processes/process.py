@@ -10,6 +10,7 @@ import time
 import daq
 
 class Process():
+    delay = 0.0
     """ A class that handles the main loop for an instrument. """
     def __init__(self, instr):
         """ Initialize the instrument and start the main loop. 
@@ -19,7 +20,6 @@ class Process():
         instr : instr object
             The object representing the instrument the process will control.
         """
-        self.delay = 0.0
         self.instr = instr
         self.c_queue = instr.command_queue
         self.r_queue = instr.response_queue
@@ -33,6 +33,10 @@ class Process():
         """ Create the instrument class and connect to the instrument. """
         instr = self.instr
         device = instr.device_cls(instr.address)
+        if device.connection_error:
+            rsp = daq.Rsp('connection_error')
+            self.r_queue.put(rsp)
+            return
         device.type = instr.device_type
         self.device = device
         rsp = daq.Rsp('connected')
@@ -89,10 +93,10 @@ class Process():
         self.dataset = dataset
         self.shot = 0
         
-    def save_stream(self):
+    def save_stream(self, numShots):
         """ Base function to be overwritten by classes that need to save data. 
         
-        For streaming devices, use the StreamProcess class. For devices 
+        For streaming devices, use the StreamProcess class. 
         """
         pass
         

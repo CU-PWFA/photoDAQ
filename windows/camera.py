@@ -27,9 +27,10 @@ qtCreatorFile = os.path.join(package_directory, "camera.ui")
 Ui_CameraWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 class CameraWindow(QtBaseClass, Ui_CameraWindow):
-    data_acquired = pyqtSignal(dict)
+    data_acquired = pyqtSignal(object)
+    device_connected = pyqtSignal()
     
-    def __init__(self, parent, DAQ, device):
+    def __init__(self, parent, DAQ, instr):
         """ Create the parent class and add event handlers. 
         
         Parameters
@@ -55,12 +56,13 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         self.data_acquired.connect(self.update_canvas)
         self.data_acquired.connect(self.update_info)
         self.triggerCheck.stateChanged.connect(self.set_trigger)
+        self.device_connected.connect(self.setup_window)
         
         # Grab references for controlling the camera
         self.DAQ = DAQ
-        self.serial = device.serial
-        self.queue = device.output_queue
-        self.device = device
+        self.serial = instr.serial
+        self.queue = instr.output_queue
+        self.instr = instr
 
         # Create the container for the image
         self.create_image()
@@ -82,12 +84,12 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         
     def create_update_thread(self):
         """ Create a thread to poll the response queue and update the image. """
-        args = (self.queue, self.data_acquired.emit)
+        args = (self.queue, self.data_acquired.emit, self.device_connected.emit)
         thread = threading.Thread(target=self.update_thread, args=args, name='CameraUpdateThread')
         thread.setDaemon(True)
         thread.start()
          
-    def update_thread(self, queue, callback):
+    def update_thread(self, queue, callback, setup):
         """ Wait for updated data to display. 
         
         Parameters
@@ -96,26 +98,19 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
             The queue that the image data is arriving on.
         callback : func
             The signal.emit to call to update the plot. 
+        setup : func
+            The signal.emit to call when the device is connected.
         """
         while True:
-            data = queue.get()
-            if data == '__exit__':
+            rsp = queue.get()
+            response = rsp.response
+            if response == 'exit':
                 break
-            elif data == '__Connected__':
-                self.setup_window()
+            elif response == 'connected':
+                setup()
             else:
-                callback(data)
+                callback(rsp)
             queue.task_done()
-        
-    def setup_window(self):
-        """ Perform setup after the camera connects. """
-        self.startStreamButton.setEnabled(True)
-        self.stopStreamButton.setEnabled(True)
-        self.shutterField.setEnabled(True)
-        self.gainField.setEnabled(True)
-        self.framerateField.setEnabled(True)
-        self.brightnessField.setEnabled(True)
-        self.triggerCheck.setEnabled(True)
         
     def set_field_range(self):
         """ Set the range of the spinbox fields based on the camera serial. """
@@ -158,10 +153,21 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
             Arguments to be sent to the command function.
         """
         DAQ = self.DAQ
-        DAQ.send_command(self.device, command, *args, **kwargs)
+        DAQ.send_command(self.instr, command, *args, **kwargs)
         
     # Event Handlers
     ###########################################################################
+    @pyqtSlot()
+    def setup_window(self):
+        """ Perform setup after the camera connects. """
+        self.startStreamButton.setEnabled(True)
+        self.stopStreamButton.setEnabled(True)
+        self.shutterField.setEnabled(True)
+        self.gainField.setEnabled(True)
+        self.framerateField.setEnabled(True)
+        self.brightnessField.setEnabled(True)
+        self.triggerCheck.setEnabled(True)
+    
     @pyqtSlot()
     def start_stream(self):
         """ Start the camera stream and display it. """
@@ -175,58 +181,57 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
     @pyqtSlot(float)
     def set_shutter(self, value):
         """ Set the shutter value. """
-        self.send_command('set_shutter_settings', (None, value))
+        self.send_command('set_shutter_settings', None, value)
         
     @pyqtSlot(float)
     def set_gain(self, value):
         """ Set the gain value. """
-        self.send_command('set_gain_settings', (None, value))
+        self.send_command('set_gain_settings', None, value)
         
     @pyqtSlot(float)
     def set_framerate(self, value):
         """ Set the framerate value. """
-        self.send_command('set_frame_rate', (None, value))
+        self.send_command('set_frame_rate', None, value)
         
     @pyqtSlot(float)
     def set_brightness(self, value):
         """ Set the brightness value. """
-        self.send_command('set_brightness_settings', (value,))
+        self.send_command('set_brightness_settings', value)
     
-    @pyqtSlot(dict)
-    def update_canvas(self, data):
+    @pyqtSlot(object)
+    def update_canvas(self, rsp):
         """ Update the canvas with the new image. 
         
         Parameters
         ----------
-        data : dict
-            The dictionary with the image data and meta.
+        rsp : rsp object
+            The response object with the image data.
         """
-        self.image_view.setImage(data['raw'], autoLevels=False)
+        self.image_view.setImage(rsp.data)#, autoLevels=False)
     
     @pyqtSlot(dict)
-    def update_info(self, data):
+    def update_info(self, rsp):
         """ Update the info blocks. 
         
         Parameters
         ----------
-        data : dict
-            The dictionary with the image data and meta.
+        rsp : rsp object
+            The response object with the image data.
         """
-        DAQ = self.DAQ
-        serial = self.serial
-        self.r_queueNum.setNum(DAQ.response_queue[serial].qsize())
-        self.s_queueNum.setNum(DAQ.save_queue[serial].qsize())
+        self.r_queueNum.setNum(self.instr.response_queue.qsize())
+        self.s_queueNum.setNum(self.instr.output_queue.qsize())
         
     @pyqtSlot(int)
     def set_trigger(self, trigger):
         """ Set the external trigger on or off. """
-        print(trigger)
         if trigger==0:
+            self.startStreamButton.setEnabled(True)
             self.framerateField.setEnabled(True)
-            self.send_command('set_trigger_settings', (False,))
+            self.send_command('set_trigger_settings', False)
         else:
+            self.startStreamButton.setEnabled(False)
             self.framerateField.setEnabled(False)
-            self.send_command('set_trigger_settings', (True,))
+            self.send_command('set_trigger_settings', True)
 
 # For testing the window directly
 if __name__ == "__main__":

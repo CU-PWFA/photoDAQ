@@ -6,9 +6,10 @@ Created on Tue May 29 16:31:09 2018
 @author: robert
 """
 
+from devices.device import Device
 import serial
 
-class KA3005P():
+class KA3005P(Device):
     """ Class to control the Korad KA3005P power supply.
     
     Note, the power supply needs at least 0.05s between commands or else
@@ -35,7 +36,8 @@ class KA3005P():
                                     stopbits=1,
                                     timeout=1)
         except:
-            print("USB error: Could not connect to the power supply.")  
+            print("USB error: Could not connect to the power supply.")
+            self.connection_error = True
             return
         self.ID = self.get_ID().decode("utf-8")
         # No way to get a serial number - address should be unique

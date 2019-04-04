@@ -10,6 +10,9 @@ import sys
 import file
 import globalVAR as Gvar
 import multiprocessing as mp
+import numpy as np
+import time
+import threading
 
 ###############################################################################
 #   
@@ -29,6 +32,7 @@ class Daq():
         - Sending commands to instruments
         - Recieving responses and data from instruments
     """
+    TC_serial = '5573631333835150F150'
     def __init__(self, desc=None, broadcast=False, max_command_queue_size=100,
                  max_response_queue_size=1000, debug=False):
         """ Initialize the main DAQ class.
@@ -62,6 +66,7 @@ class Daq():
         self.desc = desc
         self.broadcast = broadcast
         self.debug = debug
+        self.taking_data = False
         # Setup the daq
         self.setup_daq()
     
@@ -106,6 +111,13 @@ class Daq():
             proc = mp.Process(target=self.start_process, args=args)
             proc.start()
             
+            # The timing controller needs an additional thread for the DAQ to use
+            if instr.serial == self.TC_serial:
+                instr.internal_queue =  mp.JoinableQueue(self.max_response_queue_size)
+                self.TC_thread = threading.Thread(target=self.timing_thread, args=args)
+                self.TC_thread.setDaemon(True)
+                self.TC_thread.start()
+            
             args = (instr,)
             r_proc = mp.Process(target=self.response_process, args=args)
             r_proc.start()
@@ -142,7 +154,10 @@ class Daq():
                 o_queue.put(rsp)
 
         r_queue = instr.response_queue
-        o_queue = instr.output_queue
+        if hasattr(instr, 'internal_queue'):
+            o_queue = instr.internal_queue
+        else:
+            o_queue = instr.output_queue
         while True:
             rsp = r_queue.get()
             response = rsp.response
@@ -157,16 +172,59 @@ class Daq():
                 output(rsp)
             elif response == 'save':
                 output(rsp)
-#            meta = data['meta']
-#            if meta["Data type"] == 'IMAGE':
-#                data['raw'] = file.prep_IMAGE(data)
-#            if data['save']:
-#                save = getattr(file, 'save_' + meta["Data type"])
-#                if save(data, meta['Data set'], meta['Shot number']) == False:
-#                    msg = "Failed to save datafrom " + meta['Serial number']
-#                    o_queue.put(msg)
-#            out_queue.put(data)
-#            in_queue.task_done()
+                # TODO implement saving data to file in a better way
+                meta = rsp.meta
+                #if meta["Data type"] == 'IMAGE':
+                #    rsp.data = file.prep_IMAGE(data)
+                
+                save = getattr(file, 'save_' + meta["Data type"])
+                if save(rsp, meta['Data set'], meta['Shot number']) == False:
+                    print("Failed to save datafrom " + meta['Serial number'])
+            elif response == 'connection_error':
+                output(rsp)
+                print("Instrument " + instr.serial + " failed to connect.")
+                break
+            r_queue.task_done()
+            
+    def timing_thread(self, instr):
+        """ Timing thread for handling shot specific steps. 
+        
+        Parameters
+        ----------
+        instr : instr object
+            The object representing the timing control instrument.
+        """
+        o_queue = instr.output_queue
+        i_queue = instr.internal_queue
+        while True:
+            rsp = i_queue.get()
+            response = rsp.response
+            if response == 'exit':
+                o_queue.put(rsp)
+                break
+            elif response == 'connection_error':
+                o_queue.put(rsp)
+                break
+            else:
+                o_queue.put(rsp)
+            # If we are taking data this will be set true and then the timing
+            # controller will be triggered
+            if self.taking_data:
+                i = self.set
+                self.shot += 1
+                stop_points = self.sweep['stop_points']
+                # Dataset finished
+                if self.shot == stop_points[-1]:
+                    self.taking_data = False
+                # Check if we just finished a set
+                elif self.shot == stop_points[i-1]:
+                    n = stop_points[i] - stop_points[i-1]
+                    self.sweep_step()
+                    self.start_TC(n)
+                    self.set += 1
+                
+            i_queue.task_done()
+            
 
     def disconnect_instr(self, instr):
         """ Disconnects an instrument and removes it from the instr dict.
@@ -227,7 +285,7 @@ class Daq():
         """
         file.meta_TXT(self.desc, self.dataset)
         
-        for serial, instr in instrs:
+        for serial, instr in instrs.items():
             dType = instr.data_type
             # TODO, implement this function in more detail
 #            metaproc = getattr(file, 'meta_'+dType)
@@ -245,7 +303,10 @@ class Daq():
         self.dataset = Gvar.getDataSetNum()
         file.add_to_log(self.dataset)
         file.make_dir_struct('META', self.dataset)
-        
+        self.create_dir_struct()
+    
+    def create_dir_struct(self):
+        """ Create a directory structure for all connected instruments. """
         for serial, instr in self.instr.items():
             file.make_dir_struct(instr.data_type, self.dataset)
             self.send_command(instr, 'set_dataset', self.dataset)
@@ -261,14 +322,66 @@ class Daq():
             Dictionary of instrument objects to take data with.
         sweep : dict
             The dictionary containing the sweep parameters.
-        """
-        # First tell all the streaming instruments to start streaming
+        """        
+        # Tell all the streaming instruments to start streaming
         for key, instr in instrs.items():
-            self.send_command(self.command_queue[key], 'save_stream', (shots,))
+            self.send_command(instr, 'save_stream', shots)
         
-        # Prep any sweep 
+        # For sweeps we need to synchronize the different devices
+
+        # Setup the length of capture between parameter changes
         print(sweep)
-        self.save_meta()
+        shot_array = np.arange(0, shots, dtype='int16') + 1
+        stop_array = np.zeros(shots, dtype='bool')
+        for serial, item in sweep.items():
+            if item['sweep'] == False:
+                continue
+            item['shot_per_step'] = np.ceil(shots/item['step'])
+            item['parameter_array'] = np.linspace(item['start'], item['stop'], item['step'])
+            stop = (shot_array % item['shot_per_step']) == 0
+            stop_array = np.logical_or(stop_array, stop)
+        stop_points = np.array([i for i, j in enumerate(stop_array) if j]) + 1
+        np.append(stop_points, shots)
+        
+        # If we don't have any sweeps, run through the shots
+        if len(stop_points) == 0:
+            self.start_TC(shots)
+        
+        # Set all initial parameters
+        
+        
+        # Tell the timing thread to start taking data
+        self.shot = 0
+        self.set = 1
+        sweep['stop_points'] = stop_points
+        self.sweep = sweep
+        self.taking_data = True
+        
+        # Take the first set and trigger the timing thread
+        self.start_TC(stop_points[0])
+    
+        self.save_meta(instrs)
+        
+    def start_TC(self, shots):
+        """ Start the timing controller and take the passed number of shots.
+        
+        Parameters
+        ----------
+        shots : int
+            The number of shots to take.
+        """
+        if self.TC_serial not in self.instr.keys():
+            print('No timing controller connected, cannot start synchronization.')
+            return
+        else:
+            TC = self.instr[self.TC_serial]
+        self.send_command(TC, 'reset', shots)
+        self.send_command(TC, 'start_stream')
+        time.sleep(0.5) # Give the devices time to start streaming
+        self.send_command(TC, 'start')
+        
+    def sweep_step(self):
+        """ Change any instrument parameters necessary for the sweep. """
 
 
 class Cmd():

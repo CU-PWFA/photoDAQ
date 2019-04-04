@@ -19,8 +19,8 @@ class KA3005P(Process):
         instr : instr object
             The object representing the instrument the process will control.
         """
+        self.delay = 0.05
         super().__init__(instr)
-        self.delay = 0.5
     
     def get_datatype(self):
         """ Return the type of data. """

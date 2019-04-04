@@ -11,15 +11,13 @@ import time
 
 class HR4000(StreamProcess):
     """ Process class for the HR4000 spectrometer. """       
-    def capture_thread(self, r_queue, streaming):
+    def capture_thread(self, r_queue):
         """ Continually quieres the spectrometer for new spectra. 
         
         Parameters
         ----------
         r_queue : mp.Queue
             The response queue to place spectrums in.
-        streaming : bool
-            Thread exit flag, exits if False.
         """
         while self.streaming:
             raw = self.device.get_spectrum()

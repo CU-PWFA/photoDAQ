@@ -24,15 +24,13 @@ class FS304(StreamProcess):
         super().__init__(instr)
         self.delay = 0.05
         
-    def capture_thread(self, r_queue, streaming):
+    def capture_thread(self, r_queue):
         """ Continually quieres the turbo molecular pump for power. 
         
         Parameters
         ----------
         r_queue : mp.Queue
             The response queue to place the pressure in.
-        streaming : bool
-            Thread exit flag, exits if False.
         """
         while self.streaming:
             raw = {}

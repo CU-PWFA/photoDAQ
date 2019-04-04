@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Jan 15 17:19:27 2019
+Created on Mon Apr  1 14:21:57 2019
 
 @author: robert
 """
@@ -10,13 +10,13 @@ from devices.device import Device
 import serial
 import time
 
-class FRG700(Device):
+class TC(Device):
     """ Class to control the arduino for the FRG700 vacuum gauge. """
     def __init__(self, address):
         """ Create the serial object for the gauge. """
-        self.connectGauge(address)
+        self.connectController(address)
         
-    def connectGauge(self, address):
+    def connectController(self, address):
         """ Connect to the gauge and verify the connection. 
         
         Parameters
@@ -25,26 +25,26 @@ class FRG700(Device):
             The port the device is connected to, of the form "/dev/ttyACM2".
         """
         try:
-            self.Gauge = serial.Serial(address,
+            self.TC = serial.Serial(address,
                                     baudrate=9600,
                                     bytesize=8,
                                     parity='N',
                                     stopbits=1,
                                     timeout=2)
         except:
-            print("USB error: Could not connect to the vacuum gauge.")
+            print("USB error: Could not connect to the timing controller.")
             self.connection_error = True
             return
         self.ID = self.get_ID().decode("utf-8")
         # No way to get a serial number - address should be unique
         self.serialNum = address
-        print('Vacuum gauge ID: ' + self.ID)
+        print('Timing controller ID: ' + self.ID)
         # The gauge sends the id on start up and sometime get id catches that
         # This clears the get ID response
         time.sleep(2)
-        self.Gauge.reset_input_buffer()
+        self.TC.reset_input_buffer()
         
-    # Request gauge parameters
+    # Request controller parameters
     #--------------------------------------------------------------------------
     def get_ID(self):
         """ Get the gauge ID.
@@ -54,48 +54,47 @@ class FRG700(Device):
         ID : bytes
             The 6 ID bytes of the gauge.
         """
-        self.Gauge.write(b"*IDN?")
-        return self.Gauge.readline(7).strip()
+        self.TC.write(b"*IDN?")
+        return self.TC.readline(7).strip()
     
-    def get_voltage(self):
-        """ Get the output voltage of the gauge. 
+    # Control the controller
+    #--------------------------------------------------------------------------
+    def reset(self, shots):
+        """ Reset the shot counter and the maximum shots. 
+        
+        Parameters
+        ----------
+        shots : int
+            The number of shots to take for the dataset.
+        """
+        self.TC.write(b"R" + bytes(str(shots), "utf-8"))
+        
+    def start(self):
+        """ Enable the delay generator and start taking data. """
+        self.TC.write(b"ON")
+        
+    def stop(self):
+        """ Disable the delay generator and stop taking data. """
+        self.TC.write(b"OFF")
+        
+    # Read data from the controller
+    #--------------------------------------------------------------------------
+    def get_shot(self):
+        """ Get the current shot from the controller. 
         
         Returns
         -------
-        voltage : int array
-            The integer read by the ADC.
+        shot : int
+            The current shot of the dataset
         """
-        self.Gauge.write(b"VOLTAGE?")
-        v0 = int(self.Gauge.readline())
-        v1 = int(self.Gauge.readline())
-        v2 = int(self.Gauge.readline())
-        v3 = int(self.Gauge.readline())
-        return [v0, v1, v2, v3]
-    
-    def get_pressure(self):
-        """ Get the pressure reading of the gauge. 
-        
-        Returns
-        -------
-        pressure : double array
-            The pressure read by the gauge for each channel.
-        """
-        self.Gauge.write(b"PRESSURE?")
-        # If the device list is refreshed, the arduino will reset and send an ID
-        # This can't be parsed to a float and the device will fail
         try:
-            p = self.Gauge.readline().decode("utf-8")
-            p.strip()
-            p = p.split(',')
-            p0 = float(p[0])
-            p1 = float(p[1])
-            p2 = float(p[2])
-            p3 = float(p[3])
-            return [p0, p1, p2, p3]
-        except ValueError:
-            return [0.0, 0.0, 0.0, 0.0]
+            shot = int(self.TC.readline().decode("utf-8"))
+        except:
+            shot = None
+        return shot
     
     def close(self):
         """ Close method, doesn't do anything for a serial instrument. """
-        self.Gauge.close()
-
+        self.TC.close()
+    
+    

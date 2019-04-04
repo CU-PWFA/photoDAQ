@@ -20,7 +20,7 @@ class StreamProcess(Process):
         super().__init__(instr)
         
     def start_stream(self, save=False): 
-        """ Start streaming spectra to the save process. 
+        """ Start streaming data from the device. 
         
         Parameters
         ----------
@@ -53,19 +53,22 @@ class StreamProcess(Process):
             
     def create_capture_thread(self):
         """ Create a dedicated thread to handle data acquisition. """
-        args = (self.r_queue, self.streaming)
+        args = (self.r_queue, )
         self.c_thread = threading.Thread(target=self.capture_thread, args=args)
         self.c_thread.setDaemon(True)
         self.c_thread.start()
         
-    def capture_thread(self, r_queue, streaming):
+    def capture_thread(self, r_queue):
         """ Capture data loop, should be overwritten by child classes.
         
         Parameters
         ----------
         r_queue : mp.Queue
             The response queue to place spectrums in.
-        streaming : bool
-            Thread exit flag, exits if False.
         """
         pass
+    
+    def close(self):
+        """ Streaming instruments need to stop streaming before they close. """
+        self.stop_stream()
+        super().close()

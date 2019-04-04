@@ -120,6 +120,10 @@ def serial_ports():
         serial = pt.serial_number
         vid = pt.vid
         pid = pt.pid
+        if serial == '5573631333835150F150':
+            instr = instrInfo.TC(pt.device)
+            instr.serial = serial
+            instrs[instr.serial] = instr
         if serial == '55736313338351603181':
             instr = instrInfo.FRG700(pt.device)
             instr.serial = serial
