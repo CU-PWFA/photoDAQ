@@ -81,6 +81,18 @@ class SRSDG645(Process):
             meta = self.create_meta()
             rsp = daq.Rsp('save', settings, meta)
             self.r_queue.put(rsp)
+            
+    def set_chA_delay(self, delay):
+        """ Set the delay for channel A keeping the same reference. 
+        
+        Parameters
+        ----------
+        delay : float
+            The delay in seconds for the channel.
+        """
+        sdg = self.device
+        ref, delay = sdg.get_delay(2)
+        sdg.set_delay([ref, 'A', delay])
                
     def get_datatype(self):
         """Return the type of data. """

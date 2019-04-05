@@ -212,7 +212,7 @@ class Daq():
             if self.taking_data:
                 i = self.set
                 self.shot += 1
-                stop_points = self.sweep['stop_points']
+                stop_points = self.stop_points
                 # Dataset finished
                 if self.shot == stop_points[-1]:
                     self.taking_data = False
@@ -330,7 +330,6 @@ class Daq():
         # For sweeps we need to synchronize the different devices
 
         # Setup the length of capture between parameter changes
-        print(sweep)
         shot_array = np.arange(0, shots, dtype='int16') + 1
         stop_array = np.zeros(shots, dtype='bool')
         for serial, item in sweep.items():
@@ -341,19 +340,26 @@ class Daq():
             stop = (shot_array % item['shot_per_step']) == 0
             stop_array = np.logical_or(stop_array, stop)
         stop_points = np.array([i for i, j in enumerate(stop_array) if j]) + 1
-        np.append(stop_points, shots)
+        stop_points = np.append(stop_points, shots)
+        print(stop_points)
         
         # If we don't have any sweeps, run through the shots
         if len(stop_points) == 0:
             self.start_TC(shots)
         
         # Set all initial parameters
-        
-        
+        for serial, item in sweep.items():
+            if item['sweep'] == False:
+                continue
+            value = item['parameter_array'][0]
+            instr = self.instr[serial]
+            cmd = item['command']
+            self.send_command(instr, cmd, value)
+            
         # Tell the timing thread to start taking data
         self.shot = 0
         self.set = 1
-        sweep['stop_points'] = stop_points
+        self.stop_points = stop_points
         self.sweep = sweep
         self.taking_data = True
         
@@ -382,6 +388,16 @@ class Daq():
         
     def sweep_step(self):
         """ Change any instrument parameters necessary for the sweep. """
+        for serial, item in self.sweep.items():
+            if item['sweep'] == False:
+                continue
+            if self.shot % item['shot_per_step'] == 0:
+                # Update this instrument for this shot
+                ind = int(np.floor(self.shot / item['shot_per_step']))
+                value = item['parameter_array'][ind]
+                instr = self.instr[serial]
+                cmd = item['command']
+                self.send_command(instr, cmd, value)
 
 
 class Cmd():
