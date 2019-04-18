@@ -303,7 +303,10 @@ class Camera(Device):
         image : obj
             A PyCapture2.Image object which includes the image data.
         """
-        image = self.cam.retrieveBuffer()
+        try:
+            image = self.cam.retrieveBuffer()
+        except pc2.Fc2error:
+            image = None
         return image
         
     def close(self):

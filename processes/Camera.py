@@ -53,15 +53,16 @@ class Camera(StreamProcess):
             # make it through until a buffer is retrieved
             # This is a problem with an external trigger, the save command
             # wont make it through until after the first shot
-            image = self.device.retrieve_buffer()
-            raw = image.getData()
-            # TODO handle converting the picture to a useful form
-            data = np.random.randint(0, 256, size=(1024, 1024), dtype=np.uint16)
-            
             meta = self.create_meta()
-            if self.save: response = 'save'
-            else: response = 'output'
-            rsp = daq.Rsp(response, data, meta)
+            image = self.device.retrieve_buffer()
+            if image is None:
+                print('Image dropped, shot %d' % self.shot)
+                raw = None
+            else:
+                raw = image.getData()
+                if self.save: response = 'save'
+                else: response = 'output'
+                rsp = daq.Rsp(response, raw, meta)
             self.r_queue.put(rsp)
             
             self.shot += 1
