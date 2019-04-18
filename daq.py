@@ -169,17 +169,12 @@ class Daq():
                 print("Instrument " + instr.serial + " disconnected.")
                 break
             elif response == 'output':
+                rsp = file.prep_data(rsp)
                 output(rsp)
             elif response == 'save':
+                rsp = file.prep_data(rsp)
                 output(rsp)
-                # TODO implement saving data to file in a better way
-                meta = rsp.meta
-                #if meta["Data type"] == 'IMAGE':
-                #    rsp.data = file.prep_IMAGE(data)
-                
-                save = getattr(file, 'save_' + meta["Data type"])
-                if save(rsp, meta['Data set'], meta['Shot number']) == False:
-                    print("Failed to save datafrom " + meta['Serial number'])
+                file.save_data(rsp)
             elif response == 'connection_error':
                 output(rsp)
                 print("Instrument " + instr.serial + " failed to connect.")
@@ -245,12 +240,10 @@ class Daq():
         for serial in list(self.instr.keys()):
             self.disconnect_instr(self.instr[serial])
         
-        # TODO add this information into a verbose version
-#        threads = threading.enumerate()
-#        for _t in threads:
-#          print( _t.name)
-#          print( _t.isAlive())
-#          print()
+        threads = threading.enumerate()
+        for _t in threads:
+            print('Checking that all threads exited.')
+            print('Thread name:', _t.name, 'Alive:', _t.isAlive())
     
     def send_command(self, instr, command, *args, **kwargs):
         """ Send a command to a instrument. 

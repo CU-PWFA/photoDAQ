@@ -147,40 +147,84 @@ def make_dir_struct(root, dataSet):
 # Save functions
 #------------------------------------------------------------------------------
 
-def save_meta(meta, dataSet):
-    """ Save the metadata file.
+#def save_meta(meta, dataSet):
+#    """ Save the metadata file.
+#    
+#    Parameters
+#    ----------
+#    meta : dict
+#        The metadata dictionary.
+#    dataSet : int
+#        The data set number.
+#    """
+#    # XXX save the metadata as a numpy file for now, may change to text later
+#    dirName = get_dirName('META', dataSet)
+#    fileName = 'meta' + '_' + str(dataSet)
+#    np.save(dirName + fileName, meta)
+    
+
+def prep_data(rsp):
+    """ Perform any prep work for the specific datatype.
     
     Parameters
     ----------
-    meta : dict
-        The metadata dictionary.
-    dataSet : int
-        The data set number.
+    rsp : rsp object
+        The response object with the instrument data.
+        
+    Returns
+    -------
+    rsp : rsp object
+        The response object with the modified instrument data.
     """
-    # XXX save the metadata as a numpy file for now, may change to text later
-    dirName = get_dirName('META', dataSet)
-    fileName = 'meta' + '_' + str(dataSet)
-    np.save(dirName + fileName, meta)
+    meta = rsp.meta
+    data_type = meta["Data type"]
+    if data_type == 'IMAGE':
+        rsp = prep_IMAGE(rsp)
     
+    return rsp
 
-def prep_IMAGE(data):
+
+def save_data(rsp):
+    """ Save the response to file.
+    
+    Parameters
+    ----------
+    rsp : rsp object
+        The response object with the instrument data.
+    """
+    meta = rsp.meta
+    data_type = meta["Data type"]
+    save = True
+    if data_type == 'IMAGE':
+        save = save_IMAGE(rsp, meta['Data set'], meta['Shot number'])
+    elif data_type == 'TRACE':
+        save = save_TRACE(rsp, meta['Data set'], meta['Shot number'])
+    elif data_type == 'SPEC':
+        save = save_SPEC(rsp, meta['Data set'], meta['Shot number'])
+    elif data_type == 'SET':
+        save = save_SET(rsp, meta['Data set'], meta['Shot number'])
+    if save == False:
+        print("Failed to save data from " + meta['Serial number'])
+
+
+def prep_IMAGE(rsp):
     """ Convert the image data from a buffer to an array. 
     
     Parameters
     ----------
-    data : dict
-        The dictionary with image and meta dict.
+    rsp : rsp object
+        The response object with the image data.
         
     Returns
     -------
     image : array-like
         The image array.
     """
-    meta = data['meta'] 
-    raw = data['raw']
+    meta = rsp.meta
+    raw = rsp.data
     width, height = meta['pixel']
-
-    return np.frombuffer(bytes(raw), dtype=np.uint16).reshape(height, width) 
+    rsp.data = np.frombuffer(bytes(raw), dtype=np.uint16).reshape(height, width) 
+    return rsp
 
     
 def save_IMAGE(rsp, dataSet, shot):
@@ -205,7 +249,8 @@ def save_IMAGE(rsp, dataSet, shot):
     tiff.write_image(rsp.data)
     tiff.close()  
     
-    add_image_meta(name, meta)
+    # XXX we don't add meta into the individual images right now
+    #add_image_meta(name, meta)
     
 
 def add_image_meta(fileName, meta):
@@ -223,21 +268,24 @@ def add_image_meta(fileName, meta):
     subprocess.call('tiffset -s 270 ' + metaBASE + ' ' + fileName, shell=True)
     
 
-def save_TRACE(data, dataSet, shot):
+def save_TRACE(rsp, dataSet, shot):
     """ Save an oscilloscope trace to a numpy file. 
     
     Parameters
     ----------
-    data : dict
-        The dictionary with a t array, y array, and meta dictionary.
+    rsp : rsp object
+        The response object with the image data.
     dataSet : int
         The data set number.
     shot : int
         The shot number.
     """
+    data = rsp.data
     if 't' in data and 'y' in data and 'meta' in data:
         dirName = get_dirName('TRACE', dataSet)
-        fileName = get_fileName(data['meta']['INSTR'], dataSet, shot)
+        meta = rsp.meta
+        serial = meta['Serial number']
+        fileName = get_fileName(serial, dataSet, shot)
         np.save(dirName + fileName, data)
         return True
     else:
@@ -245,51 +293,50 @@ def save_TRACE(data, dataSet, shot):
         return False
 
 
-def save_SET(data, dataSet, shot):
+def save_SET(rsp, dataSet, shot):
     """ Save the settings of an instrument as a numpy file. 
     
     Parameters
     ----------
-    data : dict
-        The dictionary with a t array, y array, and meta dictionary.
+    rsp : rsp object
+        The response object with the image data.
     dataSet : int
         The data set number.
     shot : int
         The shot number.
     """
-    if 'meta' in data:
-        dirName = get_dirName('SET', dataSet)
-        serial = data['meta']['Serial number']
-        fileName = get_fileName(serial, dataSet, shot)
-        np.save(dirName + fileName, data)
-        return True
-    else:
-        print('Saving Error: Settings have no metadata.')
-        return False
-    
-    
-def save_SPEC(data, dataSet, shot):
+    dirName = get_dirName('SET', dataSet)
+    meta = rsp.meta
+    serial = meta['Serial number']
+    fileName = get_fileName(serial, dataSet, shot)
+    np.save(dirName + fileName, rsp.data)
+
+
+def save_SPEC(rsp, dataSet, shot):
     """ Save a spectrum to a numpy file. 
     
     Parameters
     ----------
-    data : dict
-        The dictionary with an lambda array, I array, and meta dictionary.
+    rsp : rsp object
+        The response object with the image data.
     dataSet : int
         The data set number.
     shot : int
         The shot number.
     """
+    data = rsp.data
     if 'lambda' in data and 'I' in data and 'meta' in data:
         dirName = get_dirName('SPEC', dataSet)
-        fileName = get_fileName(data['meta']['INSTR'], dataSet, shot)
+        meta = rsp.meta
+        serial = meta['Serial number']
+        fileName = get_fileName(serial, dataSet, shot)
         np.save(dirName + fileName, data)
         return True
     else:
         print('Saving Error: Spec data does not have the correct structure.')
         return False
-    
-    
+
+
 def meta_IMAGE(dataset, serial):
     """ Save the image meta data in a txt file. 
     
@@ -299,9 +346,6 @@ def meta_IMAGE(dataset, serial):
         The data set number.
     serial : int
         List of Cameras used in dataset by serial number
-    ts : bool
-        Records time stamp of each shot if True. 
-        Does nothing if False.
     """
     metaName = get_dirName('META', dataset)+'meta_{}.txt'.format(dataset)
     f = open(metaName, 'r')
@@ -317,42 +361,8 @@ def meta_IMAGE(dataset, serial):
     contents = ''.join(contents)
     f.write(contents)
     f.close()
-    '''
-    cnt = 0
-    for ind in range(len(contents)):
-        line = contents[ind]
-        if line[0] == '#':
-            cnt += 1
-        if cnt == 3:
-            contents.insert(ind, '\tCamera :')
-            for num in serial:
-                ind+=1
-                contents.insert(ind, '\n\t\t{}'.format(num))
-            contents.insert(ind+1, '\n\n')
-            break
-      
-    if cnt != 3:
-        contents.append('\n\n\tCamera :')
-        for num in serial:
-            contents.append('\n\t\t{}'.format(num))
-        contents.append('\n\n')
-    
-    if ts:
-        contents.append('# Time Stamp of Each Shot (year/month/day/hour/minute/second/microsecond)\n')
-        dirName = get_dirName('IMAGE', dataset)
-        for fileName in sorted( Gvar.list_files(dirName, 'tiff') ):
-            im = Image.open(dirName+fileName)
-            meta = im.tag[270][0]
-            meta = base64.b64decode(meta) 
-            meta = ast.literal_eval(str(meta, 'ascii'))
-            
-            contents.append('\nShot {}: {}'.format(meta['Shot number'], meta['Timestamp']))
 
-    f = open(metaName, 'w')
-    contents = ''.join(contents)
-    f.write(contents)
-    f.close()
-    '''
+
 def meta_TRACE(dataset, serial):
     """Save the trace meta data in a txt file.
     
@@ -362,9 +372,6 @@ def meta_TRACE(dataset, serial):
         The data set number
     serial : int
         List of O-scopes used in dataset by serial number
-    ts : bool
-        Records time stamp of each shot if True. 
-        Does nothing if False.
     """
     metaName = get_dirName('META', dataset)+'meta_{}.txt'.format(dataset)
     f = open(metaName, 'r')
@@ -378,40 +385,8 @@ def meta_TRACE(dataset, serial):
     contents = ''.join(contents)
     f.write(contents)      
     f.close()
-    '''
-    cnt = 0
-    for ind in range(len(contents)):
-        line = contents[ind]
-        if line[0] == '#':
-            cnt += 1
-        if cnt == 3:
-            contents.insert(ind, '\tOscilliscope : ')
-            contents.insert(ind+1, '\n\t\t{}'.format(serial[0]))
-            for key, elem in chan.items():
-                ind+=1
-                contents.insert(ind+1, '\n\t\t\t{} : {}'.format(key, elem[1]))
-            contents.insert(ind+2, '\n\n')
-            break   
-       
-    if cnt != 3:
-        contents.append('\n\n\tOscilliscope : ')
-        contents.append('\n\t{}'.format(serial[0]))
-        for key, elem in chan.items():
-            contents.append('\n\t\t\t{} : {}'.format(key, elem[1]))
-        contents.append('\n\n')
-        
-    if ts:
-        contents.append('# Time Stamp of Each Shot (year/month/day/hour/minute/second/microsecond)\n')
-        for file in filName:
-            meta = load_TRACE(dirName+file)['meta']
-            contents.append('\nShot {}: {}'.format(meta['Shot number'], meta['Timestamp']))
-    
-    f = open(metaName, 'w')
-    contents = ''.join(contents)
-    f.write(contents)      
-    f.close()
-    '''
-    
+
+
 def meta_SPEC(dataset, serial):
     """Save the trace meta data in a txt file.
     
@@ -421,9 +396,6 @@ def meta_SPEC(dataset, serial):
         The data set number
     serial : int
         List of O-scopes used in dataset by serial number
-    ts : bool
-        Records time stamp of each shot if True. 
-        Does nothing if False.
     """
     metaName = get_dirName('META', dataset)+'meta_{}.txt'.format(dataset)
     f = open(metaName, 'r')
@@ -437,7 +409,8 @@ def meta_SPEC(dataset, serial):
     contents = ''.join(contents)
     f.write(contents)      
     f.close()
-    
+
+
 def meta_SET(dataset, serial):
     """Save the trace meta data in a txt file.
     
@@ -463,113 +436,8 @@ def meta_SET(dataset, serial):
     contents = "".join(contents)
     f.write(contents)
     f.close()
-    '''
-    cnt = 0
-    for ind in range(len(contents)):
-        line = contents[ind]
-        if line[0] == '#':
-            cnt += 1
-        if cnt == 3:
-            contents.insert(ind, '\tPower Supply : ')
-            for val in serial:
-                ind+=1
-                contents.insert(ind, '\n\t\t{}'.format(val))
-            contents.insert(ind+1, '\n\n')
-            break   
-       
-    if cnt != 3:
-        contents.append('\n\n\tPower Supply : ')
-        for val in serial:
-            contents.append('\n\t\t{}'.format(val))
-        contents.append('\n\n')
-    
-    if ts:
-        dirName = get_dirName('SET', dataset)      
-        filName = sorted( Gvar.list_files(dirName, 'npy') )
-        contents.append('# Time Stamp of Each Shot (year/month/day/hour/minute/second/microsecond)\n')
-        for file in filName:
-            meta = load_TRACE(dirName+file)['meta']
-            contents.append('\nShot {}: {}'.format(meta['Shot number'], meta['Timestamp']))
-    
-    f = open(metaName, 'w')
-    contents = "".join(contents)
-    f.write(contents)
-    f.close()
-    '''
-def meta_DELAY(dataset, serial):
-    """Save the trace meta data in a txt file.
-    
-    Parameters
-    ----------
-    dataset : int
-        The data set number
-    serial : int
-        Ethernet port for signal delay generator
-    ts : bool
-        Records time stamp of each shot if True. 
-        Does nothing if False.
-    """
-    
-    metaName = get_dirName('META', dataset)+'meta_{}.txt'.format(dataset)
-    f = open(metaName, 'r')
-    contents = f.readlines()
-    f.close()
-    
-    contents.append('\n\tSignal Delay Generator : %s' % serial[0])
-    contents.append('\n')
-    
-    f = open(metaName, 'w')
-    contents = "".join(contents)
-    f.write(contents)
-    f.close()
-    '''
-    s = '   '
-    cnt = 0
-    for ind in range(len(contents)):
-        line = contents[ind]
-        if line[0] == '#':
-            cnt += 1
-        if cnt == 3:
-            contents.insert(ind, s+'Signal Delay Generator : ')
-            ind+=1
-            contents.insert(ind, '\n'+s+s+'{}'.format(serial[0]))
-            for file in files:
-                ind+=1
-                shot = int(file[-8:-4])
-                contents.insert(ind, '\n'+s+s+'Set before shot {}'.format(shot))
-                data = load_DELAY(dirName+file)
-                settings = data['settings']
-                for key in list(settings.keys()):
-                    ind+=1
-                    contents.insert(ind, '\n'+s+s+s++key)
-                    for delay in settings[key]['delay']:
-                        ind+=1
-                        contents.insert(ind, '\n'+s+s+s+'%s to %s by %s s' % tuple(delay) )
-                    ind+=1
-                    contents.insert(ind, '\n'+s+s+s+'%s = %s V\n' % tuple(settings[key]['output']))
-            contents.insert(ind+1, '\n')
-            break   
-        
-    if cnt != 3:
-        contents.append('\n\n'+s+'Signal Delay Generator : ')
-        contents.append('\n'+s+s+'{}'.format(serial[0]))
-        for file in files:
-            shot = int(file[-8:-4])
-            contents.append('\n'+s+s+s+'Set before shot {}'.format(shot))
-            data = load_DELAY(dirName+file)
-            settings = data['settings']
-            for key in list(settings.keys()):
-                contents.append('\n'+s+s+s+s+key)
-                for delay in settings[key]['delay']:
-                    contents.append('\n'+s+s+s+s+'%s to %s by %s s' % tuple(delay) )
-                contents.append('\n'+s+s+s+s+'%s = %s V\n' % tuple(settings[key]['output']))
-        contents.append('\n')
-    
-    f = open(metaName, 'w')
-    contents = "".join(contents)
-    f.write(contents)
-    f.close()
-    '''
+
+
 def meta_TXT(desc, dataset):
     """Records meta data in txt file and then ends dataset
     """

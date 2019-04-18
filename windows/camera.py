@@ -207,7 +207,7 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         rsp : rsp object
             The response object with the image data.
         """
-        self.image_view.setImage(rsp.data)#, autoLevels=False)
+        self.image_view.setImage(rsp.data, autoLevels=False)
     
     @pyqtSlot(dict)
     def update_info(self, rsp):
