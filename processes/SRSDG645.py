@@ -91,7 +91,8 @@ class SRSDG645(Process):
             The delay in seconds for the channel.
         """
         sdg = self.device
-        ref, delay = sdg.get_delay(2)
+        ref, temp = sdg.get_delay(2)
+        ref = self.channels[ref]
         sdg.set_delay([ref, 'A', delay])
                
     def get_datatype(self):
