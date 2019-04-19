@@ -223,7 +223,7 @@ def prep_IMAGE(rsp):
     meta = rsp.meta
     raw = rsp.data
     width, height = meta['pixel']
-    rsp.data = np.frombuffer(bytes(raw), dtype=np.uint16).reshape(height, width) 
+    rsp.data = np.frombuffer(raw, dtype=np.uint16).reshape(height, width) 
     return rsp
 
     

@@ -39,7 +39,7 @@ class Camera(StreamProcess):
         self.streaming = False
     
     def capture_thread(self, r_queue):
-        """ Contu=inually queries the camera for images.  
+        """ Continually queries the camera for images.  
         
         Parameters
         ----------
@@ -53,21 +53,26 @@ class Camera(StreamProcess):
             # make it through until a buffer is retrieved
             # This is a problem with an external trigger, the save command
             # wont make it through until after the first shot
+            start = time.clock()
             meta = self.create_meta()
             image = self.device.retrieve_buffer()
             if image is None:
                 print('Image dropped, shot %d' % self.shot)
                 raw = None
             else:
-                raw = image.getData()
+                raw = bytes(image.getData())
                 if self.save: response = 'save'
                 else: response = 'output'
+                #raw = np.random.randint(0, 256, size=(6000000), dtype=np.uint16)
                 rsp = daq.Rsp(response, raw, meta)
             self.r_queue.put(rsp)
+            end = time.clock()
+            print("Start:", start, "End:", end, "Duration:", end-start)
             
             self.shot += 1
             if self.shot == self.numShots:
                 self.save = False
+                
                 self.stop_stream() # For releasing the GIL
             time.sleep(0.01) # Guarantee the GIL is released
             
