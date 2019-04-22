@@ -325,7 +325,7 @@ def save_SPEC(rsp, dataSet, shot):
         The shot number.
     """
     data = rsp.data
-    if 'lambda' in data and 'I' in data and 'meta' in data:
+    if 'lambda' in data and 'I' in data:
         dirName = get_dirName('SPEC', dataSet)
         meta = rsp.meta
         serial = meta['Serial number']

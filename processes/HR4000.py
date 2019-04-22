@@ -8,6 +8,7 @@ Created on Wed Jul 11 18:03:07 2018
 
 from processes.streamProcess import StreamProcess
 import time
+import daq
 
 class HR4000(StreamProcess):
     """ Process class for the HR4000 spectrometer. """       
@@ -22,27 +23,16 @@ class HR4000(StreamProcess):
         while self.streaming:
             raw = self.device.get_spectrum()
             meta = self.create_meta()
-            
             data = {'lambda' : raw[0, :],
-                    'I' : raw[1, :],
-                    'meta' : meta,
-                    'save' : self.save}
+                    'I' : raw[1, :]}
+            if self.save: response = 'save'
+            else: response = 'output'
+            rsp = daq.Rsp(response, data, meta)
+            self.r_queue.put(rsp)
+            
             self.shot += 1
-            self.r_queue.put(data)
             if self.shot == self.numShots:
-                self.save = False
-        
-    def save_spectrum(self):
-        """ Save the current spectrum to disk. """
-        w, a = self.device.get_spectrum()
-        meta = self.create_meta()
-        data = {'save' : True,
-                'meta' : meta,
-                't' : w,
-                'y' : a}
-        self.shot += 1
-        self.r_queue.put(data)
-        
+                self.save = False        
     
     def get_datatype(self):
         """ Return the type of data. """

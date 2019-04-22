@@ -24,9 +24,10 @@ qtCreatorFile = os.path.join(package_directory, "HR4000.ui")
 Ui_SpecWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 class SpecWindow(QtBaseClass, Ui_SpecWindow):
-    data_acquired = pyqtSignal(dict)
+    data_acquired = pyqtSignal(object)
+    device_connected = pyqtSignal()
     
-    def __init__(self, parent, DAQ, device):
+    def __init__(self, parent, DAQ, instr):
         """ Create the parent class and add event handlers. 
         
         Parameters
@@ -35,10 +36,8 @@ class SpecWindow(QtBaseClass, Ui_SpecWindow):
             The parent window that creates this window.
         DAQ : DAQ class
             The class representing the DAQ.
-        serial : string or int
-            The serial number or string of the device the window is for.
-        queue : queue
-            Queue with output from the DAQ.
+        instr : instrInfo object
+            Object for a instrument.
         """
         QtBaseClass.__init__(self)
         Ui_SpecWindow.__init__(parent)
@@ -54,12 +53,13 @@ class SpecWindow(QtBaseClass, Ui_SpecWindow):
         self.startIntButton.clicked.connect(self.start_integration)
         self.stopIntButton.clicked.connect(self.stop_integration)
         self.showIntButton.clicked.connect(self.show_integration)
+        self.device_connected.connect(self.setup_window)
         
         # Grab references for controlling the spectrometer
         self.DAQ = DAQ
-        self.serial = device.serial
-        self.queue = device.queue
-        self.device = device
+        self.serial = instr.serial
+        self.queue = instr.output_queue
+        self.instr = instr
 
         # Create the container for the image
         self.create_image()
@@ -95,12 +95,12 @@ class SpecWindow(QtBaseClass, Ui_SpecWindow):
         
     def create_update_thread(self):
         """ Create a thread to poll the response queue and update the image. """
-        args = (self.queue, self.data_acquired.emit)
+        args = (self.queue, self.data_acquired.emit, self.device_connected.emit)
         thread = threading.Thread(target=self.update_thread, args=args)
         thread.setDaemon(True)
         thread.start()
         
-    def update_thread(self, queue, callback):
+    def update_thread(self, queue, callback, setup):
         """ Wait for updated data to display. 
         
         Parameters
@@ -109,29 +109,21 @@ class SpecWindow(QtBaseClass, Ui_SpecWindow):
             The queue that the data is arriving on.
         callback : func
             The signal.emit to call to update the plot. 
+        setup : func
+            The signal.emit to call when the device is connected.
         """
         while True:
-            data = queue.get()
-            if data == '__exit__':
+            rsp = queue.get()
+            response = rsp.response
+            if response == 'exit':
                 break
-            elif data == '__Connected__':
-                self.setup_window()
+            elif response == 'connected':
+                setup()
             else:
-                callback(data)
+                callback(rsp)
             queue.task_done()
-            
-    def setup_window(self):
-        """ Perform setup after the spectrometer connects. """
-        self.startStreamButton.setEnabled(True)
-        self.stopStreamButton.setEnabled(True)
-        self.intField.setEnabled(True)
-        self.backShotField.setEnabled(True)
-        self.takeBackButton.setEnabled(True)
-        self.startIntButton.setEnabled(True)
-        self.stopIntButton.setEnabled(True)
-        self.intShotField.setEnabled(True)
     
-    def send_command(self, command, args=None, kwargs=None):
+    def send_command(self, command, *args, **kwargs):
         """ Send commands to this windows instruments. 
         
         Parameters
@@ -142,7 +134,7 @@ class SpecWindow(QtBaseClass, Ui_SpecWindow):
             Arguments to be sent to the command function.
         """
         DAQ = self.DAQ
-        DAQ.send_command(DAQ.command_queue[self.serial], command, args)
+        DAQ.send_command(self.instr, command, *args, **kwargs)
         
     def create_plot(self, l, I):
         """ Handle all the matplotlib that goes into the plot.
@@ -251,6 +243,18 @@ class SpecWindow(QtBaseClass, Ui_SpecWindow):
     # Event Handlers
     ###########################################################################
     @pyqtSlot()
+    def setup_window(self):
+        """ Perform setup after the spectrometer connects. """
+        self.startStreamButton.setEnabled(True)
+        self.stopStreamButton.setEnabled(True)
+        self.intField.setEnabled(True)
+        self.backShotField.setEnabled(True)
+        self.takeBackButton.setEnabled(True)
+        self.startIntButton.setEnabled(True)
+        self.stopIntButton.setEnabled(True)
+        self.intShotField.setEnabled(True)
+    
+    @pyqtSlot()
     def start_stream(self):
         """ Start the camera stream and display it. """
         self.send_command('start_stream')   
@@ -267,17 +271,18 @@ class SpecWindow(QtBaseClass, Ui_SpecWindow):
     @pyqtSlot(float)
     def set_integration(self, value):
         """ Set the integration time. """
-        self.send_command('set_integration_time', (value*1000.,))
+        self.send_command('set_integration_time', value*1000.)
     
-    @pyqtSlot(dict)
-    def update_canvas(self, data):
+    @pyqtSlot(object)
+    def update_canvas(self, rsp):
         """ Update the canvas with the new image. 
         
         Parameters
         ----------
-        data : dict
-            The dictionary with the image data and meta.
+        rsp : rsp object
+            The response object with the spectrum data.
         """
+        data = rsp.data
         I = data['I']
         # Take the background first, before we modify I at all
         if self.taking_background == True:

@@ -39,8 +39,8 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
             The parent window that creates this window.
         DAQ : DAQ class
             The class representing the DAQ.
-        device : deviceInfo object
-            Object for a device.
+        instr : instrInfo object
+            Object for a instrument.
         """
         QtBaseClass.__init__(self)
         Ui_CameraWindow.__init__(parent)
