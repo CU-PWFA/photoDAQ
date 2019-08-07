@@ -19,14 +19,58 @@ import functions as fun
 from matplotlib import rc
 rc('mathtext', default='regular')
 
+dataset = '1908020002'
+
 f.PATH = f.get_file_path()
-path = f.PATH+'TRACE/year_2019/month_01/day_21/TimeSweep/'
-#dataFile = h5.File(path+'IV_TimeSeries.h5', 'w')
+path = f.PATH+'TRACE/year_2019/month_08/day_02/'+dataset+'/'
 
-dataset = ['1901210020',
-           '1901210022',
-           '1901210023']
+dataFile = h5.File(path+'trace_set.h5', 'r')
+crnt = dataFile['crnt'][:]
+bias = dataFile['bias'][:]
+time = dataFile['time'][:]
+dataFile.close()
 
+shp = bias.shape[0]
+for i in range(shp):
+    plt.plot(time * 1e6, bias[i])
+    
+plt.show()
+plt.close()
+
+'''
+shots = crnt.shape[0]
+half = int(.5 * shots)
+incr = 18
+
+#ivData = h5.File(path+'iv_set.h5', 'w')
+
+strt = 100
+fnsh = strt + 1
+for t_ind, t in enumerate(time[strt:fnsh]):
+    t_ind = t_ind + strt
+    
+    cnt=0
+    Crnt = np.empty(shots- (2*incr+1))
+    Bias = np.empty(shots- (2*incr+1))
+    for s in range(shots):
+        if (s < half-incr) or (s > half+incr):
+            Crnt[cnt] = crnt[s][t_ind] 
+            Bias[cnt] = bias[s][0]
+            cnt+=1
+    
+    Crnt[0:half-incr+1] = - np.log(np.abs(Crnt[0:half-incr+1])) + 2*np.log(np.abs(Crnt[half-incr]))
+    Crnt[half-incr+1::] = np.log(np.abs(Crnt[half-incr+1::]))
+    plt.scatter(Bias, Crnt, s=10)
+    plt.title(r'time: {0} $\mu$s ({1})'.format(round(t * 1e6, 3), t_ind))
+    plt.show()
+    plt.close()
+
+    #ivData.create_dataset('time: %s' % time, data=iv_data)
+    
+#ivData.close()
+dataFile.close()
+'''     
+'''
 Vp1 = 1
 Vp2 = -1.6
 
@@ -116,4 +160,4 @@ for i in [35]:#range(numpts):
     
 
 #dataFile.close()
-    
+'''   

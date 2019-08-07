@@ -90,4 +90,21 @@ def trace_analysis(key, trace, time, amp=1000):
         y = trace['y']
         return np.mean(y)
 
+def return_time(trace, trig):
+    t = trace['t'][1::] 
+    time = t[trig::] - t[trig]
+    
+    return time
 
+    
+def return_trace(trace, amp, trig):
+    y = trace['y']
+    crnt = - y[trig::] / amp
+
+    return crnt
+    
+
+def average_trace(trace, sign, trig):
+    y = sign * trace['y'][trig::]
+    
+    return np.array([np.mean(y), np.std(y)])
