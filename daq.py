@@ -34,7 +34,7 @@ class Daq():
     """
     TC_serial = '5573631333835150F150'
     def __init__(self, desc=None, broadcast=False, max_command_queue_size=100,
-                 max_response_queue_size=1000, debug=False):
+                 max_response_queue_size=1000, debug=False, print_normal=False):
         """ Initialize the main DAQ class.
         
         The description is used for the first dataset, it can be changed post 
@@ -65,6 +65,7 @@ class Daq():
         self.max_print_queue_size = 1000  # If more than 1000 messages back up something is wrong
         self.desc = desc
         self.broadcast = broadcast
+        self.print_normal = print_normal
         self.debug = debug
         self.taking_data = False
         # Setup the daq
@@ -84,7 +85,7 @@ class Daq():
         
         # Create the print queue to make stdout multiprocessing safe
         self.p_queue = mp.JoinableQueue(self.max_print_queue_size)
-        if self.debug == False:
+        if self.debug == False and self.print_normal == False:
             sys.stdout = WriteStream(self.p_queue)
         
         # Setup an initial dataset number
@@ -99,7 +100,7 @@ class Daq():
             The object representing the instrument to be connected.
         """
         if instr.serial in self.instr:
-            self.print_msg("Instrument "+instr.serial+" is already connected.")
+            print("Instrument "+instr.serial+" is already connected.")
         else:
             # Create all the response queues
             instr.command_queue = mp.JoinableQueue(self.max_command_queue_size)
@@ -233,7 +234,7 @@ class Daq():
             self.send_command(instr, 'close')
             self.instr.pop(instr.serial)
         else:
-            self.print_msg("Instrument "+instr.serial+" cannot be disconnected because it is not connected.")
+            print("Instrument "+instr.serial+" cannot be disconnected because it is not connected.")
             
     def close_daq(self):
         """ Disconnects all instruments and tells the printing thread to exit."""
@@ -262,7 +263,7 @@ class Daq():
         try:
             instr.command_queue.put(cmd)
         except:
-            self.print_msg('Command could not be placed in the queue:' 
+            print('Command could not be placed in the queue:' 
                            + str(sys.exc_info()[0]))
             raise
         
