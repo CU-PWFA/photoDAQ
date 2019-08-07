@@ -14,6 +14,7 @@ import subprocess
 from PIL import Image
 import ast
 import libtiff
+import os
 
 
 PATH = ''
@@ -286,7 +287,11 @@ def save_TRACE(rsp, dataSet, shot):
         meta = rsp.meta
         serial = meta['Serial number']
         fileName = get_fileName(serial, dataSet, shot)
-        np.save(dirName + fileName, data)
+        if os.path.isdir(dirName):
+            np.save(dirName + fileName, data)
+        else:
+            os.mkdir(dirName)
+            np.save(dirName + fileName, data)
         return True
     else:
         print('Saving Error: Trace data does not have the correct structure.')

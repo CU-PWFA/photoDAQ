@@ -94,6 +94,32 @@ class SRSDG645(Process):
         ref, temp = sdg.get_delay(2)
         ref = self.channels[ref]
         sdg.set_delay([ref, 'A', delay])
+        
+    def set_chB_delay(self, delay):
+        """ Set the delay for channel A keeping the same reference. 
+        
+        Parameters
+        ----------
+        delay : float
+            The delay in seconds for the channel.
+        """
+        sdg = self.device
+        ref, temp = sdg.get_delay(3)
+        ref = self.channels[ref]
+        sdg.set_delay([ref, 'B', delay])
+        
+    def set_chC_delay(self, delay):
+        """ Set the delay for channel A keeping the same reference. 
+        
+        Parameters
+        ----------
+        delay : float
+            The delay in seconds for the channel.
+        """
+        sdg = self.device
+        ref, temp = sdg.get_delay(4)
+        ref = self.channels[ref]
+        sdg.set_delay([ref, 'C', delay])
                
     def get_datatype(self):
         """Return the type of data. """

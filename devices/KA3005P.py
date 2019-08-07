@@ -142,7 +142,8 @@ class KA3005P(Device):
             The voltage (V) to set the power supply to, will round to 10mV.
         """
         maxV = 30.00
-        if v > maxV: v = maxV
+        if v > maxV: 
+            v = maxV
         v = "%2.2f" % v
         self.PS.write(b"VSET1:" + bytes(v, "utf-8"))
         

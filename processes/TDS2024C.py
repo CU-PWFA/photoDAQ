@@ -7,6 +7,7 @@ Created on Wed Jul 11 18:01:02 2018
 """
 
 from processes.process import Process
+import daq
 
 class TDS2024C(Process):
     """ Process class for the TDS2024C. """
@@ -26,9 +27,9 @@ class TDS2024C(Process):
             meta['Channel'] = chan
         for name in pre:
             meta[name] = pre[name]
-        data = {'save' : True,
-                'meta' : meta,
+        data = {'meta' : meta,
                 't' : t,
                 'y' : y}
+        rsp = daq.Rsp('save', data, meta)
         self.shot += 1
-        self.r_queue.put(data)
+        self.r_queue.put(rsp)
