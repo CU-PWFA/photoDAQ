@@ -225,44 +225,6 @@ color:white;</string>
          <string>Framerate</string>
         </property>
        </widget>
-       <widget class="QLabel" name="brightnessLabel">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>160</y>
-          <width>91</width>
-          <height>21</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Brightness</string>
-        </property>
-       </widget>
-       <widget class="QDoubleSpinBox" name="brightnessField">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="geometry">
-         <rect>
-          <x>107</x>
-          <y>160</y>
-          <width>81</width>
-          <height>26</height>
-         </rect>
-        </property>
-        <property name="decimals">
-         <number>2</number>
-        </property>
-        <property name="minimum">
-         <double>1.000000000000000</double>
-        </property>
-        <property name="maximum">
-         <double>10.000000000000000</double>
-        </property>
-        <property name="value">
-         <double>10.000000000000000</double>
-        </property>
-       </widget>
        <widget class="QCheckBox" name="triggerCheck">
         <property name="enabled">
          <bool>false</bool>
@@ -270,7 +232,7 @@ color:white;</string>
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>200</y>
+          <y>160</y>
           <width>181</width>
           <height>23</height>
          </rect>
@@ -278,6 +240,157 @@ color:white;</string>
         <property name="text">
          <string>External Trigger</string>
         </property>
+       </widget>
+       <widget class="QFrame" name="ROIFrame">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>190</y>
+          <width>181</width>
+          <height>151</height>
+         </rect>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Raised</enum>
+        </property>
+        <widget class="QLabel" name="label">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>10</y>
+           <width>67</width>
+           <height>17</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>ROI</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="startYLabel">
+         <property name="geometry">
+          <rect>
+           <x>13</x>
+           <y>60</y>
+           <width>71</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Start Y</string>
+         </property>
+        </widget>
+        <widget class="QSpinBox" name="widthField">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="geometry">
+          <rect>
+           <x>90</x>
+           <y>90</y>
+           <width>81</width>
+           <height>26</height>
+          </rect>
+         </property>
+         <property name="minimum">
+          <number>4</number>
+         </property>
+         <property name="singleStep">
+          <number>4</number>
+         </property>
+        </widget>
+        <widget class="QLabel" name="heightLabel">
+         <property name="geometry">
+          <rect>
+           <x>13</x>
+           <y>120</y>
+           <width>71</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Height</string>
+         </property>
+        </widget>
+        <widget class="QSpinBox" name="startXField">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="geometry">
+          <rect>
+           <x>90</x>
+           <y>30</y>
+           <width>81</width>
+           <height>26</height>
+          </rect>
+         </property>
+         <property name="singleStep">
+          <number>2</number>
+         </property>
+        </widget>
+        <widget class="QSpinBox" name="heightField">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="geometry">
+          <rect>
+           <x>90</x>
+           <y>120</y>
+           <width>81</width>
+           <height>26</height>
+          </rect>
+         </property>
+         <property name="minimum">
+          <number>2</number>
+         </property>
+         <property name="singleStep">
+          <number>2</number>
+         </property>
+        </widget>
+        <widget class="QLabel" name="widthLabel">
+         <property name="geometry">
+          <rect>
+           <x>13</x>
+           <y>90</y>
+           <width>71</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Width</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="startXLabel">
+         <property name="geometry">
+          <rect>
+           <x>13</x>
+           <y>30</y>
+           <width>71</width>
+           <height>21</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Start X</string>
+         </property>
+        </widget>
+        <widget class="QSpinBox" name="startYField">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="geometry">
+          <rect>
+           <x>90</x>
+           <y>60</y>
+           <width>81</width>
+           <height>26</height>
+          </rect>
+         </property>
+         <property name="singleStep">
+          <number>2</number>
+         </property>
+        </widget>
        </widget>
       </widget>
       <widget class="QWidget" name="postPage">

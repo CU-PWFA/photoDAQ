@@ -7,7 +7,7 @@ Created on Wed Jun 13 16:32:45 2018
 """
 
 from devices.device import Device
-import PyCapture2 as pc2
+import PySpin
 
 class Camera(Device):
     """ Class to control the FLIR cameras. """
@@ -20,7 +20,7 @@ class Camera(Device):
         serial : str
             The serial number of the camera.
         """
-        self.connectCam(int(serial))
+        self.connectCam(serial)
         self.setupCam(serial)
     
     def connectCam(self, serial):
@@ -31,237 +31,241 @@ class Camera(Device):
         serial : int
             The serial number of the camera.
         """
-        self.bus = pc2.BusManager()
-        numCams = self.bus.getNumOfCameras()
+        self.system = PySpin.System.GetInstance()
+        cam_list = self.system.GetCameras()
+        numCams = cam_list.GetSize()
         
         if numCams == 0:
             print('Ethernet error: No Cameras Detected')
             self.cam = False
         else:
-            self.cam = pc2.GigECamera()
-            self.guid = self.bus.getCameraFromSerialNumber(serial)
-            try:
-                self.cam.connect(self.guid)
-            except:
-                print('Ethernet error: Could not connect to camera.')
-                self.connection_error = True
-                return
-            self.camINFO = info = self.cam.getCameraInfo()
-            self.imageINFO = self.cam.getGigEImageSettingsInfo()
-            self.serialNum = info.serialNumber
-            model = info.modelName.decode("utf-8")
-            fv = info.firmwareVersion.decode("utf-8")
-            self.ID = (model + ',' + str(self.serialNum) + ',FV:' + fv)
+            self.cam = cam = cam_list.GetBySerial(serial)
+            self.nodemap_tl = cam.GetTLDeviceNodeMap()
+            cam.Init()
+            self.nodemap = cam.GetNodeMap()
+            
+            self.serialNum = serial
+            self.model = model = cam.TLDevice.DeviceModelName.ToString()
+            self.fv = fv = cam.DeviceFirmwareVersion.ToString()
+            self.ID = (model + ',' + serial + ',FV:' + fv)
             print('Camera ID:', self.ID)
     
     def setupCam(self, serial):
         """ Set settings required for correct image acquisition. """
-        width = self.imageINFO.maxWidth
-        height = self.imageINFO.maxHeight
-        if serial == '17570564':
-            pixelFormat = pc2.PIXEL_FORMAT.MONO16
-        else:
-            pixelFormat = pc2.PIXEL_FORMAT.RAW16
-        if self.set_image_settings(width, height, pixelFormat) == False:
-            self.connection_error = True
-            return # Bus error camera needs to be power cycled
-        # Turning auto gain and shutter off turns auto exposure off
-        self.gainINFO = self.set_gain_settings(False, 0)
-        self.shutterINFO = self.set_shutter_settings(False, 10)
-        self.frameINFO = self.set_frame_rate(False, 10)
-        self.brightnessINFO = self.set_brightness_settings()
-        self.set_brightness_settings(self.brightnessINFO.absMin)
-        self.set_trigger_settings(False)
+        # Set all auto controlled parameters to off
+        cam = self.cam
+        if cam.ExposureMode.GetAccessMode() == PySpin.RW:
+            cam.ExposureMode.SetValue(PySpin.ExposureMode_Timed)
+        if cam.ExposureAuto.GetAccessMode() == PySpin.RW:
+            cam.ExposureAuto.SetValue(PySpin.ExposureAuto_Off)
+        if cam.GainSelector.GetAccessMode() == PySpin.RW:
+            cam.GainSelector.SetValue(PySpin.GainSelector_All)
+        if cam.GainAuto.GetAccessMode() == PySpin.RW:
+            cam.GainAuto.SetValue(PySpin.GainAuto_Off)
+        if cam.BlackLevelSelector.GetAccessMode() == PySpin.RW:
+            cam.BlackLevelSelector.SetValue(PySpin.BlackLevelSelector_All)
+        if cam.BlackLevelAuto.GetAccessMode() == PySpin.RW:
+            cam.BlackLevelAuto.SetValue(PySpin.BlackLevelAuto_Off)
+        if cam.BlackLevel.GetAccessMode() == PySpin.RW:
+            cam.BlackLevel.SetValue(0)
+        if cam.GammaEnable.GetAccessMode() == PySpin.RW:
+            cam.GammaEnable.SetValue(False)
+        if cam.SharpeningEnable.GetAccessMode() == PySpin.RW:
+            cam.SharpeningEnable.SetValue(False)
+        if cam.AdcBitDepth.GetAccessMode() == PySpin.RW:
+            cam.AdcBitDepth.SetValue(PySpin.AdcBitDepth_Bit12)
+        if cam.AcquisitionMode.GetAccessMode() == PySpin.RW:
+            cam.AcquisitionMode.SetValue(PySpin.AcquisitionMode_Continuous)
+        if cam.AcquisitionFrameRateEnable.GetAccessMode() == PySpin.RW:
+            cam.AcquisitionFrameRateEnable(True)
         
+        # Chack the packet size is as large as possible
+        max_packet = cam.DiscoverMaxPacketSize()
+        current_packet = int(cam.GevSCPSPacketSize.ToString())
+        if current_packet != max_packet:
+            print('Camera is using a packet size of %i not the max of %i.' % (current_packet, max_packet))
+        if max_packet != 9000:
+            print('Max packet size is only %i, increase to 9000 for best performance.' % max_packet)
+        
+        self.set_pixel_format('Mono12Packed')
+        self.set_trigger_settings(False)
         
     # Request camera parameters
     #--------------------------------------------------------------------------
+    def get_sensor_height(self):
+        """ Return the height of the sensor in pixels. """
+        return self.cam.SensorHeight.GetValue()
+    
+    def get_sensor_width(self):
+        """ Return the width of the sensor in pixels. """
+        return self.cam.SensorWidth.GetValue()
+    
     def get_max_height(self):
-        """ Get the height of the sensor in pixels. """
-        return self.imageINFO.maxHeight
+        """ Get the maximum height based on the current offset. """
+        return self.cam.Height.GetMax()
     
     def get_max_width(self):
-        """ Get the width of the sensor in pixels. """
-        return self.imageINFO.maxWidth
+        """ Get the maximum width based on the current offset. """
+        return self.cam.Width.GetMax()
+    
+    def get_max_offsetX(self):
+        """ Get the maximum X offset based on the current width. """
+        return self.cam.OffsetX.GetMax()
+    
+    def get_max_offsetY(self):
+        """ Get the maximum X offset based on the current width. """
+        return self.cam.OffsetY.GetMax()
     
     def get_min_gain(self):
         """ Get the minimum gain setting. """
-        return self.gainINFO.absMin
+        return self.cam.Gain.GetMin()
     
     def get_max_gain(self):
         """ Get the maximum gain setting. """
-        return self.gainINFO.absMax
+        return self.cam.Gain.GetMax()
     
     def get_min_shutter(self):
         """ Get the minimum shutter setting. """
-        return self.shutterINFO.absMin
+        return self.cam.ExposureTime.GetMin()
     
     def get_max_shutter(self):
         """ Get the maximum shutter setting. """
-        return self.shutterINFO.absMax
+        return self.cam.ExposureTime.GetMax()
     
     def get_min_framerate(self):
         """ Get the minimum framerate setting. """
-        return self.frameINFO.absMin
+        return self.cam.AcquisitionFrameRate.GetMin()
     
     def get_max_framerate(self):
         """ Get the maximum framerate setting. """
-        return self.frameINFO.absMax
+        return self.cam.AcquisitionFrameRate.GetMax()
+    
+    def get_height(self):
+        """ Get the height of the image. """
+        return self.cam.Height.GetValue()
+        
+    def get_width(self):
+        """ Get the width of the image. """
+        return self.cam.Width.GetValue()
+    
+    def get_offsetX(self):
+        """ Get the ROI offset in X. """
+        return self.cam.OffsetX.GetValue()
+        
+    def get_offsetY(self):
+        """ Get the ROI offset in Y. """
+        return self.cam.OffsetY.GetValue()
+    
+    def get_shutter(self):
+        """ Get the current shutter setting in ms. """
+        return self.cam.ExposureTime.GetValue()*1e-3
+    
+    def get_gain(self):
+        """ Get the current gain settings. """
+        return self.cam.Gain.GetValue()
+    
+    def get_framerate(self):
+        """ Get the current framerate setting. """
+        return self.cam.AcquisitionFrameRate.GetValue()
     
     # Set camera parameters
     #--------------------------------------------------------------------------   
-    def set_image_settings(self, width=None, height=None, pixelFormat=None):
-        """ Set the image format on the camera.
+    def set_pixel_format(self, pixelFormat):
+        """ Set the pixel format of the camera. 
         
         Parameters
         ----------
-        width : int, optional
-            The width of the image in pixels.
-        height : int, optional
-            The height of the image in pixels.
-        pixelFormat : int, optional
-            Pass an atrribute of pc2.PIXEL_FORMAT for a valid integer.
-            
-        Returns
-        -------
-        success : bool
-            Was the operation successful or not.
+        pixelFormat : string
+            Pixel format as a string.
         """
-        settings = self.cam.getGigEImageSettings()
-        if pixelFormat is not None:
-            if pixelFormat & self.imageINFO.pixelFormatBitField == 0:
-                print('This pixel format is not supported by this camera.')
-            else:
-                settings.pixelFormat = pixelFormat
-        if width is not None:
-            if width > self.imageINFO.maxWidth:
-                print('Image width is greater than max width (%d)' % self.imageINFO.maxWidth)
-            else:
-                settings.width = width
-        if height is not None:
-            if height > self.imageINFO.maxHeight:
-                print('Image height is greater than max height (%d).' % self.imageINFO.maxHeight)
-            else:
-                settings.height = height
-        #If none of the conditions are triggered this doesn't change the values
-        try:
-            self.cam.setGigEImageSettings(settings)
-            return True
-        except pc2.Fc2error:
-            print("Camera bus error: power cycle camera and reconnect.")
-            return False
-    
-    def set_gain_settings(self, auto=None, value=None):
-        """ Set the camera shutter settings. 
-        
-        Parameters
-        ----------
-        auto : bool, optional
-            Whether auto gain is enabled or not.
-        value : float, optional
-            The value to set the gain to.
-            
-        Returns
-        -------
-        info : object
-            The info object with the allowed values for the property.
-        """
-        gainPROP = pc2.PROPERTY_TYPE.GAIN
-        gain = self.cam.getProperty(gainPROP)
-        info = self.cam.getPropertyInfo(gainPROP)
-        if auto is not None:
-            gain.autoManualMode = auto
-        if value is not None:
-            if value > info.absMax or value < info.absMin:
-                rang = (info.absMin, info.absMax)
-                print('Invalid value for gain, range: (%0.1f, %0.1f)'%rang)
-            else:
-                gain.absValue = value
-        self.cam.setProperty(gain)
-        return info
-    
-    def set_shutter_settings(self, auto=None, value=None):
-        """ Set the camera shutter settings. 
-        
-        Parameters
-        ----------
-        auto : bool, optional
-            Whether auto shutter is enabled or not.
-        value : float, optional
-            The value to set the shutter to.
-            
-        Returns
-        -------
-        info : object
-            The info object with the allowed values for the property.
-        """
-        shutPROP = pc2.PROPERTY_TYPE.SHUTTER
-        shut = self.cam.getProperty(shutPROP)
-        info = self.cam.getPropertyInfo(shutPROP)
-        if auto is not None:
-            shut.autoManualMode = auto
-        if value is not None:
-            if value > info.absMax or value < info.absMin:
-                rang = (info.absMin, info.absMax)
-                print('Invalid value for shutter, range: (%0.1f, %0.1f)'%rang)
-            else:
-                shut.absValue = value
-        self.cam.setProperty(shut)
-        return info
-    
-    def set_frame_rate(self, auto=None, frame_rate=None):
-        """ Set the camera frame rate.
-        
-        Parameters
-        ----------
-        auto : bool, optional
-            Whether auto framerate is enabled or not.
-        frame_rate : float
-            The FPS for the camera to capture at.
-            
-        Returns
-        -------
-        info : object
-            The info object with the allowed values for the property.
-        """
-        framePROP = pc2.PROPERTY_TYPE.FRAME_RATE
-        frame = self.cam.getProperty(framePROP)
-        info = self.cam.getPropertyInfo(framePROP)
-        if auto is not None:
-            frame.autoManualMode = auto
-        if frame_rate > info.absMax or frame_rate < info.absMin:
-            rang = (info.absMin, info.absMax)
-            print('Invalid value for frame rate, range: (%0.1f, %0.1f)'%rang)
+        if pixelFormat == 'Mono8':
+            self.cam.PixelFormat.SetValue(PySpin.PixelFormat_Mono8)
+        elif pixelFormat == 'Mono12Packed':
+            self.cam.PixelFormat.SetValue(PySpin.PixelFormat_Mono12Packed)
+        elif pixelFormat == 'Mono16':
+            self.cam.PixelFormat.SetValue(PySpin.PixelFormat_Mono16)
         else:
-            frame.absValue = frame_rate
-        self.cam.setProperty(frame)
-        return info
-    
-    def set_brightness_settings(self, value=None):
-        """ Set the camera brightness settings. 
+            print('%s is not a valid pixel format.' % pixelFormat)
+        
+    def set_gain(self, gain):
+        """ Set the gain of the camera. 
         
         Parameters
         ----------
-        value : float, optional
-            The value to set the brightness to.
-            
-        Returns
-        -------
-        info : object
-            The info object with the allowed values for the property.
+        gain : float
+            The gain of the camera's ADC in dB.
         """
-        shutPROP = pc2.PROPERTY_TYPE.SHUTTER
-        shut = self.cam.getProperty(shutPROP)
-        info = self.cam.getPropertyInfo(shutPROP)
-        if value is not None:
-            if value > info.absMax or value < info.absMin:
-                rang = (info.absMin, info.absMax)
-                print('Invalid value for brightness, range: (%0.1f, %0.1f)'%rang)
-            else:
-                shut.absValue = value
-        self.cam.setProperty(shut)
-        return info
+        gain_min = self.get_min_gain()
+        gain_max = self.get_max_gain()
+        if gain > gain_max:
+            print('Gain outside of range, setting to maximum value of %0.2f' % gain_max)
+            gain = gain_max
+        if gain < gain_min:
+            print('Gain outside of range, setting to minimum value of %0.2f' % gain_min)
+            gain = gain_min
+        self.cam.Gain.SetValue(gain)
+    
+    def set_shutter(self, shutter):
+        """  Set the shutter time of the camera
         
+        Parameters
+        ----------
+        shutter : float
+            The shutter time in ms.
+        """
+        shutter *= 1e3
+        exposure_min = self.get_min_shutter()
+        exposure_max = self.get_max_shutter()
+        if shutter > exposure_max:
+            print('Shutter outside of range, setting to maximum value of %0.2f' % (exposure_max*1e-3))
+            shutter = exposure_max
+        if shutter < exposure_min:
+            print('Shutter outside of range, setting to minimum value of %0.2f' % (exposure_min*1e-3))
+            shutter = exposure_min
+        self.cam.ExposureTime.SetValue(shutter)
+        
+    def set_frame_rate(self, frame_rate):
+        """ Set the frame rate to operate at without a trigger.
+        
+        Parameters
+        ----------
+        frame_rate : float
+            The frame rate in Hz.
+        """
+        framerate_min = self.get_min_framerate()
+        framerate_max = self.get_max_framerate()
+        if frame_rate > framerate_max:
+            print('Frame rate outside of range, setting to maximum value of %0.2f' % framerate_max)
+            frame_rate = framerate_max
+        if frame_rate < framerate_min:
+            print('Frame rate outside of range, setting to minimum value of %0.2f' % framerate_min)
+            frame_rate = framerate_min
+        if self.cam.AcquisitionFrameRate.GetAccessMode() == PySpin.RW:
+                self.cam.AcquisitionFrameRate.SetValue(frame_rate)
+        else:
+            # TODO add the reason why it isn't writable or fix the setting
+            # AcquisitionFrameRateEnable needs to be set to True - I already do this at the start
+            print('Frame rate is not currently writable.')
+        
+    def set_test_pattern(self, pattern):
+        """ Set the camera to output a test pattern.
+        
+        Parameters
+        ----------
+        pattern : string
+            'Off' turns the test pattenr off.
+            'Increment' increments each pixel value by 1 for testing bit depth.
+            'Sensor' uses a test pattern generated by the image sensor.
+        """
+        if pattern == 'Off':
+            self.cam.TestPattern.SetValue(PySpin.TestPattern_Off)
+        elif pattern == 'Increment':
+            self.cam.TestPattern.SetValue(PySpin.TestPattern_Increment)
+        elif pattern == 'Sensor':
+            self.cam.TestPattern.SetValue(PySpin.TestPattern_SensorTestPattern)
+        else:
+            print("\s is not a valid test pattern." % pattern)
+    
     def set_trigger_settings(self, enable):
         """ Set the trigger mode of the camera.
         
@@ -270,30 +274,102 @@ class Camera(Device):
         enable : bool
             Enable or disable the trigger.
         """
-        self.cam.setTriggerMode(TriggerMode=0, onOff=enable, source=0, polarity=1)
-    
-    # Control the camera
-    #--------------------------------------------------------------------------
-    def start_capture(self, callback=None, args=None):
-        """ Tell the camera to capture images and place them in the buffer. 
-        
-        Capture data from the camera to image buffers. The callback is called
-        when an  image is retrieved, otherwise images are retrieved manually
-        with retrieve buffer (not recommended).
+        cam = self.cam
+        if enable == True:
+            cam.TriggerSource.SetValue(PySpin.TriggerSource_Line0)
+            cam.TriggerActivation.SetValue(PySpin.TriggerActivation_RisingEdge)
+            cam.TriggerDelay.SetValue(0)
+            cam.TriggerSelector.SetValue(PySpin.TriggerSelector_FrameStart)
+            if cam.TriggerOverlap.GetAccessMode() == PySpin.RW:
+                cam.TriggerOverlap.SetValue(PySpin.TriggerOverlap_ReadOut)
+            
+            cam.TriggerMode.SetValue(PySpin.TriggerMode_On)
+        if enable == False:
+            cam.TriggerMode.SetValue(PySpin.TriggerMode_Off)
+            
+    def set_offsetX(self, offsetX):
+        """ Set the X offset for the ROI.
         
         Parameters
         ----------
-        callback : func, optional
-            A callback function for when an image is retrieved, must take an
-            pc2 image object as the first argument. 
-        *args : tuple
-            Arguments to be passed to the callback.
+        offsetX : int
+            The horizontal offset in pixels of the ROI.
         """
-        self.cam.startCapture(callback, args)
+        offset_max = self.get_max_offsetX()
+        if offsetX > offset_max:
+            print('Offset outside of range, setting to maximum value of %i' % offset_max)
+            offsetX = offset_max
+        if offsetX < 0:
+            print('Negative framerates are not allowed, setting to 0.')
+            offsetX = 0
+        self.cam.OffsetX.SetValue(offsetX)
+        
+    def set_offsetY(self, offsetY):
+        """ Set the Y offset for the ROI.
+        
+        Parameters
+        ----------
+        offsetY : int
+            The vertical offset in pixels of the ROI.
+        """
+        offset_max = self.get_max_offsetY()
+        if offsetY > offset_max:
+            print('Offset outside of range, setting to maximum value of %i' % offset_max)
+            offsetY = offset_max
+        if offsetY < 0:
+            print('Negative offsets are not allowed, setting to 0.')
+            offsetY = 0
+        self.cam.OffsetY.SetValue(offsetY)
+        
+    def set_height(self, height):
+        """ Set the height of the ROI.
+        
+        Parameters
+        ----------
+        height : int
+            The height of the ROI in pixels.
+        """
+        height_max = self.get_max_height()
+        if height > height_max:
+            print('Height outside of range, setting to maximum value of %i' % height_max)
+            height = height_max
+        if height < 1:
+            print('Negative and zero heights are not allowed, setting to 1.')
+            height = 1
+        if self.cam.Height.GetAccessMode() == PySpin.RW:
+            self.cam.Height.SetValue(height)
+        else:
+            print('Height is not currently writable.')
+        
+    def set_width(self, width):
+        """ Set the width of the ROI.
+        
+        Parameters
+        ----------
+        width : int
+            The width of the ROI in pixels.
+        """
+        width_max = self.get_max_width()
+        if width > width_max:
+            print('Width outside of range, setting to maximum value of %i' % width_max)
+            width = width_max
+        if width < 1:
+            print('Negative and zero widths are not allowed, setting to 1.')
+            width = 1
+        if self.cam.Width.GetAccessMode() == PySpin.RW:
+            self.cam.Width.SetValue(width)
+        else:
+            print('Width is not currently writable.')
+    
+    # Control the camera
+    #--------------------------------------------------------------------------
+    def start_capture(self):
+        """ Tell the camera to capture images and place them in the buffer. """
+        self.cam.BeginAcquisition()
     
     def stop_capture(self):
         """ Tell the camera to stop capturing images. """
-        self.cam.stopCapture()
+        self.cam.EndAcquisition()
         
     def retrieve_buffer(self):
         """ Attempt to retrieve an image from the buffer. 
@@ -301,17 +377,20 @@ class Camera(Device):
         Returns
         -------
         image : obj
-            A PyCapture2.Image object which includes the image data.
+            A PySpin.Image object which includes the image data.
         """
         try:
-            image = self.cam.retrieveBuffer()
-        except pc2.Fc2error:
+            image = self.cam.GetNextImage()
+        except PySpin.SpinnakerException as ex:
+            print('Error: %s' % ex)
             image = None
         return image
         
     def close(self):
         """ Disconnect the camera. """
-        self.cam.disconnect()
+        self.cam.DeInit()
+        del self.cam
+        self.system.ReleaseInstance()
     
     # Camera data managment
     #--------------------------------------------------------------------------
@@ -323,7 +402,19 @@ class Camera(Device):
         image : obj
             A PyCapture2.Image object which includes the image data.
         """
-        self.cam.startCapture()
-        image = self.retrieve_buffer()
-        self.cam.stopCapture()
+        cam = self.cam
+        if cam.AcquisitionMode.GetAccessMode() == PySpin.RW:
+            cam.AcquisitionMode.SetValue(PySpin.AcquisitionMode_SingleFrame)
+        cam.BeginAcquisition()
+        try:
+            image = cam.GetNextImage()
+        except PySpin.SpinnakerException as ex:
+            print('Error: %s' % ex)
+            image = None
+        if image.IsIncomplete():
+            print('Image incomplete with image status %d ...' % image.GetImageStatus())
+        cam.EndAcquisition()
+        if cam.AcquisitionMode.GetAccessMode() == PySpin.RW:
+            cam.AcquisitionMode.SetValue(PySpin.AcquisitionMode_Continuous)
         return image
+        

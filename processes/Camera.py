@@ -7,15 +7,31 @@ Created on Wed Jul 11 15:33:16 2018
 """
 
 from processes.streamProcess import StreamProcess
-import numpy as np
 import daq
 import time
+import PySpin
 
 class Camera(StreamProcess):
     """ Process class for a camera. """
     def __init__(self, device):
         """ init method. """
         super().__init__(device)
+        
+    def connect_data(self):
+        """ Gather data for the UI to use. """
+        cam = self.device
+        data = {'ShutterMin' : cam.get_min_shutter(),
+                'GainMax' : cam.get_max_gain(),
+                'SensorHeight' : cam.get_sensor_height(),
+                'SensorWidth' : cam.get_sensor_width(),
+                'Shutter' : cam.get_shutter(),
+                'Gain' : cam.get_gain(),
+                'Framerate' : cam.get_framerate(),
+                'OffsetX' : cam.get_offsetX(),
+                'OffsetY' : cam.get_offsetY(),
+                'Height' : cam.get_height(),
+                'Width' : cam.get_width()}
+        return data
     
     def start_stream(self, save=False):
         """ Start streaming images 
@@ -46,28 +62,29 @@ class Camera(StreamProcess):
         r_queue : mp.Queue
             The response queue to place the pressure in.
         """
-        # The image object doesn't like being passed through a queue
-        # we have to process it here
         while self.streaming:
             # This call blocks and does not release the GIL, no commands will
             # make it through until a buffer is retrieved
             # This is a problem with an external trigger, the save command
             # wont make it through until after the first shot
-            start = time.clock()
+            #start = time.clock()
             meta = self.create_meta()
             image = self.device.retrieve_buffer()
             if image is None:
                 print('Image dropped, shot %d' % self.shot)
                 raw = None
             else:
-                raw = bytes(image.getData())
+                converted = image.Convert(PySpin.PixelFormat_Mono16)
+                raw = converted.GetNDArray()
                 if self.save: response = 'save'
                 else: response = 'output'
-                #raw = np.random.randint(0, 256, size=(6000000), dtype=np.uint16)
+                #raw = np.random.randint(0, 256, size=(2000, 2000), dtype=np.uint16)
                 rsp = daq.Rsp(response, raw, meta)
             self.r_queue.put(rsp)
-            end = time.clock()
-            print("Start:", start, "End:", end, "Duration:", end-start)
+            #end = time.clock()
+            #print("Start:", start, "End:", end, "Duration:", end-start)
+            if image is not None:
+                image.Release()
             
             self.shot += 1
             if self.shot == self.numShots:
@@ -94,5 +111,5 @@ class Camera(StreamProcess):
 
     def create_meta(self):
         meta = super(Camera, self).create_meta()
-        meta['pixel'] = [self.device.imageINFO.maxWidth, self.device.imageINFO.maxHeight]
+        meta['pixel'] = [self.device.get_width(), self.device.get_height()]
         return meta

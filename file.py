@@ -221,10 +221,8 @@ def prep_IMAGE(rsp):
     image : array-like
         The image array.
     """
-    meta = rsp.meta
     raw = rsp.data
-    width, height = meta['pixel']
-    rsp.data = np.frombuffer(raw, dtype=np.uint16).reshape(height, width) 
+    rsp.data = np.flipud(raw) 
     return rsp
 
     

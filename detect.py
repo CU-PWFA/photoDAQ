@@ -12,6 +12,7 @@ import visa
 import seabreeze.spectrometers as sb
 import os
 import serial.tools.list_ports as prtlst
+import PySpin
 
 
 def all_instrs():
@@ -40,12 +41,26 @@ def camera():
         All of the detected Cameras in the system.
     """
     instrs = {}
-    cams = pc2.BusManager().discoverGigECameras()
-    for cam in cams:
-        serial = str(cam.serialNumber)
+    system = PySpin.System.GetInstance()
+    cam_list = system.GetCameras()
+    for i, cam in enumerate(cam_list):
+        # Nodes are just properties of the camera
+        # TL is the transport layer - never initializes the camera
+        nodemap_tl = cam.GetTLDeviceNodeMap()
+        node = PySpin.CStringPtr(nodemap_tl.GetNode('DeviceSerialNumber'))
+        if PySpin.IsAvailable(node) and PySpin.IsReadable(node):
+            serial = node.ToString()
+        node = PySpin.CStringPtr(nodemap_tl.GetNode('DeviceModelName'))
+        if PySpin.IsAvailable(node) and PySpin.IsReadable(node):
+            model = node.ToString()    
+        
         instr = instrInfo.Camera(serial)
-        instr.model = str(cam.modelName, 'utf-8')
+        instr.model = model
         instrs[serial] = instr
+    del cam
+    cam_list.Clear()
+    system.ReleaseInstance()
+    del system
     return instrs
 
 

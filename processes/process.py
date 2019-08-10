@@ -39,8 +39,13 @@ class Process():
             return
         device.type = instr.device_type
         self.device = device
-        rsp = daq.Rsp('connected')
+        data = self.connect_data()
+        rsp = daq.Rsp('connected', data)
         self.r_queue.put(rsp)
+        
+    def connect_data(self):
+        """ Collect any data to be sent in the connect response, overwrite to use. """
+        return None
         
     def command_loop(self):
         """ Check the queue for commands and execute them. """
@@ -103,6 +108,7 @@ class Process():
     def close(self):
         """" Close the device and send an exit code to the response queue. """
         self.device.close()
+        del self.device # Need to ensure all references to a camera are removed
         rsp = daq.Rsp('exit')
         self.r_queue.put(rsp)
         

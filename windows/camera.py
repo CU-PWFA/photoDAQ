@@ -28,7 +28,7 @@ Ui_CameraWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 class CameraWindow(QtBaseClass, Ui_CameraWindow):
     data_acquired = pyqtSignal(object)
-    device_connected = pyqtSignal()
+    device_connected = pyqtSignal(object)
     
     def __init__(self, parent, DAQ, instr):
         """ Create the parent class and add event handlers. 
@@ -52,11 +52,14 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         self.shutterField.valueChanged.connect(self.set_shutter)
         self.gainField.valueChanged.connect(self.set_gain)
         self.framerateField.valueChanged.connect(self.set_framerate)
-        self.brightnessField.valueChanged.connect(self.set_brightness)
         self.data_acquired.connect(self.update_canvas)
         self.data_acquired.connect(self.update_info)
         self.triggerCheck.stateChanged.connect(self.set_trigger)
         self.device_connected.connect(self.setup_window)
+        self.startXField.valueChanged.connect(self.set_offsetX)
+        self.startYField.valueChanged.connect(self.set_offsetY)
+        self.heightField.valueChanged.connect(self.set_height)
+        self.widthField.valueChanged.connect(self.set_width)
         
         # Grab references for controlling the camera
         self.DAQ = DAQ
@@ -68,7 +71,6 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         self.create_image()
         self.create_update_thread()
         self.setWindowTitle(self.serial)
-        self.set_field_range()
         
     def create_image(self):
         """ Create the matplotlib image canvas. """
@@ -107,40 +109,61 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
             if response == 'exit':
                 break
             elif response == 'connected':
-                setup()
+                setup(rsp)
             else:
                 callback(rsp)
             queue.task_done()
         
-    def set_field_range(self):
-        """ Set the range of the spinbox fields based on the camera serial. """
-        # TODO should probably just grab this from the cameras
-        serial = self.serial
-        bounds = {'17583372' : {'ShutterMin' : 0.0477,
-                              'GainMax' : 47.99,
-                              'BrightnessMin' : 0.0,
-                              'BrightnessMax' : 12.47},
-                  '17571186' : {'ShutterMin' : 0.039,
-                              'GainMax' : 18,
-                              'BrightnessMin' : 0.0,
-                              'BrightnessMax' : 25},
-                  '17529184' : {'ShutterMin' : 0.0596,
-                              'GainMax' : 47.99,
-                              'BrightnessMin' : 0.0,
-                              'BrightnessMax' : 12.475},
-                  '17570564' : {'ShutterMin' : 0.0456,
-                              'GainMax' : 23.99,
-                              'BrightnessMin' : 1.368,
-                              'BrightnessMax' : 7.42}
-                  }
-        self.shutterField.setMinimum(bounds[serial]['ShutterMin'])
-        self.gainField.setMaximum(bounds[serial]['GainMax'])
-        # The device isn't connected yet so we can't update it's parameters
-        self.brightnessField.blockSignals(True)
-        self.brightnessField.setRange(bounds[serial]['BrightnessMin'], 
-                                      bounds[serial]['BrightnessMax'])
-        self.brightnessField.setValue(bounds[serial]['BrightnessMin'])
-        self.brightnessField.blockSignals(False)
+    def set_field_range(self, rsp):
+        """ Set the range and values of the spinbox fields based on the camera. 
+        
+        Parameters
+        ----------
+        rsp : object
+            The response object from the connection response. The data contains
+            the INFO objects from the camera.
+        """
+        data = rsp.data
+        self.gainField.blockSignals(True)
+        self.gainField.setMaximum(data['GainMax'])
+        self.gainField.setValue(data['Gain'])
+        self.gainField.blockSignals(False)
+        
+        self.shutterField.blockSignals(True)
+        self.shutterField.setMinimum(data['ShutterMin'])
+        self.shutterField.setValue(data['Shutter'])
+        self.shutterField.blockSignals(False)
+        
+        self.framerateField.blockSignals(True)
+        self.framerateField.setValue(data['Framerate'])
+        self.framerateField.blockSignals(False)
+        
+        offsetX = data['OffsetX']
+        offsetY = data['OffsetY']
+        height = data['Height']
+        width = data['Width']
+        self.maxHeight = maxHeight = data['SensorHeight']
+        self.maxWidth = maxWidth = data['SensorWidth']
+        
+        self.startXField.blockSignals(True)
+        self.startXField.setMaximum(maxWidth-width)
+        self.startXField.setValue(offsetX)
+        self.startXField.blockSignals(False)
+        
+        self.startYField.blockSignals(True)
+        self.startYField.setMaximum(maxHeight-height)
+        self.startYField.setValue(offsetY)
+        self.startYField.blockSignals(False)
+        
+        self.heightField.blockSignals(True)
+        self.heightField.setMaximum(maxHeight-offsetY)
+        self.heightField.setValue(height)
+        self.heightField.blockSignals(False)
+        
+        self.widthField.blockSignals(True)
+        self.widthField.setMaximum(maxWidth-offsetX)
+        self.widthField.setValue(width)
+        self.widthField.blockSignals(False)
         
     def send_command(self, command, *args, **kwargs):
         """ Send commands to this windows instruments. 
@@ -157,46 +180,91 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         
     # Event Handlers
     ###########################################################################
-    @pyqtSlot()
-    def setup_window(self):
+    @pyqtSlot(object)
+    def setup_window(self, rsp):
         """ Perform setup after the camera connects. """
+        self.set_field_range(rsp)
+        
         self.startStreamButton.setEnabled(True)
         self.stopStreamButton.setEnabled(True)
         self.shutterField.setEnabled(True)
         self.gainField.setEnabled(True)
         self.framerateField.setEnabled(True)
-        self.brightnessField.setEnabled(True)
         self.triggerCheck.setEnabled(True)
+        self.startXField.setEnabled(True)
+        self.startYField.setEnabled(True)
+        self.widthField.setEnabled(True)
+        self.heightField.setEnabled(True)
     
     @pyqtSlot()
     def start_stream(self):
         """ Start the camera stream and display it. """
-        self.send_command('start_stream')            
+        self.heightField.setEnabled(False)
+        self.widthField.setEnabled(False)
+        self.send_command('start_stream')
         
     @pyqtSlot()
     def stop_stream(self):
         """ Stop the camera stream and the display. """
         self.send_command('stop_stream')
+        self.heightField.setEnabled(True)
+        self.widthField.setEnabled(True)
         
     @pyqtSlot(float)
     def set_shutter(self, value):
         """ Set the shutter value. """
-        self.send_command('set_shutter_settings', None, value)
+        self.send_command('set_shutter', value)
         
     @pyqtSlot(float)
     def set_gain(self, value):
         """ Set the gain value. """
-        self.send_command('set_gain_settings', None, value)
+        self.send_command('set_gain', value)
         
     @pyqtSlot(float)
     def set_framerate(self, value):
         """ Set the framerate value. """
-        self.send_command('set_frame_rate', None, value)
+        self.send_command('set_frame_rate', value)
         
     @pyqtSlot(float)
-    def set_brightness(self, value):
-        """ Set the brightness value. """
-        self.send_command('set_brightness_settings', value)
+    def set_offsetX(self, value):
+        """ Set the offsetX value. """
+        # Ensure the number is even
+        value = int(value/2)*2
+        self.startXField.blockSignals(True)
+        self.startXField.setValue(value)
+        self.startXField.blockSignals(False)
+        self.widthField.setMaximum(self.maxWidth-value)
+        self.send_command('set_offsetX', value)
+
+    @pyqtSlot(float)
+    def set_offsetY(self, value):
+        """ Set the offsetY value. """
+        value = int(value/2)*2
+        self.startYField.blockSignals(True)
+        self.startYField.setValue(value)
+        self.startYField.blockSignals(False)
+        self.heightField.setMaximum(self.maxHeight-value)
+        self.send_command('set_offsetY', value)
+        
+    @pyqtSlot(float)
+    def set_height(self, value):
+        """ Set the height value. """
+        value = int(value/2)*2
+        self.heightField.blockSignals(True)
+        self.heightField.setValue(value)
+        self.heightField.blockSignals(False)
+        self.startYField.setMaximum(self.maxHeight-value)
+        self.send_command('set_height', value)
+        
+    @pyqtSlot(float)
+    def set_width(self, value):
+        """ Set the width value. """
+        value = int(value/4)*4
+        self.widthField.blockSignals(True)
+        self.widthField.setValue(value)
+        self.widthField.blockSignals(False)
+        self.startXField.setMaximum(self.maxWidth-value)
+        self.send_command('set_width', value)
     
     @pyqtSlot(object)
     def update_canvas(self, rsp):

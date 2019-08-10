@@ -180,6 +180,8 @@ class Daq():
                 output(rsp)
                 print("Instrument " + instr.serial + " failed to connect.")
                 break
+            else:
+                output(rsp)
             r_queue.task_done()
             
     def timing_thread(self, instr):
