@@ -56,12 +56,11 @@ To fix in pyvisa-py -> usb.py change line 98 to read
 lambda current: True
 ```
 
-### pyCapture
+### Spinnaker SDK
 
-When installing pyCapture in an enviornment, you need to run python as root. However, the root user doesn't know you are in an enviornment and doesn't install the package in the enviornment. Just point sudo to the correct python and it all works fine, from the the directory where pyCapture was extracted I use the command
-```
-sudo ~/anaconda3/envs/CU-PWFA/bin/python setup.py install
-```
+The Spinnaker SDK is the interface between FLIR cameras and the daq. To install download from the FLIR website along with their python wrapper. They have a bunch of different versions depending on the version of python and the operating system. If you can't figure out which one is correct use trial and error, only the correct one should install.
+
+Follow the instructions in the readme that comes with each software. 
 
 ### Setup ethernet for the cameras
 
