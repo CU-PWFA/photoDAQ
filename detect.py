@@ -57,7 +57,7 @@ def camera():
         instr = instrInfo.Camera(serial)
         instr.model = model
         instrs[serial] = instr
-    del cam
+        del cam
     cam_list.Clear()
     system.ReleaseInstance()
     del system
