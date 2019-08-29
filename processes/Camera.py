@@ -17,7 +17,7 @@ class Camera(StreamProcess):
         """ init method. """
         super().__init__(device)
         
-    def connect_data(self):
+    def connect_info(self):
         """ Gather data for the UI to use. """
         cam = self.device
         data = {'ShutterMin' : cam.get_min_shutter(),
@@ -79,8 +79,9 @@ class Camera(StreamProcess):
                 if self.save: response = 'save'
                 else: response = 'output'
                 #raw = np.random.randint(0, 256, size=(2000, 2000), dtype=np.uint16)
-                rsp = daq.Rsp(response, raw, meta)
-            self.r_queue.put(rsp)
+                rsp = daq.Rsp(response, raw, meta=meta)
+                self.r_queue.put(rsp)
+                
             #end = time.clock()
             #print("Start:", start, "End:", end, "Duration:", end-start)
             if image is not None:

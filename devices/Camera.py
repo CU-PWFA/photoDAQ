@@ -67,7 +67,10 @@ class Camera(Device):
         if cam.BlackLevelAuto.GetAccessMode() == PySpin.RW:
             cam.BlackLevelAuto.SetValue(PySpin.BlackLevelAuto_Off)
         if cam.BlackLevel.GetAccessMode() == PySpin.RW:
-            cam.BlackLevel.SetValue(0)
+            value = cam.BlackLevel.GetMin()
+            if value != 0.0:
+                print('Warning, this camera has a nonzero black level.')
+            cam.BlackLevel.SetValue(value)
         if cam.GammaEnable.GetAccessMode() == PySpin.RW:
             cam.GammaEnable.SetValue(False)
         if cam.SharpeningEnable.GetAccessMode() == PySpin.RW:
@@ -77,15 +80,39 @@ class Camera(Device):
         if cam.AcquisitionMode.GetAccessMode() == PySpin.RW:
             cam.AcquisitionMode.SetValue(PySpin.AcquisitionMode_Continuous)
         if cam.AcquisitionFrameRateEnable.GetAccessMode() == PySpin.RW:
-            cam.AcquisitionFrameRateEnable(True)
+            cam.AcquisitionFrameRateEnable.SetValue(True)
+        # Disable sharpening
+        if cam.SharpeningEnable.GetAccessMode() == PySpin.RW:
+            cam.SharpeningEnable.SetValue(False)
+        NodeSharpnessEnabled = PySpin.CBooleanPtr(self.nodemap.GetNode('SharpnessEnabled'))
+        if PySpin.IsAvailable(NodeSharpnessEnabled) and PySpin.IsReadable(NodeSharpnessEnabled):
+            NodeSharpnessEnabled.SetValue(False)
+        # Set auto framerate to off
+        NodeAutoFrameRate = PySpin.CEnumerationPtr(self.nodemap.GetNode('AcquisitionFrameRateAuto'))
+        if PySpin.IsAvailable(NodeAutoFrameRate) and PySpin.IsReadable(NodeAutoFrameRate):
+            AutoFrameRate_Off = NodeAutoFrameRate.GetEntryByName('Off')
+            NodeAutoFrameRate.SetIntValue(AutoFrameRate_Off.GetValue())
+        # I Don't know exactly what this (it isn't in any documentation I could find)
+        # so I'm turining it off, we want the raw data from the camera, no compensation
+        NodeCompensation = PySpin.CEnumerationPtr(self.nodemap.GetNode('pgrExposureCompensationAuto'))
+        if PySpin.IsAvailable(NodeCompensation) and PySpin.IsReadable(NodeCompensation):
+            Compensation_Off = NodeCompensation.GetEntryByName('Off')
+            NodeCompensation.SetIntValue(Compensation_Off.GetValue())
         
         # Chack the packet size is as large as possible
         max_packet = cam.DiscoverMaxPacketSize()
         current_packet = int(cam.GevSCPSPacketSize.ToString())
         if current_packet != max_packet:
+            cam.GevSCPSPacketSize.SetValue(max_packet)
+            current_packet = int(cam.GevSCPSPacketSize.ToString())
+        if current_packet != max_packet:
             print('Camera is using a packet size of %i not the max of %i.' % (current_packet, max_packet))
         if max_packet != 9000:
             print('Max packet size is only %i, increase to 9000 for best performance.' % max_packet)
+            
+        # Set the packet delay, will limit bandwidth. Size=9000 and delay=5900 is 25MB/s
+        if cam.GevSCPD.GetAccessMode() == PySpin.RW:
+            cam.GevSCPD.SetValue(5900)
         
         self.set_pixel_format('Mono12Packed')
         self.set_trigger_settings(False)

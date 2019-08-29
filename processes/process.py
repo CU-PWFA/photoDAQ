@@ -39,11 +39,11 @@ class Process():
             return
         device.type = instr.device_type
         self.device = device
-        data = self.connect_data()
-        rsp = daq.Rsp('connected', data)
+        info = self.connect_info()
+        rsp = daq.Rsp('connected', info=info)
         self.r_queue.put(rsp)
         
-    def connect_data(self):
+    def connect_info(self):
         """ Collect any data to be sent in the connect response, overwrite to use. """
         return None
         

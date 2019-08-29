@@ -13,6 +13,7 @@ import multiprocessing as mp
 import numpy as np
 import time
 import threading
+import dataQueue
 
 ###############################################################################
 #   
@@ -104,7 +105,7 @@ class Daq():
         else:
             # Create all the response queues
             instr.command_queue = mp.JoinableQueue(self.max_command_queue_size)
-            instr.response_queue = mp.JoinableQueue(self.max_response_queue_size)
+            instr.response_queue = dataQueue.RspQueue(1000)
             instr.dataset = self.dataset
             if self.broadcast:
                 instr.output_queue = mp.JoinableQueue(self.max_response_queue_size)
@@ -182,7 +183,7 @@ class Daq():
                 break
             else:
                 output(rsp)
-            r_queue.task_done()
+            #r_queue.task_done()
             
     def timing_thread(self, instr):
         """ Timing thread for handling shot specific steps. 
@@ -420,20 +421,25 @@ class Rsp():
     
     The object is sent between processes through a queue, it must be picklable.
     """
-    def __init__(self, response, data=None, meta=None):
+    def __init__(self, response, data=None, info=None, meta=None):
         """ Create the response. 
         
         Parameters
         ----------
         response : string
             The response type, determines how the response is handled.
-        data : dict, optional
-            The data to send over the queue.
+        data : numpy array, optional
+            The data to send over the queue, must be a numpy array.
+        info : dict, optional
+            Information to send that isn't a numpy array.
         meta : dict, optional
             Meta data to send over the queue.
         """
         self.response = response
+        if data is None:
+            data = np.zeros(1)
         self.data = data
+        self.info = info
         self.meta = meta
 
 class WriteStream(object):

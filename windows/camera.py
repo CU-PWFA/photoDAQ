@@ -123,7 +123,7 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
             The response object from the connection response. The data contains
             the INFO objects from the camera.
         """
-        data = rsp.data
+        data = rsp.info
         self.gainField.blockSignals(True)
         self.gainField.setMaximum(data['GainMax'])
         self.gainField.setValue(data['Gain'])
@@ -230,9 +230,6 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         """ Set the offsetX value. """
         # Ensure the number is even
         value = int(value/2)*2
-        self.startXField.blockSignals(True)
-        self.startXField.setValue(value)
-        self.startXField.blockSignals(False)
         self.widthField.setMaximum(self.maxWidth-value)
         self.send_command('set_offsetX', value)
 
@@ -240,9 +237,6 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
     def set_offsetY(self, value):
         """ Set the offsetY value. """
         value = int(value/2)*2
-        self.startYField.blockSignals(True)
-        self.startYField.setValue(value)
-        self.startYField.blockSignals(False)
         self.heightField.setMaximum(self.maxHeight-value)
         self.send_command('set_offsetY', value)
         
@@ -250,9 +244,6 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
     def set_height(self, value):
         """ Set the height value. """
         value = int(value/2)*2
-        self.heightField.blockSignals(True)
-        self.heightField.setValue(value)
-        self.heightField.blockSignals(False)
         self.startYField.setMaximum(self.maxHeight-value)
         self.send_command('set_height', value)
         
@@ -260,9 +251,6 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
     def set_width(self, value):
         """ Set the width value. """
         value = int(value/4)*4
-        self.widthField.blockSignals(True)
-        self.widthField.setValue(value)
-        self.widthField.blockSignals(False)
         self.startXField.setMaximum(self.maxWidth-value)
         self.send_command('set_width', value)
     
