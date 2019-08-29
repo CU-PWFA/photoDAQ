@@ -101,6 +101,8 @@ class Camera(Device):
         
         # Chack the packet size is as large as possible
         max_packet = cam.DiscoverMaxPacketSize()
+        if cam.GevSCPSPacketSize.GetAccessMode() == PySpin.RW:
+            cam.GevSCPSPacketSize.SetValue(max_packet)
         current_packet = int(cam.GevSCPSPacketSize.ToString())
         if current_packet != max_packet:
             cam.GevSCPSPacketSize.SetValue(max_packet)
