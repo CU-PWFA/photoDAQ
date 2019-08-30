@@ -37,7 +37,7 @@ class TC(StreamProcess):
                 continue
             meta = self.create_meta()
             response = 'output'
-            rsp = daq.Rsp(response, raw, meta)
+            rsp = daq.Rsp(response, info=raw, meta=meta)
             self.r_queue.put(rsp)
             
             self.shot += 1

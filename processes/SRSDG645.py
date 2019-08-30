@@ -40,7 +40,7 @@ class SRSDG645(Process):
         meta = self.create_meta()
         if self.save: response = 'save'
         else: response = 'output'
-        rsp = daq.Rsp(response, settings, meta)
+        rsp = daq.Rsp(response, info=settings, meta=meta)
         self.r_queue.put(rsp)
         
     def save_settings(self):

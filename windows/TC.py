@@ -144,4 +144,4 @@ class TCWindow(QtBaseClass, Ui_TCWindow):
         rsp : rsp object
             The response object with the shot count.
         """
-        self.currentShot.setText(str(rsp.data))
+        self.currentShot.setText(str(rsp.info))

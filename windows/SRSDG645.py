@@ -249,7 +249,7 @@ class DGWindow(QtBaseClass, Ui_DGWindow):
             The response object with the field settings
         """
         channel = self.channelField.currentText()
-        self.settings = rsp.data
+        self.settings = rsp.info
         # Stop the channel change from doing anythin
         self.updating = True
         self.set_delay_fields(channel)

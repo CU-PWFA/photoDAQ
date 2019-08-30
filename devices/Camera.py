@@ -89,7 +89,7 @@ class Camera(Device):
             NodeSharpnessEnabled.SetValue(False)
         # Set auto framerate to off
         NodeAutoFrameRate = PySpin.CEnumerationPtr(self.nodemap.GetNode('AcquisitionFrameRateAuto'))
-        if PySpin.IsAvailable(NodeAutoFrameRate) and PySpin.IsReadable(NodeAutoFrameRate):
+        if PySpin.IsAvailable(NodeAutoFrameRate) and PySpin.IsWritable(NodeAutoFrameRate):
             AutoFrameRate_Off = NodeAutoFrameRate.GetEntryByName('Off')
             NodeAutoFrameRate.SetIntValue(AutoFrameRate_Off.GetValue())
         # I Don't know exactly what this (it isn't in any documentation I could find)
