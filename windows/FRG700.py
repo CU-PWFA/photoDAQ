@@ -240,8 +240,8 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         rsp : rsp object
             The response object with the field settings
         """
-        self.update_buffer(rsp.data)
-        self.update_plot(rsp.data)
+        self.update_buffer(rsp.info)
+        self.update_plot(rsp.info)
         self.canvas.draw()
         
     @pyqtSlot(int)

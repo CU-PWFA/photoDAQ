@@ -36,7 +36,7 @@ class FRG700(StreamProcess):
             meta = self.create_meta()
             if self.save: response = 'save'
             else: response = 'output'
-            rsp = daq.Rsp(response, raw, meta)
+            rsp = daq.Rsp(response, info=raw, meta=meta)
             self.r_queue.put(rsp)
             
             self.shot += 1

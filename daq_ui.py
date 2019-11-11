@@ -270,8 +270,8 @@ class UI(QtBaseClass, Ui_MainWindow):
         rsp : rsp object
             The response object with the pump status.
         """
-        self.turboPower.setText(str(rsp.data['power'])+' W')
-        self.turboStatus.setText(rsp.data['status'])
+        self.turboPower.setText(str(rsp.info['power'])+' W')
+        self.turboStatus.setText(rsp.info['status'])
         
     @pyqtSlot()
     def setup_turbo(self):
@@ -305,8 +305,8 @@ class UI(QtBaseClass, Ui_MainWindow):
         rsp : rsp object
             The response object with the gauge pressures.
         """
-        self.APressure.setText('%0.2E' % rsp.data[0])
-        self.BPressure.setText('%0.2E' % rsp.data[3])
+        self.APressure.setText('%0.2E' % rsp.info[0])
+        self.BPressure.setText('%0.2E' % rsp.info[3])
         
     # Timing system integration
     ###########################################################################

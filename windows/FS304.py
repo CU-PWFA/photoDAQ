@@ -224,11 +224,11 @@ class PumpWindow(QtBaseClass, Ui_PumpWindow):
         rsp : rsp object
             The response object with the field settings
         """
-        status = [rsp.data['power'], rsp.data['temperature'], rsp.data['frequency']]
+        status = [rsp.info['power'], rsp.info['temperature'], rsp.info['frequency']]
         self.update_buffer(status)
         self.update_plot()
         self.canvas.draw()
-        self.update_status(rsp.data)
+        self.update_status(rsp.info)
         
     @pyqtSlot(int)
     def change_buffer(self, length):
