@@ -290,14 +290,14 @@ class UI(QtBaseClass, Ui_MainWindow):
             Object for the turbo pump.
         """
         win = instr.window
-        win.data_acquired.connect(self.update_chamber_pressure)
+        win.data_prepared.connect(self.update_chamber_pressure)
         win.device_connected.connect(win.start_stream)
         # Connected can fire before this function runs
         if win.connected:
             win.start_stream()
     
-    @pyqtSlot(object)
-    def update_chamber_pressure(self, rsp):
+    @pyqtSlot(object, str)
+    def update_chamber_pressure(self, data, species):
         """ Update the chamber pressure readouts. 
         
         Parameters
@@ -305,8 +305,15 @@ class UI(QtBaseClass, Ui_MainWindow):
         rsp : rsp object
             The response object with the gauge pressures.
         """
-        self.APressure.setText('%0.2E' % rsp.info[0])
-        self.BPressure.setText('%0.2E' % rsp.info[3])
+        self.APressure.setText('%0.2E' % data[0])
+        self.BPressure.setText('%0.2E' % data[3])
+        display_species = species
+        if species == 'Ar':
+            display_species = 'Argon'
+        elif species == 'He':
+            display_species = 'Helium'
+        self.ASpecies.setText(display_species)
+        self.BSpecies.setText(display_species)
         
     # Timing system integration
     ###########################################################################

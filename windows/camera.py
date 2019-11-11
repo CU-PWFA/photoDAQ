@@ -77,12 +77,18 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         # Following the pyqtgraph VideoSpeedTest example, add the image
         pyqtgraph.setConfigOptions(imageAxisOrder='row-major')
         self.vb =  pg.ViewBox()
-        self.graphicsView = pg.GraphicsView(self.imageWidget)
-        self.mplvl.addWidget(self.graphicsView)
-        self.graphicsView.setCentralItem(self.vb)
-        self.vb.setAspectLocked()
-        self.image_view = pg.ImageItem()
-        self.vb.addItem(self.image_view)
+        #self.graphicsView = pg.GraphicsView(self.imageWidget)
+        #self.mplvl.addWidget(self.graphicsView)
+        #self.graphicsView.setCentralItem(self.vb)
+        #self.vb.setAspectLocked()
+        #self.image_view = pg.ImageItem()
+        #self.vb.addItem(self.image_view)
+        self.image_view = pg.ImageView()
+        self.mplvl.addWidget(self.image_view)
+        self.image_view.setHistogramRange(0, 2**16)
+        self.image_view.setLevels(0, 2**16)
+        self.image_view.ui.roiBtn.setVisible(False)
+        self.image_view.ui.menuBtn.setVisible(False)
         
     def create_update_thread(self):
         """ Create a thread to poll the response queue and update the image. """
@@ -263,7 +269,8 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         rsp : rsp object
             The response object with the image data.
         """
-        self.image_view.setImage(rsp.data, autoLevels=False)
+        self.image_view.setImage(rsp.data, autoLevels=False, autoRange=False,
+                                 autoHistogramRange=False)
     
     @pyqtSlot(dict)
     def update_info(self, rsp):

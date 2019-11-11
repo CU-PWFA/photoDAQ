@@ -26,6 +26,7 @@ Ui_GaugeWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
 class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
     data_acquired = pyqtSignal(object)
+    data_prepared = pyqtSignal(object, str)
     device_connected = pyqtSignal()
     
     def __init__(self, parent, DAQ, instr):
@@ -86,7 +87,7 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)
         fig.tight_layout()
-        data = self.prep_data()
+        data, species = self.prep_data()
         self.pr_plot0, = ax.plot(data[0])
         self.pr_plot1, = ax.plot(data[1])
         self.pr_plot2, = ax.plot(data[2])
@@ -155,13 +156,15 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         pressure : double
             The most recent pressure measurement.
         """
-        data = self.prep_data()
+        data, species = self.prep_data()
         self.pr_plot0.set_ydata(data[0])
         self.pr_plot1.set_ydata(data[1])
         self.pr_plot2.set_ydata(data[2])
         self.pr_plot3.set_ydata(data[3])
         ind = self.gaugeDisplayField.currentIndex()
-        self.pr_display.set_text('%.2E mbar' % self.prep_data(pressure[ind]))
+        current_pressure, species = self.prep_data(pressure)
+        self.pr_display.set_text('%.2E mbar' % current_pressure[ind])
+        self.data_prepared.emit(current_pressure, species)
         
     def update_buffer(self, pressure):
         """ Update the rolling buffer. 
@@ -189,6 +192,8 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         -------
         data : array-like
             The pressure data for plotting.
+        species : string
+            String representing the species, from the dropdown box options.
         """
         i = self.i
         if data is None:
@@ -198,7 +203,7 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
             data = self.Ar(data)
         if species == 'He':
             data = self.He(data)
-        return data
+        return data, species
     
     def load_adjustments(self):
         """ Load in the CSV data for adjusting the curves for different gases. """

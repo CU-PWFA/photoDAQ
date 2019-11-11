@@ -1132,6 +1132,42 @@ color:white;</string>
       <string>mbar</string>
      </property>
     </widget>
+    <widget class="QLabel" name="ASpecies">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>90</y>
+       <width>231</width>
+       <height>61</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>40</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>Air</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="BSpecies">
+     <property name="geometry">
+      <rect>
+       <x>370</x>
+       <y>90</y>
+       <width>231</width>
+       <height>61</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>40</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>Air</string>
+     </property>
+    </widget>
    </widget>
    <widget class="QFrame" name="laserSystemFrame">
     <property name="geometry">
