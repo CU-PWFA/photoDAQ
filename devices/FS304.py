@@ -44,6 +44,7 @@ class FS304(Device):
         
     def setup(self):
         """ Set pump parameters to their correct values. """
+        self.set_serial()
         self.set_water_cooling(False)
         
     # Request pump parameters
@@ -311,6 +312,12 @@ class FS304(Device):
         """
         if water: self.write('106', '1')
         else: self.write('106', '0')
+        self.acknowledge()
+        
+    def set_serial(self):
+        """ Set the pump into serial mode so it can be controlled. """
+        self.write('008', '0')
+        time.sleep(0.05)
         self.acknowledge()
         
     def close(self):
