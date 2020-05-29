@@ -282,7 +282,7 @@ class SpecWindow(QtBaseClass, Ui_SpecWindow):
         rsp : rsp object
             The response object with the spectrum data.
         """
-        data = rsp.data
+        data = rsp.info
         I = data['I']
         # Take the background first, before we modify I at all
         if self.taking_background == True:

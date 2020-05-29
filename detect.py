@@ -11,8 +11,11 @@ import PyCapture2 as pc2
 import visa
 import seabreeze.spectrometers as sb
 import os
+import sys
 import serial.tools.list_ports as prtlst
 import PySpin
+import usb
+import time
 
 
 def all_instrs():
@@ -29,6 +32,7 @@ def all_instrs():
     instrs = {**instrs, **spectrometer()}
     instrs = {**instrs, **SRSDG645()}
     instrs = {**instrs, **serial_ports()}
+    instrs = {**instrs, **pyusb()}
     return instrs
 
 
@@ -83,6 +87,54 @@ def pyvisa():
     return instrs
 
 
+def pyusb():
+    """ Detect all USB devices
+    
+    Returns
+    -------
+    instr : array of instr objects
+           All of the detected usb instruments in the system
+    """
+    def flush(ep_in):
+        while True:
+            try:
+                ep_in.read(64, timeout = 10)
+            except usb.core.USBError:
+                break
+    VID = 0x104d
+    PID = 0x4000
+    instrs = {}
+    devices = usb.core.find(find_all = True, idVendor=VID,\
+                    idProduct=PID)
+    for dev in devices:
+        cfg  = dev.get_active_configuration()
+        intf = cfg[(0,0)]
+        # Get endpoints
+        ep_out = usb.util.find_descriptor(intf, custom_match=lambda e:
+                 usb.util.endpoint_direction(e.bEndpointAddress) == \
+                 usb.util.ENDPOINT_OUT)
+        assert ep_out is not None
+        assert ep_out.wMaxPacketSize == 64
+        ep_in = usb.util.find_descriptor(intf, 
+                custom_match=lambda e:
+                    usb.util.endpoint_direction(e.bEndpointAddress) == \
+                    usb.util.ENDPOINT_IN)
+        assert ep_in is not None
+        assert ep_in.wMaxPacketSize == 64
+        flush(ep_in)
+        # Get serial number
+        ep_out.write(b"*IDN?\r")
+        address = ep_in.read(64).tobytes()
+        address = address.decode().split()[-1]
+        flush(ep_in)
+        instr = instrInfo.NF8742(address)
+        # Disconnect
+        usb.util.dispose_resources(dev)
+        instrs[address] = instr
+        
+    return instrs
+
+           
 def spectrometer():
     """ Detect all oceanview spectrometers.
     

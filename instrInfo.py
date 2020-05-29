@@ -281,3 +281,28 @@ class TC(Instr):
         self.window_cls = windows.TC.TCWindow
         self.model = 'TC'
         self.stream = True
+        
+        
+class NF8742(Instr):
+    """ Class for New Focus picomotor driver. """
+    def __init__(self, address):
+        """ Initialize all the object attributes. 
+        Parameters
+        ----------
+        address : string
+            The serial address of the driver
+        """
+        super().__init__(address)
+        import processes.NF8742
+        import devices.NF8742
+        import windows.NF8742
+        
+        self.serial      = address
+        self.device_type = 'NF8742'
+        self.data_type   = 'SET'
+        self.device_cls  = devices.NF8742.NF8742
+        self.process_cls = processes.NF8742.NF8742
+        self.window_cls  = windows.NF8742.NF8742Window
+        self.model       = "NF8742"
+        self.stream      = False
+        

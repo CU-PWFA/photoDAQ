@@ -1365,9 +1365,9 @@ color:white;</string>
         </widget>
        </item>
        <item row="1" column="1">
-        <widget class="QPushButton" name="detectNAButton">
+        <widget class="QPushButton" name="detectUSBButton">
          <property name="enabled">
-          <bool>false</bool>
+          <bool>true</bool>
          </property>
          <property name="font">
           <font>
@@ -1375,7 +1375,7 @@ color:white;</string>
           </font>
          </property>
          <property name="text">
-          <string/>
+          <string>USB Instr(s)</string>
          </property>
         </widget>
        </item>
@@ -1390,7 +1390,7 @@ color:white;</string>
      <x>0</x>
      <y>0</y>
      <width>1920</width>
-     <height>22</height>
+     <height>25</height>
     </rect>
    </property>
   </widget>

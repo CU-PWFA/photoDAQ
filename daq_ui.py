@@ -58,6 +58,7 @@ class UI(QtBaseClass, Ui_MainWindow):
         self.detectSerialButton.clicked.connect(self.detect_serial)
         self.detectSpecButton.clicked.connect(self.detect_spectrometer)
         self.detectVisaButton.clicked.connect(self.detect_visa)
+        self.detectUSBButton.clicked.connect(self.detect_usb)
         self.detectSDGButton.clicked.connect(self.detect_SDG)
         self.detectCamerasButton.clicked.connect(self.detect_camera)
         self.addToDatasetButton.clicked.connect(self.add_to_dataset)
@@ -430,7 +431,11 @@ class UI(QtBaseClass, Ui_MainWindow):
         """ Detect and add visa instruments to the available instruments. """
         instrs = detect.pyvisa()
         self.add_instrs(instrs)
-        
+    
+    @pyqtSlot()
+    def detect_usb(self):
+        instrs = detect.pyusb()
+        self.add_instrs(instrs)
     @pyqtSlot()
     def detect_SDG(self):
         """ Detect and add the SDG to the available instruments. """

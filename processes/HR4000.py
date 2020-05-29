@@ -27,7 +27,7 @@ class HR4000(StreamProcess):
                     'I' : raw[1, :]}
             if self.save: response = 'save'
             else: response = 'output'
-            rsp = daq.Rsp(response, data, meta)
+            rsp = daq.Rsp(response, info=data, meta=meta)
             self.r_queue.put(rsp)
             
             self.shot += 1
