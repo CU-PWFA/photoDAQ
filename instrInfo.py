@@ -210,6 +210,29 @@ class SRSDG645(Instr):
                         },
                 }
 
+class XPS(Instr):
+    """ Class for XPS controller. """
+    def __init__(self, address):
+        """ Initialize all the object attributes. 
+        
+        Parameters
+        ----------
+        address : string
+            The ip address of the XPS controller.
+        """
+        super().__init__(address)
+        import processes.XPS
+        import devices.XPS
+        import windows.XPS
+        
+        self.device_type = 'XPS'
+        self.data_type = 'SET'
+        self.device_cls = devices.XPS.XPS
+        self.process_cls = processes.XPS.XPS
+        self.window_cls = windows.XPS.XPSWindow
+        self.model = 'XPS'
+        self.stream = True
+        
 
 class FRG700(Instr):
     """ Class for FRG700 vacuum gauge controller. """

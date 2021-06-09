@@ -56,6 +56,7 @@ class UI(QtBaseClass, Ui_MainWindow):
         self.detailButton.clicked.connect(self.open_detail_panel)
         self.startDatasetButton.clicked.connect(self.start_dataset)
         self.detectSerialButton.clicked.connect(self.detect_serial)
+        self.detectXPSButton.clicked.connect(self.detect_XPS)
         self.detectSpecButton.clicked.connect(self.detect_spectrometer)
         self.detectVisaButton.clicked.connect(self.detect_visa)
         self.detectUSBButton.clicked.connect(self.detect_usb)
@@ -201,6 +202,8 @@ class UI(QtBaseClass, Ui_MainWindow):
             self.integrate_SDG(instr)
         elif instr.device_type == 'TC':
             self.integrate_TC(instr)
+#        elif instr.device_type == 'XPS':
+#            self.integrate_XPS(instr)
             
     def add_instr_widget(self, instr):
         """ Create and add a widget for the passed instrument to the list. 
@@ -390,6 +393,24 @@ class UI(QtBaseClass, Ui_MainWindow):
         if shot == self.DAQProgress.maximum():
             self.resumeDAQButton.setEnabled(False)
             self.pauseDAQButton.setEnabled(False)
+
+    # XPS control system integration
+    ###########################################################################
+    # XPS-D controller
+    #--------------------------------------------------------------------------
+#    def integrate_XPS(self, instr):
+#        """ Add connections with the XPS controller. 
+        
+#        Parmaeters
+#        ----------
+#        instr : instr object
+#            Object for the XPS controller.
+#        """
+#        win = instr.window
+#        win.device_connected.connect(win.start_stream)
+        # Connected can fire before this function runs
+#        if win.connected:
+#            win.start_stream()
         
     
     # Event Handlers
@@ -418,6 +439,12 @@ class UI(QtBaseClass, Ui_MainWindow):
     def detect_serial(self):
         """ Detect and add serial device to the available instruments. """
         instrs = detect.serial_ports()
+        self.add_instrs(instrs)
+
+    @pyqtSlot()
+    def detect_XPS(self):
+        """ Detect and add XPS controller to the available instruments. """
+        instrs = detect.XPS()
         self.add_instrs(instrs)
         
     @pyqtSlot()

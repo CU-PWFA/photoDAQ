@@ -31,6 +31,7 @@ def all_instrs():
     instrs = {**instrs, **pyvisa()}
     instrs = {**instrs, **spectrometer()}
     instrs = {**instrs, **SRSDG645()}
+    instrs = {**instrs, **XPS()}
     instrs = {**instrs, **serial_ports()}
     instrs = {**instrs, **pyusb()}
     return instrs
@@ -171,6 +172,22 @@ def SRSDG645():
         instrs[instr.serial] = instr
     return instrs
 
+def XPS():
+    """ Detect if the XPS is connected. 
+    
+    Returns
+    -------
+    instrs : array of instr objects
+        Will have a single element if the XPS is detected.
+    """
+    instrs = {}
+    ret = os.system("ping -c 1 169.254.248.150")
+    if ret == 0:
+        instr = instrInfo.XPS('169.254.248.150')
+        instr.model = 'XPS-D'
+        instr.serial = '18308053'
+        instrs[instr.serial] = instr
+    return instrs
 
 def serial_ports():
     """ Find all the instruments connected to serial ports.
