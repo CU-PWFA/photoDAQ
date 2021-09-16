@@ -9,6 +9,7 @@ Created on Wed Jul 11 18:03:07 2018
 from processes.streamProcess import StreamProcess
 import time
 import daq
+import numpy as np
 
 class HR4000(StreamProcess):
     """ Process class for the HR4000 spectrometer. """       
@@ -21,13 +22,15 @@ class HR4000(StreamProcess):
             The response queue to place spectrums in.
         """
         while self.streaming:
-            raw = self.device.get_spectrum()
+            raw = self.device.get_spectrum()  
             meta = self.create_meta()
             data = {'lambda' : raw[0, :],
                     'I' : raw[1, :]}
-            if self.save: response = 'save'
-            else: response = 'output'
-            rsp = daq.Rsp(response, info=data, meta=meta)
+            if self.save:
+                response = 'save'
+            else: 
+                response = 'output'
+            rsp = daq.Rsp(response, info=data, meta=meta)  
             self.r_queue.put(rsp)
             
             self.shot += 1

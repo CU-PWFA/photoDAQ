@@ -11,7 +11,7 @@ import time
 import daq
 
 class FRG700(StreamProcess):
-    """ Process class for the FRG700 vacuum gauge. """
+    """ Process class for the FRG700 and CDG500 vacuum gauges. """
     def __init__(self, instr):
         """ For parameters see the parent method. 
         
@@ -32,11 +32,14 @@ class FRG700(StreamProcess):
             The response queue to place the pressure in.
         """
         while self.streaming:
-            raw = self.device.get_pressure()
+            raw = self.device.voltage_to_pressure()
             meta = self.create_meta()
+            serial = meta['Serial number'] # This serial number has '/dev/' in front, which causes an error when saving the data.
+            serial_sliced = serial[5:]  # Remove /dev/ from serial number
+            meta['Serial number'] = serial_sliced  # Redefine the serial number in meta
             if self.save: response = 'save'
             else: response = 'output'
-            rsp = daq.Rsp(response, info=raw, meta=meta)
+            rsp = daq.Rsp(response, info=raw, meta=meta) 
             self.r_queue.put(rsp)
             
             self.shot += 1

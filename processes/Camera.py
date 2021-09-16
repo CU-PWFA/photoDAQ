@@ -76,8 +76,10 @@ class Camera(StreamProcess):
             else:
                 converted = image.Convert(PySpin.PixelFormat_Mono16)
                 raw = converted.GetNDArray()
-                if self.save: response = 'save'
-                else: response = 'output'
+                if self.save:
+                    response = 'save'
+                else: 
+                    response = 'output'
                 #raw = np.random.randint(0, 256, size=(2000, 2000), dtype=np.uint16)
                 rsp = daq.Rsp(response, raw, meta=meta)
                 self.r_queue.put(rsp)

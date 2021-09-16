@@ -55,7 +55,7 @@
          <x>0</x>
          <y>0</y>
          <width>200</width>
-         <height>445</height>
+         <height>442</height>
         </rect>
        </property>
        <attribute name="label">
@@ -290,6 +290,19 @@ color:white;</string>
          <string>Subtract Background</string>
         </property>
        </widget>
+       <widget class="QCheckBox" name="triggerCheck">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>370</y>
+          <width>151</width>
+          <height>22</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>External Trigger</string>
+        </property>
+       </widget>
       </widget>
       <widget class="QWidget" name="postPage">
        <property name="geometry">
@@ -297,7 +310,7 @@ color:white;</string>
          <x>0</x>
          <y>0</y>
          <width>200</width>
-         <height>445</height>
+         <height>442</height>
         </rect>
        </property>
        <attribute name="label">
@@ -462,6 +475,14 @@ color:white;</string>
        </widget>
       </widget>
       <widget class="QWidget" name="page">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>200</width>
+         <height>442</height>
+        </rect>
+       </property>
        <attribute name="label">
         <string>Spectrum Information</string>
        </attribute>
@@ -534,7 +555,7 @@ color:white;</string>
      <x>0</x>
      <y>0</y>
      <width>1005</width>
-     <height>22</height>
+     <height>25</height>
     </rect>
    </property>
   </widget>

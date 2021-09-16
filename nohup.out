@@ -1,0 +1,42 @@
+Traceback (most recent call last):
+  File "/home/cu-pwfa/anaconda3/envs/CU-PWFA/bin/jupyter-notebook", line 6, in <module>
+    sys.exit(notebook.notebookapp.main())
+  File "/home/cu-pwfa/anaconda3/envs/CU-PWFA/lib/python3.6/site-packages/jupyter_core/application.py", line 267, in launch_instance
+    return super(JupyterApp, cls).launch_instance(argv=argv, **kwargs)
+  File "/home/cu-pwfa/anaconda3/envs/CU-PWFA/lib/python3.6/site-packages/traitlets/config/application.py", line 657, in launch_instance
+    app.initialize(argv)
+  File "<decorator-gen-7>", line 2, in initialize
+  File "/home/cu-pwfa/anaconda3/envs/CU-PWFA/lib/python3.6/site-packages/traitlets/config/application.py", line 87, in catch_config_error
+    return method(app, *args, **kwargs)
+  File "/home/cu-pwfa/anaconda3/envs/CU-PWFA/lib/python3.6/site-packages/notebook/notebookapp.py", line 1296, in initialize
+    self.init_webapp()
+  File "/home/cu-pwfa/anaconda3/envs/CU-PWFA/lib/python3.6/site-packages/notebook/notebookapp.py", line 1115, in init_webapp
+    xheaders=self.trust_xheaders)
+  File "/home/cu-pwfa/anaconda3/envs/CU-PWFA/lib/python3.6/site-packages/tornado/util.py", line 293, in __new__
+    instance.initialize(*args, **init_kwargs)
+  File "/home/cu-pwfa/anaconda3/envs/CU-PWFA/lib/python3.6/site-packages/tornado/httpserver.py", line 167, in initialize
+    read_chunk_size=chunk_size)
+  File "/home/cu-pwfa/anaconda3/envs/CU-PWFA/lib/python3.6/site-packages/tornado/tcpserver.py", line 128, in __init__
+    self.ssl_options['certfile'])
+ValueError: certfile "Jupyter/mycert.pem" does not exist
+Traceback (most recent call last):
+  File "/home/cu-pwfa/anaconda3/envs/CU-PWFA/bin/jupyter-notebook", line 6, in <module>
+    sys.exit(notebook.notebookapp.main())
+  File "/home/cu-pwfa/anaconda3/envs/CU-PWFA/lib/python3.6/site-packages/jupyter_core/application.py", line 267, in launch_instance
+    return super(JupyterApp, cls).launch_instance(argv=argv, **kwargs)
+  File "/home/cu-pwfa/anaconda3/envs/CU-PWFA/lib/python3.6/site-packages/traitlets/config/application.py", line 657, in launch_instance
+    app.initialize(argv)
+  File "<decorator-gen-7>", line 2, in initialize
+  File "/home/cu-pwfa/anaconda3/envs/CU-PWFA/lib/python3.6/site-packages/traitlets/config/application.py", line 87, in catch_config_error
+    return method(app, *args, **kwargs)
+  File "/home/cu-pwfa/anaconda3/envs/CU-PWFA/lib/python3.6/site-packages/notebook/notebookapp.py", line 1296, in initialize
+    self.init_webapp()
+  File "/home/cu-pwfa/anaconda3/envs/CU-PWFA/lib/python3.6/site-packages/notebook/notebookapp.py", line 1115, in init_webapp
+    xheaders=self.trust_xheaders)
+  File "/home/cu-pwfa/anaconda3/envs/CU-PWFA/lib/python3.6/site-packages/tornado/util.py", line 293, in __new__
+    instance.initialize(*args, **init_kwargs)
+  File "/home/cu-pwfa/anaconda3/envs/CU-PWFA/lib/python3.6/site-packages/tornado/httpserver.py", line 167, in initialize
+    read_chunk_size=chunk_size)
+  File "/home/cu-pwfa/anaconda3/envs/CU-PWFA/lib/python3.6/site-packages/tornado/tcpserver.py", line 128, in __init__
+    self.ssl_options['certfile'])
+ValueError: certfile "Jupyter/mycert.pem" does not exist

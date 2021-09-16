@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>462</width>
-    <height>203</height>
+    <width>483</width>
+    <height>278</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -52,51 +52,13 @@
     <string>Relative Motion</string>
    </property>
   </widget>
-  <widget class="QLabel" name="status">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>20</y>
-     <width>211</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string/>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignCenter</set>
-   </property>
-   <property name="wordWrap">
-    <bool>true</bool>
-   </property>
-  </widget>
-  <widget class="QLabel" name="grouplabel_1">
-   <property name="geometry">
-    <rect>
-     <x>-3</x>
-     <y>0</y>
-     <width>231</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="styleSheet">
-    <string notr="true"/>
-   </property>
-   <property name="text">
-    <string>Group1</string>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignCenter</set>
-   </property>
-  </widget>
   <widget class="QFrame" name="frame">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>231</width>
-     <height>201</height>
+     <width>241</width>
+     <height>251</height>
     </rect>
    </property>
    <property name="frameShape">
@@ -113,66 +75,66 @@
      <rect>
       <x>10</x>
       <y>80</y>
-      <width>121</width>
+      <width>71</width>
       <height>21</height>
      </rect>
     </property>
     <property name="text">
-     <string>Current Position:</string>
+     <string>POSITION:</string>
     </property>
    </widget>
    <widget class="QLabel" name="requestPosLabel">
     <property name="geometry">
      <rect>
-      <x>60</x>
+      <x>10</x>
       <y>110</y>
       <width>71</width>
       <height>20</height>
      </rect>
     </property>
     <property name="text">
-     <string>Request :</string>
+     <string>REQUEST:</string>
     </property>
    </widget>
    <widget class="QDoubleSpinBox" name="requestPosValue">
     <property name="geometry">
      <rect>
-      <x>130</x>
+      <x>80</x>
       <y>110</y>
-      <width>51</width>
+      <width>91</width>
       <height>21</height>
      </rect>
     </property>
     <property name="decimals">
-     <number>0</number>
+     <number>4</number>
     </property>
     <property name="minimum">
-     <double>-51.000000000000000</double>
+     <double>-100.000000000000000</double>
     </property>
     <property name="maximum">
-     <double>50.000000000000000</double>
+     <double>100.000000000000000</double>
     </property>
     <property name="singleStep">
-     <double>0.010000000000000</double>
+     <double>0.000300000000000</double>
     </property>
    </widget>
    <widget class="QLabel" name="currentPosValue">
     <property name="geometry">
      <rect>
-      <x>140</x>
+      <x>90</x>
       <y>80</y>
-      <width>41</width>
+      <width>71</width>
       <height>21</height>
      </rect>
     </property>
     <property name="text">
-     <string>0</string>
+     <string>0.0000</string>
     </property>
    </widget>
    <widget class="QPushButton" name="requestPosButton">
     <property name="geometry">
      <rect>
-      <x>190</x>
+      <x>200</x>
       <y>110</y>
       <width>31</width>
       <height>27</height>
@@ -199,27 +161,157 @@ color:white;</string>
      <string>Absolute Motion</string>
     </property>
    </widget>
-  </widget>
-  <widget class="QPushButton" name="initializeButton_2">
-   <property name="geometry">
-    <rect>
-     <x>240</x>
-     <y>50</y>
-     <width>99</width>
-     <height>27</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Initialize</string>
-   </property>
+   <widget class="QLabel" name="requestPosLabel_3">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>110</y>
+      <width>31</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>mm</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="requestPosLabel_5">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>80</y>
+      <width>31</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>mm</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="upperBoundLabel_1">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>200</y>
+      <width>101</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Upper Bound:</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lowerBoundLabel_1">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>220</y>
+      <width>101</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Lower Bound:</string>
+    </property>
+   </widget>
+   <widget class="QDoubleSpinBox" name="upperBoundValue_1">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>200</y>
+      <width>101</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="minimum">
+     <double>-100.000000000000000</double>
+    </property>
+    <property name="maximum">
+     <double>100.000000000000000</double>
+    </property>
+    <property name="singleStep">
+     <double>0.010000000000000</double>
+    </property>
+    <property name="value">
+     <double>50.000000000000000</double>
+    </property>
+   </widget>
+   <widget class="QDoubleSpinBox" name="lowerBoundValue_1">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>220</y>
+      <width>101</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="minimum">
+     <double>-100.000000000000000</double>
+    </property>
+    <property name="maximum">
+     <double>100.000000000000000</double>
+    </property>
+    <property name="singleStep">
+     <double>0.010000000000000</double>
+    </property>
+    <property name="value">
+     <double>-49.000000000000000</double>
+    </property>
+   </widget>
+   <widget class="QLabel" name="grouplabel_1">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>241</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true"/>
+    </property>
+    <property name="text">
+     <string>Motor 1</string>
+    </property>
+    <property name="textFormat">
+     <enum>Qt::AutoText</enum>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="status">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>20</y>
+      <width>201</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+    <property name="wordWrap">
+     <bool>true</bool>
+    </property>
+   </widget>
   </widget>
   <widget class="QFrame" name="frame_2">
    <property name="geometry">
     <rect>
-     <x>230</x>
+     <x>240</x>
      <y>0</y>
-     <width>231</width>
-     <height>201</height>
+     <width>241</width>
+     <height>251</height>
     </rect>
    </property>
    <property name="frameShape">
@@ -234,40 +326,40 @@ color:white;</string>
    <widget class="QLabel" name="currentPosLabel_2">
     <property name="geometry">
      <rect>
-      <x>10</x>
+      <x>20</x>
       <y>80</y>
-      <width>121</width>
+      <width>71</width>
       <height>21</height>
      </rect>
     </property>
     <property name="text">
-     <string>Current Position:</string>
+     <string>POSITION:</string>
     </property>
    </widget>
    <widget class="QLabel" name="requestPosLabel_2">
     <property name="geometry">
      <rect>
-      <x>60</x>
+      <x>10</x>
       <y>110</y>
       <width>71</width>
       <height>20</height>
      </rect>
     </property>
     <property name="text">
-     <string>Request :</string>
+     <string>REQUEST:</string>
     </property>
    </widget>
    <widget class="QDoubleSpinBox" name="requestPosValue_2">
     <property name="geometry">
      <rect>
-      <x>130</x>
+      <x>80</x>
       <y>110</y>
-      <width>51</width>
+      <width>91</width>
       <height>21</height>
      </rect>
     </property>
     <property name="decimals">
-     <number>0</number>
+     <number>4</number>
     </property>
     <property name="minimum">
      <double>-51.000000000000000</double>
@@ -282,20 +374,20 @@ color:white;</string>
    <widget class="QLabel" name="currentPosValue_2">
     <property name="geometry">
      <rect>
-      <x>140</x>
+      <x>100</x>
       <y>80</y>
-      <width>41</width>
+      <width>71</width>
       <height>21</height>
      </rect>
     </property>
     <property name="text">
-     <string>0</string>
+     <string>0.0000</string>
     </property>
    </widget>
    <widget class="QPushButton" name="requestPosButton_2">
     <property name="geometry">
      <rect>
-      <x>190</x>
+      <x>200</x>
       <y>110</y>
       <width>31</width>
       <height>27</height>
@@ -307,6 +399,115 @@ color:white;</string>
     </property>
     <property name="text">
      <string>Go</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="requestPosLabel_4">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>110</y>
+      <width>31</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>mm</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="requestPosLabel_6">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>80</y>
+      <width>31</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>mm</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="initializeButton_2">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>50</y>
+      <width>99</width>
+      <height>27</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Initialize</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="upperBoundLabel_2">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>200</y>
+      <width>101</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Upper Bound:</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lowerBoundLabel_2">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>220</y>
+      <width>101</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Lower Bound:</string>
+    </property>
+   </widget>
+   <widget class="QDoubleSpinBox" name="upperBoundValue_2">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>200</y>
+      <width>101</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="minimum">
+     <double>-100.000000000000000</double>
+    </property>
+    <property name="maximum">
+     <double>100.000000000000000</double>
+    </property>
+    <property name="singleStep">
+     <double>0.010000000000000</double>
+    </property>
+    <property name="value">
+     <double>50.000000000000000</double>
+    </property>
+   </widget>
+   <widget class="QDoubleSpinBox" name="lowerBoundValue_2">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>220</y>
+      <width>101</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="minimum">
+     <double>-100.000000000000000</double>
+    </property>
+    <property name="maximum">
+     <double>100.000000000000000</double>
+    </property>
+    <property name="singleStep">
+     <double>0.010000000000000</double>
+    </property>
+    <property name="value">
+     <double>-49.000000000000000</double>
     </property>
    </widget>
   </widget>
@@ -352,14 +553,17 @@ color:white;</string>
   <widget class="QLabel" name="status_2">
    <property name="geometry">
     <rect>
-     <x>240</x>
+     <x>260</x>
      <y>20</y>
-     <width>211</width>
+     <width>201</width>
      <height>31</height>
     </rect>
    </property>
    <property name="text">
     <string/>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
    </property>
    <property name="wordWrap">
     <bool>true</bool>
@@ -368,32 +572,49 @@ color:white;</string>
   <widget class="QLabel" name="grouplabel_2">
    <property name="geometry">
     <rect>
-     <x>227</x>
+     <x>247</x>
      <y>0</y>
      <width>231</width>
      <height>20</height>
     </rect>
    </property>
+   <property name="font">
+    <font>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
    <property name="text">
-    <string>Group2</string>
+    <string>Motor 2</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignCenter</set>
    </property>
   </widget>
+  <widget class="QPushButton" name="rebootButton">
+   <property name="geometry">
+    <rect>
+     <x>180</x>
+     <y>250</y>
+     <width>99</width>
+     <height>27</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Reboot</string>
+   </property>
+  </widget>
+  <zorder>frame_2</zorder>
   <zorder>frame</zorder>
   <zorder>initializeButton</zorder>
   <zorder>homeButton</zorder>
   <zorder>relCheckBox</zorder>
-  <zorder>status</zorder>
-  <zorder>grouplabel_1</zorder>
-  <zorder>initializeButton_2</zorder>
-  <zorder>frame_2</zorder>
   <zorder>homeButton_2</zorder>
   <zorder>absCheckBox_2</zorder>
   <zorder>relCheckBox_2</zorder>
   <zorder>status_2</zorder>
   <zorder>grouplabel_2</zorder>
+  <zorder>rebootButton</zorder>
  </widget>
  <resources/>
  <connections/>

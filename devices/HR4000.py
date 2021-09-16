@@ -100,15 +100,26 @@ class HR4000(Device):
         """
         self.SP.integration_time_micros(time)
     
-    def set_triggermode(self, mode):
+    def set_triggermode(self, enable):
         """ Set the trigger mode of the spectrometer. 
         
         Parameters
         ----------
-        mode : string
-            Need to find documentation on this, what are the options? Is it a string?
+        enable: bool
+            Enable or disable the external trigger.
+        
+        mode:
+        'FREE_RUNNING' : 0,
+        'SOFTWARE'     : 1,
+        'EXT_HW'       : 3,
+        'EXT_HW_SYNC'  : 2,
         """
-        self.SP.trigger_mode()
+        
+        if enable== True:
+            mode= 2
+        else:
+            mode= 0
+        self.SP.trigger_mode(mode)
     
     def close(self):
         """ Disconnect the spectrometer. """

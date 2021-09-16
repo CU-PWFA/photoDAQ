@@ -9,10 +9,8 @@ Source module: https://github.com/pyepics/newportxps
 
 """
 
-from PyQt4 import QtCore, QtGui, uic
-from PyQt4.QtCore import (pyqtSlot, QThread, pyqtSignal)
-from PyQt4.QtGui import (QPixmap, QImage, QLabel)
-import numpy as np
+from PyQt4 import uic
+from PyQt4.QtCore import (pyqtSlot, pyqtSignal)
 import threading
 import os
 
@@ -50,7 +48,8 @@ class XPSWindow(QtBaseClass, Ui_XPSWindow):
         self.initializeButton.clicked.connect(self.initialize_group1)
         self.initializeButton_2.clicked.connect(self.initialize_group2)
         self.requestPosButton.clicked.connect(self.move_stage1)  
-        self.requestPosButton_2.clicked.connect(self.move_stage2)     
+        self.requestPosButton_2.clicked.connect(self.move_stage2) 
+        self.rebootButton.clicked.connect(self.reboot)
         # Make checkboxes exclusive and make absolute motion the default
         self.absCheckBox.stateChanged.connect(self.abs_clicked)
         self.relCheckBox.stateChanged.connect(self.rel_clicked)
@@ -137,9 +136,12 @@ class XPSWindow(QtBaseClass, Ui_XPSWindow):
         self.initializeButton_2.setEnabled(True)
         self.homeButton_2.setEnabled(True)
         self.requestPosValue_2.setEnabled(True)
+        self.rebootButton.setEnabled(True)
         self.connected = True
         self.send_command('update_status1')
         self.send_command('update_position1')
+        #self.send_command('update_status2')
+        #self.send_command('update_position2')
         
         # Get the initial settings
         self.send_command("get_settings")
@@ -154,46 +156,91 @@ class XPSWindow(QtBaseClass, Ui_XPSWindow):
     def initialize_group2(self):
         """ Initialize Group2. """
         self.send_command('initialize_group2')
+        self.send_command('update_status2')
 
     @pyqtSlot()
     def home_group1(self):
         """ Home Group1. """
+        self.send_command('homing_status1')
         self.send_command('home_group1')
         self.send_command('update_status1')
 
     @pyqtSlot()
     def home_group2(self):
         """ Home Group2. """
+        self.send_command('homing_status2')
         self.send_command('home_group2')
+        self.send_command('update_status2')
+    
+    @pyqtSlot()
+    def reboot(self):
+        """Reboot XPS controller"""
+        self.send_command('reboot_status')
+        self.send_command('reboot')
+        self.send_command('update_status1')
+        self.send_command('update_status2')
 
     @pyqtSlot(object)
     def update_text(self, rsp):
-        if "pos_readback" in rsp.info:        
-            self.currentPosValue.setText(str(rsp.info['pos_readback']))
-        if "status" in rsp.info:
-            self.status.setText(str(rsp.info['status']))
+        if "pos_readback1" in rsp.info:        
+            self.currentPosValue.setText(str(rsp.info['pos_readback1']))
+        if "status1" in rsp.info:
+            self.status.setText(str(rsp.info['status1']))
+        if "pos_readback2" in rsp.info:        
+            self.currentPosValue_2.setText(str(rsp.info['pos_readback2']))
+        if "status2" in rsp.info:
+            self.status_2.setText(str(rsp.info['status2']))
+        if "reboot" in rsp.info:
+            self.status.setText(str(rsp.info['reboot']))
+            self.status_2.setText(str(rsp.info['reboot']))
+        if "homing1" in rsp.info:
+            self.status.setText(str(rsp.info['homing1']))
+        if 'homing2' in rsp.info:
+            self.status_2.setText(str(rsp.info['homing2']))
+        
     
     @pyqtSlot(float)
     def move_stage1(self):
         """ Move stage 1 to absolute or relative position 'pos' [mm]. """
-        pos = self.requestPosValue.value()
+        current_pos_text = self.currentPosValue.text()
+        current_pos = float(current_pos_text)
+        req_pos = self.requestPosValue.value()
+        upper_bound = self.upperBoundValue_1.value()
+        lower_bound = self.lowerBoundValue_1.value()
         if self.absCheckBox.checkState():
-            self.send_command('move_stage1_abs', pos)
-            self.send_command('update_status1')
+            if req_pos <= upper_bound and req_pos >= lower_bound:
+                self.send_command('move_stage1_abs', req_pos)
+                self.send_command('update_status1')
+            else:
+                print("Error: Requested position out of range")
         elif self.relCheckBox.checkState():
-            self.send_command('move_stage1_rel', pos)
-            self.send_command('update_status1')
+            sum_pos = current_pos + req_pos
+            if sum_pos <= upper_bound and sum_pos > lower_bound:
+                self.send_command('move_stage1_rel', req_pos)
+                self.send_command('update_status1')
+            else:
+                print("Error: Requested position out of range")
 
     @pyqtSlot(float)
     def move_stage2(self):
         """ Move stage 2 to absolute or relative position 'pos' [mm]. """
-        pos = self.requestPosValue_2.value()
+        current_pos_text = self.currentPosValue_2.text()
+        current_pos = float(current_pos_text)
+        req_pos = self.requestPosValue_2.value()
+        upper_bound = self.upperBoundValue_2.value()
+        lower_bound = self.lowerBoundValue_2.value()
         if self.absCheckBox_2.checkState():
-            self.send_command('move_stage2_abs', pos)
-            self.send_command('update_status2')
+            if req_pos <= upper_bound and req_pos >= lower_bound:
+                self.send_command('move_stage2_abs', req_pos)
+                self.send_command('update_status2')
+            else:
+                print("Error: Requested position out of range")
         elif self.relCheckBox_2.checkState():
-            self.send_command('move_stage2_rel', pos)
-            self.send_command('update_status2')
-    
+            sum_pos = current_pos + req_pos
+            if sum_pos <= upper_bound and sum_pos > lower_bound:
+                self.send_command('move_stage2_rel', req_pos)
+                self.send_command('update_status2')
+            else:
+                print("Error: Requested position out of range")
 
 

@@ -107,6 +107,7 @@ class Camera(Device):
         if current_packet != max_packet:
             cam.GevSCPSPacketSize.SetValue(max_packet)
             current_packet = int(cam.GevSCPSPacketSize.ToString())
+        print(max_packet, current_packet)
         if current_packet != max_packet:
             print('Camera is using a packet size of %i not the max of %i.' % (current_packet, max_packet))
         if max_packet != 9000:

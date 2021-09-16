@@ -10,7 +10,6 @@ Source module: https://github.com/pyepics/newportxps
 
 
 from devices.device import Device
-import pysftp
 from newportxps import NewportXPS
 from collections import OrderedDict
 
@@ -39,12 +38,14 @@ class XPS(Device):
     def group_names(self):
         """ Create dictionary of group names. 
         
-            Default names are Group1, Group2, ... """
-        
+            Default names are Group1, Group2, etc... """
+            
+        group_list=[]
         for gname, info in self.xps.groups.items():
-            group_list = [gname]
+            group_list.append(gname)
             count = 1
             self.dict_groupnames = {}
+        #print(group_list) #debugging
     
         for i in group_list:
             self.dict_groupnames[count] = i
@@ -54,11 +55,13 @@ class XPS(Device):
         """ Create dictionary of stage names.
         
             Default names are Group1.Pos, Group2.Pos, ..."""
-            
+        
+        stage_list = []
         for sname, info in self.xps.stages.items():
-            stage_list = [sname]
+            stage_list.append(sname)
             count = 1
             self.dict_stagenames = {}
+        #print(stage_list) #debugging
     
         for i in stage_list:
             self.dict_stagenames[count] = i
@@ -123,3 +126,7 @@ class XPS(Device):
     def move_stage2_rel(self, pos):
         """ move stage 2 to the absolute position 'pos' """
         self.xps.move_stage(str(self.dict_stagenames[2]), pos, 1)
+    
+    def reboot(self):
+        """ Reboot the XPS controller """
+        self.xps.reboot()

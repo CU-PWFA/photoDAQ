@@ -312,7 +312,7 @@ def save_SET(rsp, dataSet, shot):
     meta = rsp.meta
     serial = meta['Serial number']
     fileName = get_fileName(serial, dataSet, shot)
-    np.save(dirName + fileName, rsp.data)
+    np.save(dirName + fileName, rsp.info)
 
 
 def save_SPEC(rsp, dataSet, shot):
@@ -327,7 +327,7 @@ def save_SPEC(rsp, dataSet, shot):
     shot : int
         The shot number.
     """
-    data = rsp.data
+    data = rsp.info
     if 'lambda' in data and 'I' in data:
         dirName = get_dirName('SPEC', dataSet)
         meta = rsp.meta

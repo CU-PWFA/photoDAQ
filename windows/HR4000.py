@@ -53,6 +53,7 @@ class SpecWindow(QtBaseClass, Ui_SpecWindow):
         self.startIntButton.clicked.connect(self.start_integration)
         self.stopIntButton.clicked.connect(self.stop_integration)
         self.showIntButton.clicked.connect(self.show_integration)
+        self.triggerCheck.stateChanged.connect(self.set_trigger)
         self.device_connected.connect(self.setup_window)
         
         # Grab references for controlling the spectrometer
@@ -81,9 +82,10 @@ class SpecWindow(QtBaseClass, Ui_SpecWindow):
     def create_image(self):
         """ Create the matplotlib canvas. """
         self.fig = fig = Figure()
-        #self.sp_ax = fig.add_subplot(111)
-        self.sp_ax = plt.Axes(fig, rect=[0, 0, 1, 1])
-        fig.add_axes(self.sp_ax)
+        self.sp_ax = fig.add_subplot(111)
+        #self.sp_ax = plt.Axes(fig, rect=[0, 0, 1, 1])
+        #fig.add_axes(self.sp_ax, xlabel = 'Wavelength', ylabel = 'Intensity')
+        fig.add_subplot(self.sp_ax)
         
         # The mplvl is a named layout on the imageWidget
         self.canvas = canvas = FigureCanvas(fig)
@@ -150,6 +152,13 @@ class SpecWindow(QtBaseClass, Ui_SpecWindow):
         self.spec_plot, = ax.plot(l, I)
         ax.set_axis_on()
         ax.set_ybound(-1000, 16384)
+        ax.set_xlabel('Wavelength (nm)')
+        ax.set_ylabel('Intensity (shots)')
+        # Show the major grid lines with dark grey lines
+        ax.grid(b=True, which='major', color='#666666', linestyle='-')
+        # Show the minor grid lines with very faint and almost transparent grey lines
+        ax.minorticks_on()
+        ax.grid(b=True, which='minor', color='#999999', linestyle='-', alpha=0.2)
         
     def add_background_shot(self, I):
         """ Add a single shot to the background. 
@@ -341,5 +350,14 @@ class SpecWindow(QtBaseClass, Ui_SpecWindow):
         data = self.get_integration_data()
         self.spec_plot.set_ydata(data)
         self.canvas.draw()
-        
+    
+    @pyqtSlot(int)        
+    def set_trigger(self, trigger):
+        """ Set the external trigger on or off. """
+        if trigger==0:
+            self.startStreamButton.setEnabled(True)
+            self.send_command('set_triggermode', False)
+        else:
+            self.startStreamButton.setEnabled(False)
+            self.send_command('set_triggermode', True)
     

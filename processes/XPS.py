@@ -26,17 +26,6 @@ class XPS(StreamProcess):
         self.sampleDelay = 0.2
         super().__init__(instr)
         self.delay = 0.05
-        
-    def get_settings(self):
-        """ """
-        settings = {}
-        xps      = self.device
-        current_position1 = xps.get_stage1_position()
-        
-        
-        settings       = {"current_pos"          :current_position1, 
-                          }  
-        return settings
     
     def home_group1(self):
         xps = self.device
@@ -58,37 +47,59 @@ class XPS(StreamProcess):
         xps.move_stage1_rel(pos)
         self.update_position1()
 
+    def move_stage2_abs(self, pos):
+        xps = self.device
+        xps.move_stage2_abs(pos)
+        self.update_position2()
+
+    def move_stage2_rel(self, pos):
+        xps = self.device
+        xps.move_stage2_rel(pos)
+        self.update_position2()
+
     def update_position1(self):
         xps = self.device
-        pos_readback = xps.get_stage1_position()
-        rsp = daq.Rsp('driver', info={'pos_readback': pos_readback})
+        pos_readback1 = xps.get_stage1_position()
+        rsp = daq.Rsp('driver', info={'pos_readback1': pos_readback1})
         self.r_queue.put(rsp)
 
     def update_position2(self):
         xps = self.device
-        pos_readback = xps.get_stage2_position()
-        rsp = daq.Rsp('driver', info={'pos_readback': pos_readback})
+        pos_readback2 = xps.get_stage2_position()
+        rsp = daq.Rsp('driver', info={'pos_readback2': pos_readback2})
         self.r_queue.put(rsp)
-    
+
     def update_status1(self):
         xps = self.device
-        status = xps.get_group1_status()
-        rsp = daq.Rsp('driver', info={'status': status})
+        status1 = xps.get_group1_status()
+        rsp = daq.Rsp('driver', info={'status1': status1})
         self.r_queue.put(rsp)
 
     def update_status2(self):
         xps = self.device
-        status = xps.get_group2_status()
-        rsp = daq.Rsp('driver', info={'status': status})
+        status2 = xps.get_group2_status()
+        rsp = daq.Rsp('driver', info={'status2': status2})
+        self.r_queue.put(rsp)
+
+    def reboot_status(self):
+        rsp = daq.Rsp('driver', info={'reboot': 'Rebooting...'})
+        self.r_queue.put(rsp)
+    
+    def homing_status1(self):
+        rsp = daq.Rsp('driver', info={'homing1': 'Homing...'})
+        self.r_queue.put(rsp)
+
+    def homing_status2(self):
+        rsp = daq.Rsp('driver', info={'homing2': 'Homing...'})
         self.r_queue.put(rsp)
         
     def capture_thread(self, r_queue):
-        """ Continually quieres the XPS controller for position. 
+        """ Continually quieres the XPS controller for updated data. 
         
         Parameters
         ----------
         r_queue : mp.Queue
-            The response queue to place the position in.
+            The response queue to place the data.
         """
         while self.streaming:
             raw = self.get_settings()

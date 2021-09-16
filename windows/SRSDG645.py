@@ -250,7 +250,7 @@ class DGWindow(QtBaseClass, Ui_DGWindow):
         """
         channel = self.channelField.currentText()
         self.settings = rsp.info
-        # Stop the channel change from doing anythin
+        # Stop the channel change from doing anything
         self.updating = True
         self.set_delay_fields(channel)
         self.set_reference_field(channel)

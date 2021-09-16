@@ -15,14 +15,15 @@ import numpy_indexed as npi
 import h5py as h5
 from scipy.stats import linregress
 import functions as fun
+import numpy_indexed as npi
 
 from matplotlib import rc
 rc('mathtext', default='regular')
 
-dataset = '1908020002'
+dataset = '1908090003'
 
 f.PATH = f.get_file_path()
-path = f.PATH+'TRACE/year_2019/month_08/day_02/'+dataset+'/'
+path = f.PATH+'TRACE/year_2019/month_08/day_09/'+dataset+'/'
 
 dataFile = h5.File(path+'trace_set.h5', 'r')
 crnt = dataFile['crnt'][:]
@@ -32,7 +33,15 @@ dataFile.close()
 
 shp = bias.shape[0]
 for i in range(shp):
-    plt.plot(time * 1e6, bias[i])
+    bias_now, crnt_now = npi.group_by(bias[i]).mean(crnt[i])
+    
+    #crnt_plt = crnt_now[ (bias_now > - 9) & (bias_now < 9) ]
+    #bias_plt = bias_now[ (bias_now > - 9) & (bias_now < 9) ]
+    #time_plt = time[ (bias_now > - 9) & (bias_now < 9) ]
+    
+    #plt.plot(time_plt * 1e6, crnt_plt * 1e3)
+    time_plot = np.linspace(time[0], time[1], crnt_now.shape[0])
+    plt.plot(time_plot * 1e6, crnt_now * 1e3)
     
 plt.show()
 plt.close()

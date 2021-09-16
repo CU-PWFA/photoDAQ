@@ -23,7 +23,7 @@ instr_display = {
         'KA3005P' : 'KA3005P DC Power Supply',
         'HR4000' : 'HR4000 Spectrometer',
         'DG645' : 'SRSDG645 Signal Delay Generator',
-        'FRG700' : 'FRG700 Vacuum Gauge',
+        'FRG700' : 'Vacuum Gauges',
         'FS304' : '304 FS Turbomolecular Pump',
         'TC' : 'Timing Controller',
         }
@@ -463,6 +463,7 @@ class UI(QtBaseClass, Ui_MainWindow):
     def detect_usb(self):
         instrs = detect.pyusb()
         self.add_instrs(instrs)
+        
     @pyqtSlot()
     def detect_SDG(self):
         """ Detect and add the SDG to the available instruments. """

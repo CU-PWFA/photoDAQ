@@ -232,6 +232,22 @@ class XPS(Instr):
         self.window_cls = windows.XPS.XPSWindow
         self.model = 'XPS'
         self.stream = True
+        self.sweep_params = {
+                'motor1' : {
+                        'display' : 'Mt 1 Position',
+                        'min' : -49,
+                        'max' : 50,
+                        'command' : 'move_stage1_abs',
+                        'decimals' : 3
+                        },
+                'motor2' : {
+                        'display' : 'Mt 2 Position',
+                        'min' : -49,
+                        'max' : 50,
+                        'command' : 'move_stage2_abs',
+                        'decimals' : 3
+                        }
+                }
         
 
 class FRG700(Instr):

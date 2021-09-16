@@ -156,14 +156,14 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         pressure : double
             The most recent pressure measurement.
         """
-        data, species = self.prep_data()
+        data, species = self.prep_data() 
         self.pr_plot0.set_ydata(data[0])
         self.pr_plot1.set_ydata(data[1])
         self.pr_plot2.set_ydata(data[2])
         self.pr_plot3.set_ydata(data[3])
         ind = self.gaugeDisplayField.currentIndex()
-        current_pressure, species = self.prep_data(pressure)
-        self.pr_display.set_text('%.2E mbar' % current_pressure[ind])
+        current_pressure, species = self.prep_data(pressure) 
+        self.pr_display.set_text('%.2E mbar' % current_pressure[ind]) 
         self.data_prepared.emit(current_pressure, species)
         
     def update_buffer(self, pressure):
@@ -269,12 +269,13 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         self.bufferSize = length
         self.i = 0
         # We also need to update the plot 
-        self.update_plot(self.pressure[:, length])
+        self.update_plot(self.pressure[:, length])  # This is the original line
         self.pr_plot0.set_xdata(range(length))
         self.pr_plot1.set_xdata(range(length))
         self.pr_plot2.set_xdata(range(length))
         self.pr_plot3.set_xdata(range(length))
         self.pr_ax.set_xbound(0, length)
+
     
     @pyqtSlot(int)
     def change_delay(self, delay):

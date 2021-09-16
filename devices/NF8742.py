@@ -3,11 +3,13 @@
 """
 Created on Tue Nov 19 09:54:33 2019
 
-@author: cu-pwfa
+@author: keenan & jamie
 """
 
 from devices.device import Device
 import usb
+import usb.core
+import usb.util
 
 class NF8742(Device):
     """ 
@@ -149,7 +151,7 @@ class NF8742(Device):
             
         command = slave + command + "\r"
         command = command.encode()
-        #print(command) # debugging
+#        print('command: ' + str(command)) # debugging
         self.ep_out.write(command)
         
         if query:
@@ -159,6 +161,7 @@ class NF8742(Device):
                 response = response.decode()
                 response = response.strip()
                 self.flush()
+#                print('response: ' + str(response)) #debugging
                 return response
             except:
                 print("NF8742: Expected response but received none")
@@ -194,7 +197,7 @@ class NF8742(Device):
         volatile memory
         """
         
-        command  = slave + "*RST\r"
+        command  = "*RST"
         
         self.pass_command(command, slave)
     
@@ -222,7 +225,7 @@ class NF8742(Device):
         accel = self.pass_command(command, slave)
         return accel
         
-    def set_home(self, axis, home = 0, slave = ""):
+    def define_home(self, axis, home, slave = ""):
         """ 
         Set the home position for an axis
         
@@ -275,10 +278,11 @@ class NF8742(Device):
         
         Parameters
         ----------
+        axis : int from 1 to 4, specifies axis number
         position : int, optional
             THe position to move to in steps between +/- 2147483648, default 0
         """
-        command = str(axis) + "PA" + str(position)
+        command = str(axis) + "PA" + str(position) + "\r"
         self.pass_command(command, slave)
         
     def get_position(self, axis, slave = ""):
@@ -323,11 +327,11 @@ class NF8742(Device):
         command = str(axis) + "QM" + str(mtype)
         self.pass_command(command, slave)
         
-    def get_motor(self, axis, slave = ""):
+    def get_motor(self, slave = ""):
         """
         Query the motor type of an axis
         """
-        command = str(axis) + "QM?"
+        command = "2QM?"
         mtype = self.pass_command(command, slave)
         return mtype
     
@@ -496,12 +500,13 @@ class NF8742(Device):
                     for motors connected to controllers upon reboot
                 2 - Perform auto motor detection check and set motor type 
                     automatically when commanded to move. Scan for motors
-                    connected to controlle rupon power-up or reset
+                    connected to controller upon power-up or reset
                 3 - Do not perform auto motor detection on move. 
                     Scan for motors connected to controller upon power-up or
                     reset
         """
-        self.pass_command("ZZ", slave)
+        command = "ZZ" + str(cfg)
+        self.pass_command(command, slave)
     
     def get_config(self, slave = ""):
         """
