@@ -62,6 +62,12 @@ The Spinnaker SDK is the interface between FLIR cameras and the daq. To install 
 
 Follow the instructions in the readme that comes with each software. 
 
+The zip file should have a python wheel in it. Install the python wheel in the environment using
+```
+sudo python -m pip install spinnaker_python-2.x.x.x-cp36-cp36m-linux_x86_64.whl
+```
+The wheel file name might be slightly different. The number after cp is the python version which must match the version installed in the environment or else pip will throw an error. 
+
 ### Setup ethernet for the cameras
 
 The cameras are setup to operate in LLO (Link-Local Only mode). Once the camera is connected, the small LED on the back will begin to blink. If it blinks three times in a row about every second, then the camera is in LLO mode, if it doesn't blink three times it is in another mode. The wired connection in linux needs to be setup as an LLO connection in order to recognize the camera. Click on the connections button in the top right corner, then go to edit connections. In the menu that pops up select the etherent connection the camera is connected to and click edit. Go to the IPv4 tab and change the method to Link-Local Only and flyCap2 should detect the camera.
