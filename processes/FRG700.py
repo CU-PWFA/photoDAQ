@@ -32,7 +32,7 @@ class FRG700(StreamProcess):
             The response queue to place the pressure in.
         """
         while self.streaming:
-            raw = self.device.voltage_to_pressure()
+            raw = self.device.get_voltage()
             meta = self.create_meta()
             serial = meta['Serial number'] # This serial number has '/dev/' in front, which causes an error when saving the data.
             serial_sliced = serial[5:]  # Remove /dev/ from serial number

@@ -56,6 +56,7 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         self.gaugeCheck_1.stateChanged.connect(self.toggle_plot)
         self.gaugeCheck_2.stateChanged.connect(self.toggle_plot)
         self.gaugeCheck_3.stateChanged.connect(self.toggle_plot)
+    
         
         # Grab references for controlling the gauge
         self.DAQ = DAQ
@@ -156,13 +157,13 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         pressure : double
             The most recent pressure measurement.
         """
-        data, species = self.prep_data() 
+        data, species = self.prep_data()
         self.pr_plot0.set_ydata(data[0])
         self.pr_plot1.set_ydata(data[1])
         self.pr_plot2.set_ydata(data[2])
         self.pr_plot3.set_ydata(data[3])
         ind = self.gaugeDisplayField.currentIndex()
-        current_pressure, species = self.prep_data(pressure) 
+        current_pressure, species = self.prep_data(pressure)
         self.pr_display.set_text('%.2E mbar' % current_pressure[ind]) 
         self.data_prepared.emit(current_pressure, species)
         
@@ -196,14 +197,50 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
             String representing the species, from the dropdown box options.
         """
         i = self.i
+        species = self.speciesField.currentText()
         if data is None:
             data = self.pressure[:, i:i+self.bufferSize]
-        species = self.speciesField.currentText()
-        if species == 'Ar':
-            data = self.Ar(data)
-        if species == 'He':
-            data = self.He(data)
+        data = np.array(data, dtype='double')
+        voltage = data*0.003001
+        type0 = self.gaugeType_0.currentText()
+        type1 = self.gaugeType_1.currentText()
+        type2 = self.gaugeType_2.currentText()
+        type3 = self.gaugeType_3.currentText()
+        data[0] = self.apply_adjustment(voltage[0], type0, species)
+        data[1] = self.apply_adjustment(voltage[1], type1, species)
+        data[2] = self.apply_adjustment(voltage[2], type2, species)
+        data[3] = self.apply_adjustment(voltage[3], type3, species)
         return data, species
+        
+    def apply_adjustment(self, voltage, gaugeType, species):
+        """ Correct a gauge for different species. 
+        
+        Parameters
+        ----------
+        voltage : float
+            Voltage reading from the gauge.
+        gaugeType : str
+            Gauge type.
+        species : str
+            Gas species.
+            
+        Returns
+        -------
+        data : float
+            Corrected gauge pressure.
+        """
+        if gaugeType=='CM 1mTorr':
+            return 2*voltage/10*1333
+        elif gaugeType=='Dual Range':
+            pressure = 10**(2*1.667*voltage-11.33)
+            if species == 'Ar':
+                return self.Ar(pressure)
+            if species == 'He':
+                return self.He(pressure)
+            else:
+                return pressure
+        else:
+            print("Gauge type unknown.")
     
     def load_adjustments(self):
         """ Load in the CSV data for adjusting the curves for different gases. """

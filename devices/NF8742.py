@@ -27,12 +27,7 @@ class NF8742(Device):
         """
         
         self.connect_driver(address)
-        self.setup_driver()
-        self.flush()
-        # Scan and add slave drivers in ascending address order
-        self.scan(2)
-        self.flush()
-        
+        self.flush()      
     
     def connect_driver(self, address):
         """ 
@@ -44,12 +39,6 @@ class NF8742(Device):
         address : int
             The serial number of the control driver        
         """
-        def flush(ep_in):
-            while True:
-                try:
-                    ep_in.read(64, timeout = 10)
-                except usb.core.USBError:
-                    break
         # Find all connected drivers and distinguish by serial number
         VID = 0x104d; PID = 0x4000
         
@@ -62,59 +51,46 @@ class NF8742(Device):
             ep_out = usb.util.find_descriptor(intf, custom_match=lambda e:
                      usb.util.endpoint_direction(e.bEndpointAddress) == \
                      usb.util.ENDPOINT_OUT)
-            assert ep_out is not None
-            assert ep_out.wMaxPacketSize == 64
+            self.ep_out = ep_out
+            if ep_out is None:
+                print("Picomotor USB error, endpoint out is None.")
+                self.connection_error = True
+                return
+            if ep_out.wMaxPacketSize != 64:
+                print("Picomotor USB error, endpoint out packet size is not 64.")
+                self.connection_error = True
+                return
             ep_in = usb.util.find_descriptor(intf, 
                     custom_match=lambda e:
                         usb.util.endpoint_direction(e.bEndpointAddress) == \
                         usb.util.ENDPOINT_IN)
-            assert ep_in is not None
-            assert ep_in.wMaxPacketSize == 64
-            flush(ep_in)
+            self.ep_in = ep_in
+            if ep_in is None:
+                print("Picomotor USB error, endpoint in is None.")
+                self.connection_error = True
+                return
+            if ep_in.wMaxPacketSize != 64:
+                print("Picomotor USB error, endpoint in packet size is not 64.")
+                self.connection_error = True
+                return
+            self.flush()
             # Get serial number
             ep_out.write(b"*IDN?\r")
             serial = ep_in.read(64).tobytes()
             serial = serial.decode().split()[-1]
-            flush(ep_in)
+            self.flush()
             if serial == address:
                 self.nf = cont
             else:
                 usb.util.dispose_resources(cont)
+                print("No picomotor controller found at address {:s}".format(address))
+                self.connection_error = True
+                return
         
 
         # Set configuration and get interface
         self.cfg  = self.nf.get_active_configuration()
         self.intf = self.cfg[(0,0)]
-
-    def setup_driver(self):
-        """ 
-        Sets up the in and out endpoints of the drive and orders 
-        addresses of slave controllers
-        """
-        self.ep_out = usb.util.find_descriptor(
-                        self.intf,
-                        # match the first OUT endpoint
-                        custom_match = \
-                        lambda e: \
-                        usb.util.endpoint_direction(e.bEndpointAddress) == \
-                        usb.util.ENDPOINT_OUT)
-
-        assert self.ep_out is not None
-        assert self.ep_out.wMaxPacketSize == 64
-    
-    
-        self.ep_in = usb.util.find_descriptor(
-                        self.intf,
-                        # match the first IN endpoint
-                        custom_match = \
-                        lambda e: \
-                        usb.util.endpoint_direction(e.bEndpointAddress) == \
-                        usb.util.ENDPOINT_IN)
-        
-        assert self.ep_in is not None
-        assert self.ep_in.wMaxPacketSize == 64
-        
-        
     
     def flush(self):
         while True:

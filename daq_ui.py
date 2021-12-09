@@ -55,6 +55,7 @@ class UI(QtBaseClass, Ui_MainWindow):
         self.disconnectButton.clicked.connect(self.disconnect_instr)
         self.detailButton.clicked.connect(self.open_detail_panel)
         self.startDatasetButton.clicked.connect(self.start_dataset)
+        self.AbortButton.clicked.connect(self.abort_dataset)
         self.detectSerialButton.clicked.connect(self.detect_serial)
         self.detectXPSButton.clicked.connect(self.detect_XPS)
         self.detectSpecButton.clicked.connect(self.detect_spectrometer)
@@ -310,7 +311,7 @@ class UI(QtBaseClass, Ui_MainWindow):
             The response object with the gauge pressures.
         """
         self.APressure.setText('%0.2E' % data[0])
-        self.BPressure.setText('%0.2E' % data[3])
+        self.BPressure.setText('%0.2E' % data[1])
         display_species = species
         if species == 'Ar':
             display_species = 'Argon'
@@ -549,6 +550,17 @@ class UI(QtBaseClass, Ui_MainWindow):
             DAQ.start_dataset(shots, self.current_instr, sweep)
         else:
             print('Cannot start dataset: timing devices not connected.')
+            
+
+    @pyqtSlot()
+    def abort_dataset(self):
+        """ Abort currently running dataset. """
+        DAQ= self.DAQ
+        self.set_shot_number(0)
+        self.DAQProgress.setValue(0)
+        self.resumeDAQButton.setEnabled(False)
+        self.pauseDAQButton.setEnabled(False)
+        DAQ.abort(self.current_instr)
     
     @pyqtSlot()
     def add_to_dataset(self):

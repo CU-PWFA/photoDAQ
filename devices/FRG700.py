@@ -137,8 +137,8 @@ class FRG700(Device):
         p0 = float(10**(2*1.667*v0_V-11.33))
         p1 = float(v1_V)
         p2 = float(v2_V)
-        p3 = float(2*v3_V)
-#        p3 = float(2*v3_V/10*1333)
+#        p3 = float(2*v3_V)
+        p3 = float(2*v3_V/10*1333)
         return [p0, p1, p2, p3]
     
     def close(self):

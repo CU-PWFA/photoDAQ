@@ -178,6 +178,7 @@ class Daq():
                 output(rsp)
                 file.save_data(rsp)
             elif response == 'connection_error':
+                # TODO make sure there is error handling if a device fails to connect
                 output(rsp)
                 print("Instrument " + instr.serial + " failed to connect.")
                 break
@@ -364,6 +365,34 @@ class Daq():
         self.start_TC(stop_points[0])
     
         self.save_meta(instrs)
+        
+    def abort(self, instrs, shots=1):
+        for key, instr in instrs.items():
+            self.send_command(instr, 'save_stream', shots)
+        
+        stop_array = np.zeros(shots, dtype='bool')
+        stop_points = np.array([i for i, j in enumerate(stop_array) if j]) + 1
+        stop_points = np.append(stop_points, shots)
+        print(stop_points)
+        
+        if len(stop_points) == 0:
+            self.start_TC(shots)
+        self.shot = 0
+        self.set = 1
+        self.stop_points = stop_points
+        self.taking_data = True
+        self.start_TC(stop_points[0])
+    
+        self.save_meta(instrs)
+
+        self.stop_TC()
+        print('Abort')
+
+    def stop_TC(self):
+        TC =self.instr[self.TC_serial]
+        self.send_command(TC, 'stop')
+        self.streaming = False
+        self.taking_data = False
         
     def start_TC(self, shots):
         """ Start the timing controller and take the passed number of shots.
