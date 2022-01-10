@@ -51,7 +51,6 @@ class TCWindow(QtBaseClass, Ui_TCWindow):
         self.data_acquired.connect(self.update_text)
         self.device_connected.connect(self.setup_window)
 
-        self.TriggerModeButton.clicked.connect(self.TriggerMode)
         self.FreeRunButton.clicked.connect(self.FreeRun)
         
         # Grab references for controlling the gauge
@@ -131,6 +130,7 @@ class TCWindow(QtBaseClass, Ui_TCWindow):
         self.send_command('stop')
         self.send_command('stop_stream')
         self.streaming = False
+        self.FreeRunOnOff.setText('FreeRunTrigger Off')
         
     @pyqtSlot()
     def reset(self):
@@ -156,9 +156,4 @@ class TCWindow(QtBaseClass, Ui_TCWindow):
 #        self.send_command('start_stream')
         self.send_command('FreeRun')
         self.FR= True
-
-    @pyqtSlot()
-    def TriggerMode(self):
-        """ original trigger mode"""
-#TODO figure out what to do here
-        self.send_command('start_stream')
+        self.FreeRunOnOff.setText('FreeRunTrigger On')
