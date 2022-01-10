@@ -132,7 +132,7 @@ color:white;</string>
           <x>10</x>
           <y>100</y>
           <width>81</width>
-          <height>26</height>
+          <height>25</height>
          </rect>
         </property>
         <property name="minimum">
@@ -221,7 +221,7 @@ color:white;</string>
           <x>10</x>
           <y>160</y>
           <width>81</width>
-          <height>26</height>
+          <height>25</height>
          </rect>
         </property>
         <property name="minimum">
@@ -244,7 +244,7 @@ color:white;</string>
          </rect>
         </property>
         <property name="text">
-         <string>Pressure readings in He are inaccurate above 6mbar</string>
+         <string>Pressure readings in He using the FRG700 are inaccurate above 6mbar</string>
         </property>
         <property name="wordWrap">
          <bool>true</bool>
@@ -328,11 +328,6 @@ color:white;</string>
         </property>
         <item>
          <property name="text">
-          <string>Gauge 0</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
           <string>Gauge 1</string>
          </property>
         </item>
@@ -344,6 +339,11 @@ color:white;</string>
         <item>
          <property name="text">
           <string>Gauge 3</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Gauge 4</string>
          </property>
         </item>
        </widget>
@@ -372,16 +372,6 @@ color:white;</string>
           <height>25</height>
          </rect>
         </property>
-        <item>
-         <property name="text">
-          <string>Dual Range</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>CM 1mTorr</string>
-         </property>
-        </item>
        </widget>
        <widget class="QComboBox" name="gaugeType_1">
         <property name="enabled">
@@ -395,16 +385,6 @@ color:white;</string>
           <height>25</height>
          </rect>
         </property>
-        <item>
-         <property name="text">
-          <string>Dual Range</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>CM 1mTorr</string>
-         </property>
-        </item>
        </widget>
        <widget class="QLabel" name="gaugeLabel_0">
         <property name="geometry">
@@ -457,16 +437,6 @@ color:white;</string>
           <height>25</height>
          </rect>
         </property>
-        <item>
-         <property name="text">
-          <string>CM 1mTorr</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Dual Range</string>
-         </property>
-        </item>
        </widget>
        <widget class="QLabel" name="gaugeLabel_3">
         <property name="geometry">
@@ -478,7 +448,7 @@ color:white;</string>
          </rect>
         </property>
         <property name="text">
-         <string>Gauge 2</string>
+         <string>Gauge 4</string>
         </property>
        </widget>
        <widget class="QComboBox" name="gaugeType_3">
@@ -493,16 +463,6 @@ color:white;</string>
           <height>25</height>
          </rect>
         </property>
-        <item>
-         <property name="text">
-          <string>Dual Range</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>CM 1mTorr</string>
-         </property>
-        </item>
        </widget>
       </widget>
      </widget>

@@ -24,6 +24,15 @@ package_directory = os.path.dirname(os.path.abspath(__file__))
 qtCreatorFile = os.path.join(package_directory, "FRG700.ui")
 Ui_GaugeWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 
+gauge_list = ["FRG700",
+              "CDG500T1000",
+              "CDG500T0100",
+              "CDG500T0010",
+              "CDG500T0001"
+              ]
+              
+gauge_defaults = [0, 0, 1, 1]
+
 class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
     data_acquired = pyqtSignal(object)
     data_prepared = pyqtSignal(object, str)
@@ -56,6 +65,16 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         self.gaugeCheck_1.stateChanged.connect(self.toggle_plot)
         self.gaugeCheck_2.stateChanged.connect(self.toggle_plot)
         self.gaugeCheck_3.stateChanged.connect(self.toggle_plot)
+        
+        for key in gauge_list:
+            self.gaugeType_0.addItem(key)
+            self.gaugeType_1.addItem(key)
+            self.gaugeType_2.addItem(key)
+            self.gaugeType_3.addItem(key)
+        self.gaugeType_0.setCurrentIndex(gauge_defaults[0])
+        self.gaugeType_1.setCurrentIndex(gauge_defaults[1])   
+        self.gaugeType_2.setCurrentIndex(gauge_defaults[2])   
+        self.gaugeType_3.setCurrentIndex(gauge_defaults[3])   
     
         
         # Grab references for controlling the gauge
@@ -229,9 +248,15 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
         data : float
             Corrected gauge pressure.
         """
-        if gaugeType=='CM 1mTorr':
-            return 2*voltage/10*1333
-        elif gaugeType=='Dual Range':
+        if gaugeType=='CDG500T1000':
+            return 2*voltage/10*1333.22
+        elif gaugeType=='CDG500T0100':
+            return 2*voltage/10*133.322
+        elif gaugeType=='CDG500T0010':
+            return 2*voltage/10*13.3322
+        elif gaugeType=='CDG500T0001':
+            return 2*voltage/10*1.33322
+        elif gaugeType=='FRG700':
             pressure = 10**(2*1.667*voltage-11.33)
             if species == 'Ar':
                 return self.Ar(pressure)
@@ -240,7 +265,7 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
             else:
                 return pressure
         else:
-            print("Gauge type unknown.")
+            print("Gauge type {:s} is not recognized.".format(gaugeType))
     
     def load_adjustments(self):
         """ Load in the CSV data for adjusting the curves for different gases. """
