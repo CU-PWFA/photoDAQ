@@ -98,3 +98,7 @@ class TC(Device):
         self.TC.close()
     
     
+    def FreeRun(self):
+        '''Enable the free run mode'''
+        self.TC.write(b"FR")
+        

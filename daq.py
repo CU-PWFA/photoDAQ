@@ -322,6 +322,10 @@ class Daq():
             The dictionary containing the sweep parameters.
         """        
         # Tell all the streaming instruments to start streaming
+        TC =self.instr[self.TC_serial]
+        self.send_command(TC, 'stop')
+        time.sleep(0.5)
+        
         for key, instr in instrs.items():
             self.send_command(instr, 'save_stream', shots)
         
@@ -407,10 +411,12 @@ class Daq():
             return
         else:
             TC = self.instr[self.TC_serial]
+        
         self.send_command(TC, 'reset', shots)
         self.send_command(TC, 'start_stream')
         time.sleep(0.5) # Give the devices time to start streaming
         self.send_command(TC, 'start')
+        
         
     def sweep_step(self):
         """ Change any instrument parameters necessary for the sweep. """

@@ -292,7 +292,7 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
             self.framerateField.setEnabled(True)
             self.send_command('set_trigger_settings', False)
         else:
-            self.startStreamButton.setEnabled(False)
+            self.startStreamButton.setEnabled(True)
             self.framerateField.setEnabled(False)
             self.send_command('set_trigger_settings', True)
 

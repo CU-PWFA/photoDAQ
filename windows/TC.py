@@ -50,6 +50,9 @@ class TCWindow(QtBaseClass, Ui_TCWindow):
         self.resetButton.clicked.connect(self.reset)
         self.data_acquired.connect(self.update_text)
         self.device_connected.connect(self.setup_window)
+
+        self.TriggerModeButton.clicked.connect(self.TriggerMode)
+        self.FreeRunButton.clicked.connect(self.FreeRun)
         
         # Grab references for controlling the gauge
         self.DAQ = DAQ
@@ -112,6 +115,7 @@ class TCWindow(QtBaseClass, Ui_TCWindow):
         self.startButton.setEnabled(True)
         self.stopButton.setEnabled(True)
         self.resetButton.setEnabled(True)
+        self.FreeRunButton.setEnabled(True)
         self.connected = True
         
     @pyqtSlot()
@@ -145,3 +149,16 @@ class TCWindow(QtBaseClass, Ui_TCWindow):
             The response object with the shot count.
         """
         self.currentShot.setText(str(rsp.info))
+
+    @pyqtSlot()
+    def FreeRun(self):
+        """ Free Run Trigger """
+#        self.send_command('start_stream')
+        self.send_command('FreeRun')
+        self.FR= True
+
+    @pyqtSlot()
+    def TriggerMode(self):
+        """ original trigger mode"""
+#TODO figure out what to do here
+        self.send_command('start_stream')
