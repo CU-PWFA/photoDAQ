@@ -109,7 +109,7 @@ class UI(QtBaseClass, Ui_MainWindow):
     
     def set_dataset_num(self):
         """ Set the dataset number to the DAQ's dataset. """
-        self.datasetNumber.setNum(self.DAQ.dataset)
+        self.datasetNumber.setText(str(self.DAQ.dataset))
         
     def set_shot_number(self, num):
         """ Set the shot number. """
