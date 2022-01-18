@@ -20,11 +20,12 @@ class Camera(StreamProcess):
     def connect_info(self):
         """ Gather data for the UI to use. """
         cam = self.device
-        data = {'ShutterMin' : cam.get_min_shutter(),
+        data = {'ShutterMin' : cam.get_min_shutter()*1e-3,
+                'ShutterMax' : cam.get_max_shutter()*1e-3,
                 'GainMax' : cam.get_max_gain(),
                 'SensorHeight' : cam.get_sensor_height(),
                 'SensorWidth' : cam.get_sensor_width(),
-                'Shutter' : cam.get_shutter(),
+                'Shutter' : cam.get_shutter()*1e-3,
                 'Gain' : cam.get_gain(),
                 'Framerate' : cam.get_framerate(),
                 'OffsetX' : cam.get_offsetX(),
@@ -74,7 +75,10 @@ class Camera(StreamProcess):
                 print('Image dropped, shot %d' % self.shot)
                 raw = None
             else:
-                converted = image.Convert(PySpin.PixelFormat_Mono16)
+                # This conversion reduces the image to 8bit
+                #converted = image.Convert(PySpin.PixelFormat_Mono16)
+                # Changed everything to just run in 8bit instead
+                converted = image
                 raw = converted.GetNDArray()
                 if self.save:
                     response = 'save'
@@ -114,5 +118,8 @@ class Camera(StreamProcess):
 
     def create_meta(self):
         meta = super(Camera, self).create_meta()
-        meta['pixel'] = [self.device.get_width(), self.device.get_height()]
+        meta['Pixel'] = [self.device.get_width(), self.device.get_height()]
+        meta['Offset'] = [self.device.get_offsetX(), self.device.get_offsetY()]
+        meta['Gain'] = self.device.get_gain()
+        meta['Shutter'] = self.device.get_shutter()*1e-3
         return meta

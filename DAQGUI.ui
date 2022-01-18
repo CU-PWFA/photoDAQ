@@ -778,21 +778,21 @@ color:white;</string>
       <rect>
        <x>10</x>
        <y>50</y>
-       <width>181</width>
+       <width>251</width>
        <height>17</height>
       </rect>
      </property>
      <property name="text">
-      <string>Default Settings</string>
+      <string>Default Settings - Not Implemented</string>
      </property>
     </widget>
     <widget class="QDoubleSpinBox" name="shutterField">
      <property name="enabled">
-      <bool>true</bool>
+      <bool>false</bool>
      </property>
      <property name="geometry">
       <rect>
-       <x>117</x>
+       <x>137</x>
        <y>80</y>
        <width>81</width>
        <height>26</height>
@@ -810,11 +810,11 @@ color:white;</string>
     </widget>
     <widget class="QDoubleSpinBox" name="gainField">
      <property name="enabled">
-      <bool>true</bool>
+      <bool>false</bool>
      </property>
      <property name="geometry">
       <rect>
-       <x>117</x>
+       <x>137</x>
        <y>110</y>
        <width>81</width>
        <height>26</height>
@@ -827,7 +827,7 @@ color:white;</string>
     <widget class="QLabel" name="gainLabel">
      <property name="geometry">
       <rect>
-       <x>20</x>
+       <x>40</x>
        <y>110</y>
        <width>91</width>
        <height>21</height>
@@ -840,7 +840,7 @@ color:white;</string>
     <widget class="QLabel" name="shutterLabel">
      <property name="geometry">
       <rect>
-       <x>20</x>
+       <x>40</x>
        <y>80</y>
        <width>91</width>
        <height>21</height>
@@ -852,11 +852,11 @@ color:white;</string>
     </widget>
     <widget class="QDoubleSpinBox" name="framerateField">
      <property name="enabled">
-      <bool>true</bool>
+      <bool>false</bool>
      </property>
      <property name="geometry">
       <rect>
-       <x>117</x>
+       <x>137</x>
        <y>140</y>
        <width>81</width>
        <height>26</height>
@@ -877,11 +877,11 @@ color:white;</string>
     </widget>
     <widget class="QCheckBox" name="triggerCheck">
      <property name="enabled">
-      <bool>true</bool>
+      <bool>false</bool>
      </property>
      <property name="geometry">
       <rect>
-       <x>20</x>
+       <x>40</x>
        <y>170</y>
        <width>181</width>
        <height>23</height>
@@ -894,7 +894,7 @@ color:white;</string>
     <widget class="QLabel" name="framerateLabel">
      <property name="geometry">
       <rect>
-       <x>20</x>
+       <x>40</x>
        <y>140</y>
        <width>91</width>
        <height>21</height>
@@ -902,6 +902,73 @@ color:white;</string>
      </property>
      <property name="text">
       <string>Framerate</string>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="defaultShutterCheck">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>80</y>
+       <width>21</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="defaultGainCheck">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>110</y>
+       <width>21</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="defaultShutterCheck_3">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>140</y>
+       <width>21</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="cameraSaveCheck">
+     <property name="geometry">
+      <rect>
+       <x>200</x>
+       <y>10</y>
+       <width>151</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Use Last Settings</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+     <property name="tristate">
+      <bool>false</bool>
      </property>
     </widget>
    </widget>

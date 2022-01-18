@@ -249,7 +249,7 @@ def save_IMAGE(rsp, dataSet, shot):
     tiff.close()  
     
     # XXX we don't add meta into the individual images right now
-    #add_image_meta(name, meta)
+    add_image_meta(name, meta)
     
 
 def add_image_meta(fileName, meta):
@@ -340,7 +340,7 @@ def save_SPEC(rsp, dataSet, shot):
         return False
 
 
-def meta_IMAGE(dataset, serial):
+def meta_IMAGE(dataset, instr):
     """ Save the image meta data in a txt file. 
     
     Parameters
@@ -350,23 +350,24 @@ def meta_IMAGE(dataset, serial):
     serial : int
         List of Cameras used in dataset by serial number
     """
+    print("Writing image meta")
     metaName = get_dirName('META', dataset)+'meta_{}.txt'.format(dataset)
     f = open(metaName, 'r')
     contents = f.readlines()
     f.close()
     
     contents.append('\n\tCamera :')
-    for num in serial:
-        contents.append('\n\t\t{}'.format(num))
+    contents.append('\n\t\t{}'.format(instr.serial))
     contents.append('\n')
     
+    print(contents)
     f = open(metaName, 'w')
     contents = ''.join(contents)
     f.write(contents)
     f.close()
 
 
-def meta_TRACE(dataset, serial):
+def meta_TRACE(dataset, instr):
     """Save the trace meta data in a txt file.
     
     Parameters
@@ -381,7 +382,7 @@ def meta_TRACE(dataset, serial):
     contents = f.readlines()
     f.close()
 
-    contents.append('\n\tOscilliscope : %s' % serial[0])
+    contents.append('\n\tOscilliscope : %s' % instr.serial[0])
     contents.append('\n')
     
     f = open(metaName, 'w')
@@ -390,7 +391,7 @@ def meta_TRACE(dataset, serial):
     f.close()
 
 
-def meta_SPEC(dataset, serial):
+def meta_SPEC(dataset, instr):
     """Save the trace meta data in a txt file.
     
     Parameters
@@ -405,7 +406,7 @@ def meta_SPEC(dataset, serial):
     contents = f.readlines()
     f.close()
 
-    contents.append('\n\tSpectrometer : %s' % serial[0])
+    contents.append('\n\tSpectrometer : %s' % instr.serial[0])
     contents.append('\n')
     
     f = open(metaName, 'w')
@@ -414,7 +415,7 @@ def meta_SPEC(dataset, serial):
     f.close()
 
 
-def meta_SET(dataset, serial):
+def meta_SET(dataset, instr):
     """Save the trace meta data in a txt file.
     
     Parameters
@@ -432,7 +433,7 @@ def meta_SET(dataset, serial):
     contents = f.readlines()
     f.close()
     
-    contents.append('\n\tPower Supply : %s' % serial[0])
+    contents.append('\n\tPower Supply : %s' % instr.serial[0])
     contents.append('\n')
     
     f = open(metaName, 'w')

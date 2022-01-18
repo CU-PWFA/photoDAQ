@@ -74,7 +74,7 @@ class Process():
         meta['ID'] = self.device.ID
         meta['Serial number'] = self.device.serialNum
         #meta['Timestamp'] = Gvar.get_timestamp()
-        meta['Data set'] = self.dataset
+        meta['Dataset'] = self.dataset
         meta['Shot number'] = self.shot
         meta['Data type'] = self.get_datatype()
         return meta

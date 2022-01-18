@@ -216,6 +216,7 @@ class Daq():
                 # Dataset finished
                 if self.shot == stop_points[-1]:
                     self.taking_data = False
+                    self.verify_data()
                 # Check if we just finished a set
                 elif self.shot == stop_points[i-1]:
                     n = stop_points[i] - stop_points[i-1]
@@ -285,9 +286,8 @@ class Daq():
         
         for serial, instr in instrs.items():
             dType = instr.data_type
-            # TODO, implement this function in more detail
-#            metaproc = getattr(file, 'meta_'+dType)
-#            metaproc(self.dataset, instr)
+            metaproc = getattr(file, 'meta_'+dType)
+            metaproc(self.dataset, instr)
         
     def adv_dataset(self, desc=None):
         """ Advances dataset number in all instruments and creates directories.
@@ -323,6 +323,12 @@ class Daq():
         """        
         # Tell all the streaming instruments to start streaming
         TC =self.instr[self.TC_serial]
+
+
+        for key, instr in instrs.items():
+            self.send_command(instr, 'stop_stream')
+        time.sleep(0.1)
+        
         self.send_command(TC, 'stop')
         time.sleep(0.5)
         
@@ -395,7 +401,6 @@ class Daq():
     def stop_TC(self):
         TC =self.instr[self.TC_serial]
         self.send_command(TC, 'stop')
-        self.streaming = False
         self.taking_data = False
         
     def start_TC(self, shots):
@@ -430,6 +435,10 @@ class Daq():
                 instr = self.instr[serial]
                 cmd = item['command']
                 self.send_command(instr, cmd, value)
+                
+    def verify_data():
+        """ Check to make sure a dataset has the specified number of shots. """
+        pass
 
 
 class Cmd():

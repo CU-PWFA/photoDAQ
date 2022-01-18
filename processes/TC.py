@@ -21,6 +21,7 @@ class TC(StreamProcess):
             The object representing the instrument the process will control.
         """
         self.sampleDelay = 0.05
+        self.FR = False
         super().__init__(instr)
         
     def capture_thread(self, r_queue):
@@ -53,4 +54,12 @@ class TC(StreamProcess):
     def get_type(self):
         """ Return the instrument type. """
         return "TC"
+    
+    def is_free_running(self):
+        """ Check if the TC is free running. """
+        if self.FR:
+            meta = self.create_meta()
+            response = 'output'
+            rsp = daq.Rsp(response, info=raw, meta=meta)
+            self.r_queue.put(rsp)
 

@@ -3,13 +3,14 @@
 """
 Created on Tue Nov 19 09:54:33 2019
 
-@author: keenan & jamie
+@author: keenan & jamie & Robert
 """
 
 from devices.device import Device
 import usb
 import usb.core
 import usb.util
+import time
 
 class NF8742(Device):
     """ 
@@ -103,7 +104,17 @@ class NF8742(Device):
     
     def detect_slaves(self):
         """ Detect and record the number of slaves controllers connected. """
+        self.scan(1)
+        for i in range(100):
+            if self.scan_status()=='1':
+                break
+            else:
+                time.sleep(0.1)
+        
         controllers = self.list_controllers()
+        if controllers is None:
+            self.controllers = []
+            return
         conflict = controllers[-1]
         if conflict == '1':
             print("Pico motor controllers on the same bus have an address conflict.")
@@ -297,9 +308,9 @@ class NF8742(Device):
         command = str(axis) + "QM" + str(mtype)
         self.pass_command(command, slave)
         
-    def get_motor(self, slave = ""):
+    def get_motor(self, axis, slave = ""):
         """ Query the motor type of an axis. """
-        command = "2QM?"
+        command = str(axis) + "QM?"
         mtype = self.pass_command(command, slave)
         return mtype
     
@@ -339,6 +350,8 @@ class NF8742(Device):
     def list_controllers(self):
         """ Query the list of all controllers on an RS-485 network. """
         controllers = self.pass_command("SC?")
+        if controllers is None:
+            return
         controllers = int(controllers)
         return bin(controllers)
     

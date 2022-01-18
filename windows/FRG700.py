@@ -290,7 +290,7 @@ class GaugeWindow(QtBaseClass, Ui_GaugeWindow):
     def start_stream(self):
         """ Start the camera stream and display it. """
         self.send_command('start_stream')   
-        self.streaming = True   
+        self.streaming = True
         
     @pyqtSlot()
     def stop_stream(self):

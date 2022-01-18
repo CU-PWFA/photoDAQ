@@ -65,6 +65,7 @@ class UI(QtBaseClass, Ui_MainWindow):
         self.detectCamerasButton.clicked.connect(self.detect_camera)
         self.addToDatasetButton.clicked.connect(self.add_to_dataset)
         self.updateTimingButton.clicked.connect(self.update_timing)
+        self.cameraSaveCheck.stateChanged.connect(self.toggle_save_cam_settings)
         
         # Define useful variables
         self.connected_instr = {} # Tracks all connected instruments
@@ -203,6 +204,8 @@ class UI(QtBaseClass, Ui_MainWindow):
             self.integrate_SDG(instr)
         elif instr.device_type == 'TC':
             self.integrate_TC(instr)
+        elif instr.device_type == 'NF8742':
+            self.integrate_pico(instr)
 #        elif instr.device_type == 'XPS':
 #            self.integrate_XPS(instr)
             
@@ -292,7 +295,7 @@ class UI(QtBaseClass, Ui_MainWindow):
         Parmaeters
         ----------
         instr : instr object
-            Object for the turbo pump.
+            Object for the vacuum gauge.
         """
         win = instr.window
         win.data_prepared.connect(self.update_chamber_pressure)
@@ -319,6 +322,22 @@ class UI(QtBaseClass, Ui_MainWindow):
             display_species = 'Helium'
         self.ASpecies.setText(display_species)
         self.BSpecies.setText(display_species)
+        
+    # Picomotor controller
+    #--------------------------------------------------------------------------
+    def integrate_pico(self, instr):
+        """ Add connections with the picomotor controller. 
+        
+        Parmaeters
+        ----------
+        instr : instr object
+            Object for the picomotor controller.
+        """
+        win = instr.window
+        win.device_connected.connect(win.start_stream)
+        # Connected can fire before this function runs
+        if win.connected:
+            win.start_stream()
         
     # Timing system integration
     ###########################################################################
@@ -619,6 +638,13 @@ class UI(QtBaseClass, Ui_MainWindow):
             self.TCBoolLabel.setText('No')
         # Return if we are ready to take a dataset
         return SDG and TC
+    
+    @pyqtSlot(int)
+    def toggle_save_cam_settings(self, save):
+        if save==0:
+            self.save_cam_settings = False
+        else:
+            self.save_cam_settings = True
     
     def closeEvent(self, event):
         """ Override the close method to disconnect all instruments. """

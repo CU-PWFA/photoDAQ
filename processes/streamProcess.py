@@ -16,7 +16,6 @@ class StreamProcess(Process):
         self.streaming = False
         self.shot = 0
         self.numShots = 0
-        self.FR= False
         # Needs to ocur last, starts infinite queue loop
         super().__init__(instr)
         

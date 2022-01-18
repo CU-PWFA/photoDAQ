@@ -107,7 +107,6 @@ class Camera(Device):
         if current_packet != max_packet:
             cam.GevSCPSPacketSize.SetValue(max_packet)
             current_packet = int(cam.GevSCPSPacketSize.ToString())
-        print(max_packet, current_packet)
         if current_packet != max_packet:
             print('Camera is using a packet size of %i not the max of %i.' % (current_packet, max_packet))
         if max_packet != 9000:
@@ -117,7 +116,9 @@ class Camera(Device):
         if cam.GevSCPD.GetAccessMode() == PySpin.RW:
             cam.GevSCPD.SetValue(5900)
         
-        self.set_pixel_format('Mono12Packed')
+        # Conversion to Mono16 (required to generate numpy array) reduces image to 8bit anyways
+        #self.set_pixel_format('Mono12Packed')
+        self.set_pixel_format('Mono8')
         self.set_trigger_settings(False)
         
     # Request camera parameters
@@ -188,7 +189,7 @@ class Camera(Device):
     
     def get_shutter(self):
         """ Get the current shutter setting in ms. """
-        return self.cam.ExposureTime.GetValue()*1e-3
+        return self.cam.ExposureTime.GetValue()
     
     def get_gain(self):
         """ Get the current gain settings. """
@@ -247,10 +248,10 @@ class Camera(Device):
         exposure_min = self.get_min_shutter()
         exposure_max = self.get_max_shutter()
         if shutter > exposure_max:
-            print('Shutter outside of range, setting to maximum value of %0.2f' % (exposure_max*1e-3))
+            print('Shutter outside of range, setting to maximum value of %0.3f' % (exposure_max*1e-3))
             shutter = exposure_max
         if shutter < exposure_min:
-            print('Shutter outside of range, setting to minimum value of %0.2f' % (exposure_min*1e-3))
+            print('Shutter outside of range, setting to minimum value of %0.3f' % (exposure_min*1e-3))
             shutter = exposure_min
         self.cam.ExposureTime.SetValue(shutter)
         
