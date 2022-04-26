@@ -235,6 +235,9 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         self.image_view.addItem(self.cenhLine, ignoreBounds=True)
         self.cenvLine.setPos(self.cen_x)
         self.cenhLine.setPos(self.cen_y)
+    
+    def show_cen_pos(self):
+        self.centroidDisplay.setText("({:4d}, {:4d})".format(int(self.cen_x), int(self.cen_y)))
         
     def find_cen(self, data):
         self.CM = center_of_mass(data)
@@ -338,6 +341,7 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
             self.find_cen(rsp.data)
             if self.centroidCrossCheck.isChecked():
                 self.draw_cen_cross()
+                self.show_cen_pos()
                 
     
     @pyqtSlot(dict)
@@ -392,6 +396,7 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         else:
             self.calc_cen = True
             self.draw_cen_cross()
+            self.show_cen_pos()
             self.getCenButton.setEnabled(True)
             
     @pyqtSlot()

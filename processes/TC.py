@@ -41,6 +41,7 @@ class TC(StreamProcess):
             rsp = daq.Rsp(response, info=raw, meta=meta)
             self.r_queue.put(rsp)
             
+            #print('TC', self.shot)
             self.shot += 1
             if self.shot == self.numShots and raw == self.numShots:
                 self.save = False

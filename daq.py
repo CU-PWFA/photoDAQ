@@ -194,27 +194,33 @@ class Daq():
         instr : instr object
             The object representing the timing control instrument.
         """
+        def output(rsp): 
+            if o_queue is not None:
+                o_queue.put(rsp)
+        
         o_queue = instr.output_queue
         i_queue = instr.internal_queue
         while True:
             rsp = i_queue.get()
             response = rsp.response
             if response == 'exit':
-                o_queue.put(rsp)
+                output(rsp)
                 break
             elif response == 'connection_error':
-                o_queue.put(rsp)
+                output(rsp)
                 break
             else:
-                o_queue.put(rsp)
+                output(rsp)
             # If we are taking data this will be set true and then the timing
             # controller will be triggered
             if self.taking_data:
                 i = self.set
                 self.shot += 1
                 stop_points = self.stop_points
+                #print(self.shot, rsp.info)
                 # Dataset finished
                 if self.shot == stop_points[-1]:
+                    #print('Done!')
                     self.taking_data = False
                     self.verify_data()
                 # Check if we just finished a set
@@ -329,8 +335,8 @@ class Daq():
             self.send_command(instr, 'stop_stream')
         time.sleep(0.1)
         
-        self.send_command(TC, 'stop')
-        time.sleep(0.5)
+        #self.send_command(TC, 'stop')
+        #time.sleep(0.5)
         
         for key, instr in instrs.items():
             self.send_command(instr, 'save_stream', shots)
@@ -349,11 +355,11 @@ class Daq():
             stop_array = np.logical_or(stop_array, stop)
         stop_points = np.array([i for i, j in enumerate(stop_array) if j]) + 1
         stop_points = np.append(stop_points, shots)
-        print(stop_points)
+        #print(stop_points)
         
         # If we don't have any sweeps, run through the shots
-        if len(stop_points) == 0:
-            self.start_TC(shots)
+        #if len(stop_points) == 0:
+        #    self.start_TC(shots)
         
         # Set all initial parameters
         for serial, item in sweep.items():
@@ -383,7 +389,7 @@ class Daq():
         stop_array = np.zeros(shots, dtype='bool')
         stop_points = np.array([i for i, j in enumerate(stop_array) if j]) + 1
         stop_points = np.append(stop_points, shots)
-        print(stop_points)
+        #print(stop_points)
         
         if len(stop_points) == 0:
             self.start_TC(shots)
@@ -436,7 +442,7 @@ class Daq():
                 cmd = item['command']
                 self.send_command(instr, cmd, value)
                 
-    def verify_data():
+    def verify_data(self):
         """ Check to make sure a dataset has the specified number of shots. """
         pass
 

@@ -162,7 +162,14 @@ def make_dir_struct(root, dataSet):
 #    dirName = get_dirName('META', dataSet)
 #    fileName = 'meta' + '_' + str(dataSet)
 #    np.save(dirName + fileName, meta)
-    
+
+
+def get_file_ending(datatype):
+    if datatype == 'IMAGE':
+        return '.tiff'
+    else:
+        return ''
+
 
 def prep_data(rsp):
     """ Perform any prep work for the specific datatype.
@@ -197,13 +204,13 @@ def save_data(rsp):
     data_type = meta["Data type"]
     save = True
     if data_type == 'IMAGE':
-        save = save_IMAGE(rsp, meta['Data set'], meta['Shot number'])
+        save = save_IMAGE(rsp, meta['Dataset'], meta['Shot number'])
     elif data_type == 'TRACE':
-        save = save_TRACE(rsp, meta['Data set'], meta['Shot number'])
+        save = save_TRACE(rsp, meta['Dataset'], meta['Shot number'])
     elif data_type == 'SPEC':
-        save = save_SPEC(rsp, meta['Data set'], meta['Shot number'])
+        save = save_SPEC(rsp, meta['Dataset'], meta['Shot number'])
     elif data_type == 'SET':
-        save = save_SET(rsp, meta['Data set'], meta['Shot number'])
+        save = save_SET(rsp, meta['Dataset'], meta['Shot number'])
     if save == False:
         print("Failed to save data from " + meta['Serial number'])
 
@@ -350,7 +357,7 @@ def meta_IMAGE(dataset, instr):
     serial : int
         List of Cameras used in dataset by serial number
     """
-    print("Writing image meta")
+    #print("Writing image meta")
     metaName = get_dirName('META', dataset)+'meta_{}.txt'.format(dataset)
     f = open(metaName, 'r')
     contents = f.readlines()
@@ -360,7 +367,7 @@ def meta_IMAGE(dataset, instr):
     contents.append('\n\t\t{}'.format(instr.serial))
     contents.append('\n')
     
-    print(contents)
+    #print(contents)
     f = open(metaName, 'w')
     contents = ''.join(contents)
     f.write(contents)

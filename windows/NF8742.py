@@ -111,6 +111,19 @@ class NF8742Window(QtBaseClass, Ui_NFWindow):
         self.step = 10
         
         self.settingsWindow = NF8742Settings(self)
+        setWin = self.settingsWindow
+        setWin.motorVelocity1.valueChanged.connect(self.set_motor1_vel)
+        setWin.motorVelocity2.valueChanged.connect(self.set_motor2_vel)
+        setWin.motorVelocity3.valueChanged.connect(self.set_motor3_vel)
+        setWin.motorVelocity4.valueChanged.connect(self.set_motor4_vel)
+        setWin.motorAcceleration1.valueChanged.connect(self.set_motor1_acc)
+        setWin.motorAcceleration2.valueChanged.connect(self.set_motor2_acc)
+        setWin.motorAcceleration3.valueChanged.connect(self.set_motor3_acc)
+        setWin.motorAcceleration4.valueChanged.connect(self.set_motor4_acc)
+        setWin.motorType1.currentIndexChanged.connect(self.set_motor1_typ)
+        setWin.motorType2.currentIndexChanged.connect(self.set_motor2_typ)
+        setWin.motorType3.currentIndexChanged.connect(self.set_motor3_typ)
+        setWin.motorType4.currentIndexChanged.connect(self.set_motor4_typ)
         
         self.create_update_thread()
     
@@ -360,18 +373,54 @@ class NF8742Window(QtBaseClass, Ui_NFWindow):
     def reset(self):
         self.send_command('reset', self.slave)
 
-#    @pyqtSlot()    
-#    def set_velocity(self):
-#        vel_text = self.setVelocityText.toPlainText()
-#        velocity = int(vel_text)
-#        self.send_command('set_vel', velocity)
-#    
-#    @pyqtSlot()
-#    def set_acceleration(self):
-#        accel_text = self.setAccelText.toPlainText()
-#        accel = int(accel_text)
-#        self.send_command('set_accel', accel)
-#
+    @pyqtSlot(int)
+    def set_motor1_typ(self, typ):
+        self.send_command('set_motor', 1, typ, self.slave)
+
+    @pyqtSlot(int)
+    def set_motor2_typ(self, typ):
+        self.send_command('set_motor', 2, typ, self.slave)
+
+    @pyqtSlot(int)
+    def set_motor3_typ(self, typ):
+        self.send_command('set_motor', 3, typ, self.slave)
+
+    @pyqtSlot(int)
+    def set_motor4_typ(self, typ):
+        self.send_command('set_motor', 4, typ, self.slave)
+
+    @pyqtSlot(int)
+    def set_motor1_vel(self, vel):
+        self.send_command('set_velocity', 1, vel, self.slave)
+
+    @pyqtSlot(int)
+    def set_motor2_vel(self, vel):
+        self.send_command('set_velocity', 2, vel, self.slave)
+
+    @pyqtSlot(int)
+    def set_motor3_vel(self, vel):
+        self.send_command('set_velocity', 3, vel, self.slave)
+
+    @pyqtSlot(int)
+    def set_motor4_vel(self, vel):
+        self.send_command('set_velocity', 4, vel, self.slave)
+
+    @pyqtSlot(int)
+    def set_motor1_acc(self, acc):
+        self.send_command('set_acceleration', 1, acc, self.slave)
+
+    @pyqtSlot(int)
+    def set_motor2_acc(self, acc):
+        self.send_command('set_acceleration', 2, acc, self.slave)
+
+    @pyqtSlot(int)
+    def set_motor3_acc(self, acc):
+        self.send_command('set_acceleration', 3, acc, self.slave)
+
+    @pyqtSlot(int)
+    def set_motor4_acc(self, acc):
+        self.send_command('set_acceleration', 4, acc, self.slave)
+
 #    @pyqtSlot()
 #    def get_error(self):
 #        self.send_command('get_error')

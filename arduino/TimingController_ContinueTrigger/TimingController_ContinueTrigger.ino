@@ -6,9 +6,10 @@
 
 String command;
 volatile int shot = 0;
-int max_shots = 0;
+int max_shots = 10;
 bool new_shot = false;
 bool freeRun = false;
+bool stopped = true;
 
 void setup() {
   // initialize serial communication at 9600 bits per second:
@@ -32,10 +33,12 @@ void loop() {
       Serial.println("TC");
     }
     else if(command == "OFF") {
+      stopped = true;
       digitalWrite(8, HIGH);
       freeRun = false;
     }
     else if(command == "ON") {
+      stopped = false;
       digitalWrite(8, LOW);
     }
     else if(command[0] == 'R') {
@@ -64,15 +67,18 @@ void loop() {
   if (new_shot) {
     new_shot = false;
     if (freeRun == false){
-    shot += 1;
-    if (shot == max_shots) {
-    digitalWrite(8, HIGH);
-    }
-    Serial.println(shot);
+      shot += 1;
+      if (shot == max_shots) {
+        stopped = true;
+        digitalWrite(8, HIGH);
+      }
+      Serial.println(shot);
     }
   }
 }
 
 void fire() {
-  new_shot = true;
+  if (!stopped) {
+    new_shot = true;
+  }
 }

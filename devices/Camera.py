@@ -58,6 +58,8 @@ class Camera(Device):
             cam.ExposureMode.SetValue(PySpin.ExposureMode_Timed)
         if cam.ExposureAuto.GetAccessMode() == PySpin.RW:
             cam.ExposureAuto.SetValue(PySpin.ExposureAuto_Off)
+        #if cam.pgrExposureCompensationAuto.GetAccessMode() == PySpin.RW:
+        #    cam.pgrExposureCompensationAuto.SetValue(PySpin.pgrExposureCompensationAuto_Off)
         if cam.GainSelector.GetAccessMode() == PySpin.RW:
             cam.GainSelector.SetValue(PySpin.GainSelector_All)
         if cam.GainAuto.GetAccessMode() == PySpin.RW:
@@ -81,6 +83,10 @@ class Camera(Device):
             cam.AcquisitionMode.SetValue(PySpin.AcquisitionMode_Continuous)
         if cam.AcquisitionFrameRateEnable.GetAccessMode() == PySpin.RW:
             cam.AcquisitionFrameRateEnable.SetValue(True)
+        #if cam.AcquisitionFrameRateAuto.GetAccessMode() == PySpin.RW:
+        #    cam.AcquisitionFrameRateAuto.SetValue(PySpin.AcquisitionFrameRateAuto_Off)
+        if cam.AcquisitionFrameRate.GetAccessMode() == PySpin.RW:
+            cam.AcquisitionFrameRate.SetValue(10)
         # Disable sharpening
         if cam.SharpeningEnable.GetAccessMode() == PySpin.RW:
             cam.SharpeningEnable.SetValue(False)

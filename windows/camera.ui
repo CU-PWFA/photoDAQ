@@ -509,6 +509,35 @@ color:white;</string>
          <string>Centroid Cross</string>
         </property>
        </widget>
+       <widget class="QLabel" name="centroidLabel">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>150</y>
+          <width>131</width>
+          <height>17</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Centroid Position:</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="centroidDisplay">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>170</y>
+          <width>131</width>
+          <height>17</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>(0, 0)</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
       </widget>
       <widget class="QWidget" name="page">
        <property name="geometry">

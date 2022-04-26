@@ -52,7 +52,10 @@ class Camera(StreamProcess):
         """ Stop streaming from the camera. """
         if self.streaming:
             # stop_capture throws an error if the device isn't capturing
-            self.device.stop_capture() 
+            try:
+                self.device.stop_capture()
+            except:
+                pass
         self.streaming = False
     
     def capture_thread(self, r_queue):
@@ -92,7 +95,7 @@ class Camera(StreamProcess):
             #print("Start:", start, "End:", end, "Duration:", end-start)
             if image is not None:
                 image.Release()
-            
+            #print('Camera', self.shot)
             self.shot += 1
             if self.shot == self.numShots:
                 self.save = False
