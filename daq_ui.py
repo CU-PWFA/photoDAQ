@@ -8,8 +8,8 @@
 
 import daq
 import detect
-from PyQt4.QtCore import (pyqtSlot, QThread, pyqtSignal)
-from PyQt4 import QtCore, QtGui, uic
+from PyQt5.QtCore import (pyqtSlot, QThread, pyqtSignal)
+from PyQt5 import QtCore, QtGui, uic, QtWidgets
 import threading
 from windows import datasetInstr
 
@@ -139,7 +139,7 @@ class UI(QtBaseClass, Ui_MainWindow):
             text = instr_display[instr.model]+' ('+instr.serial+')'
         else:
             text = instr.model+' ('+instr.serial+')'
-        item = QtGui.QListWidgetItem(text, parent=parent)
+        item = QtWidgets.QListWidgetItem(text, parent=parent)
         item.__key__ = serial
         instr.item = item
     
@@ -656,7 +656,7 @@ class UI(QtBaseClass, Ui_MainWindow):
         
 if __name__ == "__main__":
     import sys
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     DAQ = daq.Daq(broadcast=True)
     ui = UI(DAQ)
     ui.set_dataset_num()

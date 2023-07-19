@@ -440,7 +440,9 @@ def meta_SET(dataset, instr):
     contents = f.readlines()
     f.close()
     
-    contents.append('\n\tPower Supply : %s' % instr.serial[0])
+    if instr.address== '/dev/ttyACM0':        
+        contents.append('\n\tVacuum Gauge : %s' % instr.address)
+#    contents.append('\n\tPower Supply : %s' % instr.serial[0])
     contents.append('\n')
     
     f = open(metaName, 'w')

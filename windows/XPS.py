@@ -9,8 +9,8 @@ Source module: https://github.com/pyepics/newportxps
 
 """
 
-from PyQt4 import uic
-from PyQt4.QtCore import (pyqtSlot, pyqtSignal)
+from PyQt5 import uic
+from PyQt5.QtCore import (pyqtSlot, pyqtSignal)
 import threading
 import os
 

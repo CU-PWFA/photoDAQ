@@ -39,7 +39,7 @@ def main(start, stop, incr, desc):
     if devices is None:
         DAQ.close_daq()
         return
-    NF, FF, stage_cam, xps, sdg, TC = devices
+    stage_cam, xps, sdg, TC = devices
     DAQ.create_dir_struct()
     # Handle the XPS directly rather than through the DAQ
     print('Connecting XPS motor controller')
@@ -47,16 +47,7 @@ def main(start, stop, incr, desc):
     time.sleep(5)
     print('Finished waiting 5s for instruments to connect')
     # Config any instrument settings that we want to make sure are correct
-    config_instruments(DAQ, NF, FF, stage_cam)
-    
-    # Take the initial dataset
-    pos = move_stage(positions[0], xps_dev)
-    instrs = {
-            NF.serial: NF,
-            FF.serial: FF,
-            }
-    append_meta('Initial laser parameters:\t{:s}'.format(str(DAQ.dataset)))
-    take_laser('Initial laser parameters', DAQ, instrs)
+    config_instruments(DAQ, stage_cam)
     
     # Move the stage and take a dataset at each position
     instrs = {
@@ -69,15 +60,6 @@ def main(start, stop, incr, desc):
         append_meta('Step:\t{:0.3f}\t{:s}'.format(pos, str(DAQ.dataset)))
         take_step(step_desc, DAQ, instrs)
         adjust_gain()
-    
-    # Take the final dataset
-    instrs = {
-            NF.serial: NF,
-            FF.serial: FF,
-            }
-    append_meta('Final laser parameters:\t{:s}'.format(str(DAQ.dataset)))
-    take_laser('Final laser parameters', DAQ, instrs, adv=False)
-    DAQ.close_daq()
 
 def check_log():
     """ Create a log for each day that assigns a unique ID to each sweep. """
@@ -116,28 +98,19 @@ def connect_instruments(DAQ):
     # Detect and connect cameras
     print('Detecting cameras')
     cameras = detect.camera()
-    if '18085415' in cameras:
-        NF = cameras['18085415']
-    else:
-        print('NF camera (serial 18085415) not detected')
-        return
-    if '18085362' in cameras:
-        FF = cameras['18085362']
-    else:
-        print('FF camera (serial 18085362) not detected')
-        return
     if '17583372' in cameras:
         print('Wide FOV camera detected on translation stage')
         stage_cam = cameras['17583372']
     elif '17571186' in cameras:
         print('MO camera detected on translation stage')
         stage_cam = cameras['17571186']
+    elif '17529184' in cameras:
+        print('3.45 micron camera detected on translation stage')
+        stage_cam = cameras['17529184']
     else:
         print('Stage camera (serial 18085362 or serial 17571186) not detected')
         return
     print('Connecting cameras')
-    DAQ.connect_instr(NF)
-    DAQ.connect_instr(FF)
     DAQ.connect_instr(stage_cam)
     # Detect and connect the spectrometer
     # spec = detect.spectrometers()
@@ -148,6 +121,7 @@ def connect_instruments(DAQ):
     xps = detect.XPS()
     if '18308053' in xps:
         xps = xps['18308053']
+        
     else:
         print('XPS motor controller not detected')
         return
@@ -170,33 +144,25 @@ def connect_instruments(DAQ):
         return
     print('Connecting timing controller')
     DAQ.connect_instr(TC)
-    return NF, FF, stage_cam, xps, sdg, TC
+    return stage_cam, xps, sdg, TC
 
-def config_instruments(DAQ, NF, FF, stage_cam):
-    DAQ.send_command(NF, 'set_gain', 4.0)
-    DAQ.send_command(FF, 'set_gain', 12.0)
-    DAQ.send_command(NF, 'set_shutter', 21.0)
-    DAQ.send_command(FF, 'set_shutter', 10.0)
-    DAQ.send_command(stage_cam, 'set_shutter', 1.0)
-    DAQ.send_command(NF, 'set_trigger_settings', True)
-    DAQ.send_command(FF, 'set_trigger_settings', True)
-    DAQ.send_command(stage_cam, 'set_trigger_settings', True)
-    DAQ.send_command(NF, 'set_height', 1200)
-    DAQ.send_command(NF, 'set_width', 1200)
-    DAQ.send_command(FF, 'set_height', 768)
-    DAQ.send_command(FF, 'set_width', 1024)
-    DAQ.send_command(NF, 'set_offsetX', 804)
-    DAQ.send_command(NF, 'set_offsetY', 110)
-    DAQ.send_command(FF, 'set_offsetX', 512)
-    DAQ.send_command(FF, 'set_offsetY', 384)
-
+def config_instruments(DAQ, stage_cam):
+    DAQ.send_command(stage_cam, 'set_shutter', 13)
+    DAQ.send_command(stage_cam, 'set_trigger_settings', False)
+    
+    if stage_cam.serial == '17529184':
+        DAQ.send_command(stage_cam, 'set_gain', .0)
+        DAQ.send_command(stage_cam, 'set_height', 2048)
+        DAQ.send_command(stage_cam, 'set_width', 2448)
+        DAQ.send_command(stage_cam, 'set_offsetX', 0)
+        DAQ.send_command(stage_cam, 'set_offsetY', 0)    
     
     if stage_cam.serial == '17583372':
         DAQ.send_command(stage_cam, 'set_gain', 9.0)
-        DAQ.send_command(stage_cam, 'set_height', 1536)
-        DAQ.send_command(stage_cam, 'set_width', 1536)
-        DAQ.send_command(stage_cam, 'set_offsetX', 284)
-        DAQ.send_command(stage_cam, 'set_offsetY', 0)
+        DAQ.send_command(stage_cam, 'set_height', 1024)
+        DAQ.send_command(stage_cam, 'set_width', 1224)
+        DAQ.send_command(stage_cam, 'set_offsetX', 900)
+        DAQ.send_command(stage_cam, 'set_offsetY', 400)
         
     if stage_cam.serial == '17571186':
         DAQ.send_command(stage_cam, 'set_gain', 4)
@@ -260,7 +226,7 @@ def get_sweep(instrs):
     return sweep
     
 def take_step(desc, DAQ, instrs, adv=True, j=0):
-    steps = 10
+    steps = 3
     sweep = get_sweep(instrs)
     DAQ.desc = desc
     DAQ.start_dataset(steps, instrs, sweep)

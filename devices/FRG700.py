@@ -138,4 +138,6 @@ class FRG700(Device):
     def close(self):
         """ Close method, doesn't do anything for a serial instrument. """
         self.Gauge.close()
+        
+
 

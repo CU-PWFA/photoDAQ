@@ -6,9 +6,10 @@ Created on Mon Dec  2 08:57:56 2019
 @author: keenan & jamie
 """
 
-from PyQt4 import QtCore, QtGui, uic
-from PyQt4.QtCore import (pyqtSlot, QThread, pyqtSignal)
-from PyQt4.QtGui import (QPixmap, QImage, QLabel)
+from PyQt5 import QtCore, QtGui, uic
+from PyQt5.QtCore import (pyqtSlot, QThread, pyqtSignal)
+from PyQt5.QtGui import (QPixmap, QImage)
+from PyQt5.QtWidgets import QLabel, QListWidgetItem
 import numpy as np
 import threading
 import os
@@ -207,7 +208,7 @@ class NF8742Window(QtBaseClass, Ui_NFWindow):
         self.controllers = data['controllers']
         for i in range(len(self.slaves)):
             text = "Id: {:s} (Address: {:s})".format(self.controllers[i], self.slaves[i])
-            item = QtGui.QListWidgetItem(text, parent=self.controllerList)
+            item = QListWidgetItem(text, parent=self.controllerList)
             item.__key__ = self.slaves[i]
             item.__name__ = self.controllers[i]
         self.controllerList.addItem(item)

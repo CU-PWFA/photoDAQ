@@ -255,7 +255,7 @@ class Daq():
         threads = threading.enumerate()
         for _t in threads:
             print('Checking that all threads exited.')
-            print('Thread name:', _t.name, 'Alive:', _t.isAlive())
+            print('Thread name:', _t.name, 'Alive:', _t.is_alive())
     
     def send_command(self, instr, command, *args, **kwargs):
         """ Send a command to a instrument. 

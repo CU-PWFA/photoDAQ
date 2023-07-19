@@ -6,9 +6,10 @@ Created on Mon Mar 18 17:54:53 2019
 @author: robert
 """
 
-from PyQt4 import QtCore, QtGui, uic
-from PyQt4.QtCore import (pyqtSlot, QThread, pyqtSignal)
-from PyQt4.QtGui import (QPixmap, QImage, QLabel)
+from PyQt5 import QtCore, QtGui, uic
+from PyQt5.QtCore import (pyqtSlot, QThread, pyqtSignal)
+from PyQt5.QtGui import (QPixmap, QImage)
+from PyQt5.QtWidgets import QLabel
 import numpy as np
 import threading
 import os

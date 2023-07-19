@@ -7,8 +7,7 @@ Created on Wed Feb 20 17:31:03 2019
 """
 
 import instrInfo
-import PyCapture2 as pc2
-import visa
+import pyvisa as visa
 import seabreeze.spectrometers as sb
 import os
 import sys
@@ -147,7 +146,7 @@ def spectrometer():
     instrs = {}
     spectrometers = sb.list_devices()
     for spec in spectrometers:
-        serial = spec.serial
+        serial = spec.serial_number
         if spec.model == 'HR4000':
             instr = instrInfo.HR4000(serial)
             instr.model = spec.model

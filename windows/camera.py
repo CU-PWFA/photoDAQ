@@ -6,10 +6,11 @@ Created on Fri Jan  4 16:00:22 2019
 @author: robert
 """
 
-from PyQt4 import QtCore, QtGui, uic
-from PyQt4.QtCore import (pyqtSlot, QThread, pyqtSignal)
-from PyQt4.QtGui import (QPixmap, QImage, QLabel)
-from matplotlib.backends.backend_qt4agg import (
+from PyQt5 import QtCore, QtGui, uic
+from PyQt5.QtCore import (pyqtSlot, QThread, pyqtSignal)
+from PyQt5.QtGui import (QPixmap, QImage)
+from PyQt5.QtWidgets import QLabel
+from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg as FigureCanvas,
     NavigationToolbar2QT as NavigationToolbar)
 from matplotlib.figure import Figure
@@ -67,6 +68,8 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         self.crossYField.valueChanged.connect(self.set_cross)
         self.centroidCrossCheck.stateChanged.connect(self.toggle_cen_cross)
         self.getCenButton.clicked.connect(self.ref_centroid)
+        self.referenceCircleCheck.stateChanged.connect(self.toggle_ref_circle)
+        self.circleField.valueChanged.connect(self.set_circle)
         
         # Grab references for controlling the camera
         self.DAQ = DAQ
@@ -83,6 +86,7 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         self.refhLine = None
         self.cenvLine = None
         self.cenhLine = None
+        self.refCirc = None
         self.calc_cen = False
         self.cen_x = 0
         self.cen_y = 0
@@ -221,6 +225,17 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         self.image_view.addItem(self.refhLine, ignoreBounds=True)
         self.refvLine.setPos(self.crossXField.value()+0.5)
         self.refhLine.setPos(self.crossYField.value()+0.5)
+    
+    def hide_ref_circle(self):
+        self.image_view.removeItem(self.refCirc)
+    
+    def draw_ref_circle(self):
+        if self.refCirc is None:
+            self.refCirc = pg.QtGui.QGraphicsEllipseItem(100, 100, 100, 100)
+            self.refCirc.setPen(pg.mkPen(color='b', width=1))
+        self.image_view.addItem(self.refCirc, ignoreBounds=True)
+        r = self.circleField.value()
+        self.refCirc.setRect(self.crossXField.value()+0.5-r, self.crossYField.value()+0.5-r, 2*r, 2*r)
         
     def hide_cen_cross(self):
         self.image_view.removeItem(self.cenvLine)
@@ -240,7 +255,15 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         self.centroidDisplay.setText("({:4d}, {:4d})".format(int(self.cen_x), int(self.cen_y)))
         
     def find_cen(self, data):
-        self.CM = center_of_mass(data)
+        method = self.methodField.currentIndex()
+        if method == 0:
+            self.CM = center_of_mass(data)
+        elif method == 1:
+            t = self.thresholdField.value()
+            data_t = np.zeros(np.shape(data))
+            sel = data > t
+            data_t[sel] = 1.0
+            self.CM = center_of_mass(data_t)
         #CM = [500, 500]
         self.cen_x = self.CM[1]
         self.cen_y = self.CM[0]
@@ -295,31 +318,37 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         """ Set the framerate value. """
         self.send_command('set_frame_rate', value)
         
-    @pyqtSlot(float)
+    @pyqtSlot()
     def set_offsetX(self, value):
         """ Set the offsetX value. """
         # Ensure the number is even
         value = int(value/2)*2
+        if self.serial == '17571186':
+            value = int(value/4)*4
         self.widthField.setMaximum(self.maxWidth-value)
         self.crossXField.setMaximum(self.maxWidth-value)
         self.send_command('set_offsetX', value)
 
-    @pyqtSlot(float)
+    @pyqtSlot()
     def set_offsetY(self, value):
         """ Set the offsetY value. """
         value = int(value/2)*2
+        if self.serial == '17571186':
+            value = int(value/4)*4
         self.heightField.setMaximum(self.maxHeight-value)
         self.crossYField.setMaximum(self.maxHeight-value)
         self.send_command('set_offsetY', value)
         
-    @pyqtSlot(float)
+    @pyqtSlot()
     def set_height(self, value):
         """ Set the height value. """
         value = int(value/2)*2
+        if self.serial == '17571186':
+            value = int(value/4)*4
         self.startYField.setMaximum(self.maxHeight-value)
         self.send_command('set_height', value)
         
-    @pyqtSlot(float)
+    @pyqtSlot()
     def set_width(self, value):
         """ Set the width value. """
         value = int(value/4)*4
@@ -383,10 +412,24 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         else:
             self.draw_ref_cross()
             
-    @pyqtSlot(float)
+    @pyqtSlot(int)
     def set_cross(self, value):
         if self.referenceCrossCheck.isChecked():
             self.draw_ref_cross()
+        if self.referenceCircleCheck.isChecked():
+            self.draw_ref_circle()
+    
+    @pyqtSlot(int)
+    def toggle_ref_circle(self, circle):
+        if circle==0:
+            self.hide_ref_circle()
+        else:
+            self.draw_ref_circle()
+            
+    @pyqtSlot(int)
+    def set_circle(self, value):
+        if self.referenceCircleCheck.isChecked():
+            self.draw_ref_circle()
         
     @pyqtSlot(int)
     def toggle_cen_cross(self, cross):

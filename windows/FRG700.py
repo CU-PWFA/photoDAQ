@@ -6,10 +6,11 @@ Created on Wed Jan 16 12:04:04 2019
 @author: robert
 """
 
-from PyQt4 import QtCore, QtGui, uic
-from PyQt4.QtCore import (pyqtSlot, QThread, pyqtSignal)
-from PyQt4.QtGui import (QPixmap, QImage, QLabel)
-from matplotlib.backends.backend_qt4agg import (
+from PyQt5 import QtCore, QtGui, uic
+from PyQt5.QtCore import (pyqtSlot, QThread, pyqtSignal)
+from PyQt5.QtGui import (QPixmap, QImage)
+from PyQt5.QtWidgets import QLabel
+from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg as FigureCanvas,
     NavigationToolbar2QT as NavigationToolbar)
 from matplotlib.figure import Figure
