@@ -15,6 +15,7 @@ import serial.tools.list_ports as prtlst
 import PySpin
 import usb
 import time
+import multiprocessing
 
 
 def all_instrs():
@@ -36,14 +37,7 @@ def all_instrs():
     return instrs
 
 
-def camera():
-    """ Detect all connected FLIR cameras. 
-    
-    Returns
-    -------
-    instrs : array of instr objects
-        All of the detected Cameras in the system.
-    """
+def _camera(cam_serial_model_list):
     instrs = {}
     system = PySpin.System.GetInstance()
     cam_list = system.GetCameras()
@@ -57,14 +51,24 @@ def camera():
         node = PySpin.CStringPtr(nodemap_tl.GetNode('DeviceModelName'))
         if PySpin.IsAvailable(node) and PySpin.IsReadable(node):
             model = node.ToString()    
-        
-        instr = instrInfo.Camera(serial)
-        instr.model = model
-        instrs[serial] = instr
+        cam_serial_model_list.append((serial, model))
         del cam
     cam_list.Clear()
     system.ReleaseInstance()
     del system
+    return instrs
+
+def camera():
+    instrs = {}
+    with multiprocessing.Manager() as manager:
+        cam_serial_model_list = manager.list()
+        p = multiprocessing.Process(target=_camera, args=(cam_serial_model_list,))
+        p.start()
+        p.join()
+        for (serial, model) in cam_serial_model_list:
+            instr = instrInfo.Camera(serial)
+            instr.model = model
+            instrs[serial] = instr
     return instrs
 
 

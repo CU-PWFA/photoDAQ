@@ -1,0 +1,23 @@
+name: daq
+channels:
+- conda-forge
+dependencies:
+- python<=3.10.6
+- numpy
+- scipy
+- matplotlib
+- pillow
+- pylibtiff
+- pyvisa
+- pyvisa-py
+- pyusb
+- pyserial
+- seabreeze
+- qt<=5.15.8
+- pyqt
+- psutil
+- zeroconf
+- pyqtgraph
+- pip
+- pip:
+  - instrumentkit
