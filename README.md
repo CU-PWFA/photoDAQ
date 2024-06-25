@@ -95,3 +95,7 @@ To install libtiff tools run the following command
 ```
 sudo apt-get install libtiff-tools
 ```
+### Install instruments
+```
+$ pip install -e git+https://www.github.com/instrumentkit/InstrumentKit.git#egg=instrumentkit
+```
