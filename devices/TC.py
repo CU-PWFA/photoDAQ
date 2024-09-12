@@ -14,6 +14,7 @@ class TC(Device):
     """ Class to control the arduino for the FRG700 vacuum gauge. """
     def __init__(self, address):
         """ Create the serial object for the gauge. """
+        print(address)
         self.connectController(address)
         
     def connectController(self, address):

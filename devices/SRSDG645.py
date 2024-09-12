@@ -43,6 +43,7 @@ class SRSDG645(Device):
             The ip address of the SDG.
         """
         try:
+            print(ip)
             self.srs = ik.srs.SRSDG645.open_tcpip(ip, 5025)
             self.ID = self.srs.query('*IDN?')
             print(self.ID.strip())

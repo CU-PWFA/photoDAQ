@@ -2,6 +2,9 @@
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
+  <property name="enabled">
+   <bool>true</bool>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -17,6 +20,9 @@
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="3">
      <widget class="QWidget" name="imageWidget" native="true">
+      <property name="enabled">
+       <bool>false</bool>
+      </property>
       <layout class="QVBoxLayout" name="mplvl"/>
      </widget>
     </item>
@@ -55,7 +61,7 @@
          <x>0</x>
          <y>0</y>
          <width>200</width>
-         <height>442</height>
+         <height>436</height>
         </rect>
        </property>
        <attribute name="label">
@@ -63,7 +69,7 @@
        </attribute>
        <widget class="QPushButton" name="stopStreamButton">
         <property name="enabled">
-         <bool>false</bool>
+         <bool>true</bool>
         </property>
         <property name="geometry">
          <rect>
@@ -94,7 +100,7 @@ color:white;</string>
        </widget>
        <widget class="QPushButton" name="startStreamButton">
         <property name="enabled">
-         <bool>false</bool>
+         <bool>true</bool>
         </property>
         <property name="geometry">
          <rect>
@@ -415,7 +421,7 @@ color:white;</string>
          <x>0</x>
          <y>0</y>
          <width>200</width>
-         <height>442</height>
+         <height>436</height>
         </rect>
        </property>
        <attribute name="label">
@@ -545,7 +551,7 @@ color:white;</string>
          <x>0</x>
          <y>0</y>
          <width>200</width>
-         <height>442</height>
+         <height>436</height>
         </rect>
        </property>
        <attribute name="label">
@@ -620,7 +626,7 @@ color:white;</string>
      <x>0</x>
      <y>0</y>
      <width>1005</width>
-     <height>25</height>
+     <height>31</height>
     </rect>
    </property>
   </widget>

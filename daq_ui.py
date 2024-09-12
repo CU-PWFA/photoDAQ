@@ -8,8 +8,9 @@
 
 import daq
 import detect
-from PyQt4.QtCore import (pyqtSlot, QThread, pyqtSignal)
-from PyQt4 import QtCore, QtGui, uic
+from PyQt6.QtCore import (pyqtSlot, QThread, pyqtSignal)
+from PyQt6 import QtCore, QtGui, QtWidgets, uic
+from PyQt6.QtGui import QTextCursor
 import threading
 from windows import datasetInstr
 
@@ -87,7 +88,7 @@ class UI(QtBaseClass, Ui_MainWindow):
         """ Create a thread to pull from stdout. """
         args = (self.DAQ.p_queue, self.message_acquired.emit)
         thread = threading.Thread(target=self.logging_thread, args=args)
-        thread.setDaemon(True)
+        thread.daemon = True
         thread.start()
         
     def logging_thread(self, queue, callback):
@@ -139,7 +140,7 @@ class UI(QtBaseClass, Ui_MainWindow):
             text = instr_display[instr.model]+' ('+instr.serial+')'
         else:
             text = instr.model+' ('+instr.serial+')'
-        item = QtGui.QListWidgetItem(text, parent=parent)
+        item = QtWidgets.QListWidgetItem(text, parent=parent)
         item.__key__ = serial
         instr.item = item
     
@@ -217,7 +218,7 @@ class UI(QtBaseClass, Ui_MainWindow):
         instr : instr object
             Object for an instrument.
         """
-        item = QtGui.QListWidgetItem(self.datasetList)
+        item = QtWidgets.QListWidgetItem(self.datasetList)
         # We keep the widget around to preserve the settings
         if hasattr(instr, 'dataset_widget') == False:
             widget = datasetInstr.DatasetInstr(item, self.DAQ, instr)
@@ -437,7 +438,8 @@ class UI(QtBaseClass, Ui_MainWindow):
     ###########################################################################
     @pyqtSlot(str)
     def print_log(self, text):
-        self.logBrowser.moveCursor(QtGui.QTextCursor.End)
+        self.logBrowser.moveCursor(QTextCursor.MoveOperation.End)
+#        self.logBrowser.moveCursor(QtGui.QTextCursor.End)
         self.logBrowser.insertPlainText(text)
     
     @pyqtSlot()
@@ -656,9 +658,10 @@ class UI(QtBaseClass, Ui_MainWindow):
         
 if __name__ == "__main__":
     import sys
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     DAQ = daq.Daq(broadcast=True)
     ui = UI(DAQ)
     ui.set_dataset_num()
     ui.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
+

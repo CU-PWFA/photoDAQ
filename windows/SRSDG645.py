@@ -6,9 +6,10 @@ Created on Thu Jan 17 13:51:25 2019
 @author: robert
 """
 
-from PyQt4 import QtCore, QtGui, uic
-from PyQt4.QtCore import (pyqtSlot, QThread, pyqtSignal)
-from PyQt4.QtGui import (QPixmap, QImage, QLabel)
+from PyQt6 import QtCore, QtGui, QtWidgets, uic
+from PyQt6.QtCore import (pyqtSlot, QThread, pyqtSignal)
+from PyQt6.QtGui import QPixmap, QImage
+from PyQt6.QtWidgets import QLabel
 import numpy as np
 import threading
 import os
@@ -252,10 +253,10 @@ class DGWindow(QtBaseClass, Ui_DGWindow):
         self.settings = rsp.info
         # Stop the channel change from doing anything
         self.updating = True
-        self.set_delay_fields(channel)
-        self.set_reference_field(channel)
-        self.set_output_field(channel)
-        self.set_polarity_field(channel)
+#        self.set_delay_fields(channel)
+#        self.set_reference_field(channel)
+#        self.set_output_field(channel)
+#        self.set_polarity_field(channel)
         self.updating = False
     
     @pyqtSlot(int)

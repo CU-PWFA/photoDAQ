@@ -107,12 +107,13 @@ def get_file_path():
     data : string
         The path to the daq directory.
     """
-    try:
-        import var.var as var
-        return var.path
-    except:
-        print('File Error: No var/var.py to specify the path to the daq.')
-        return False
+    return '/mnt/raid/DAQ/'
+#    try:
+#        import var.var as var
+#        return var.path
+#    except:
+#        print('File Error: No var/var.py to specify the path to the daq.')
+#        return False
 
 
 def add_to_log(dataSet):

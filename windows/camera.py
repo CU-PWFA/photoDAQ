@@ -6,12 +6,13 @@ Created on Fri Jan  4 16:00:22 2019
 @author: robert
 """
 
-from PyQt4 import QtCore, QtGui, uic
-from PyQt4.QtCore import (pyqtSlot, QThread, pyqtSignal)
-from PyQt4.QtGui import (QPixmap, QImage, QLabel)
-from matplotlib.backends.backend_qt4agg import (
-    FigureCanvasQTAgg as FigureCanvas,
-    NavigationToolbar2QT as NavigationToolbar)
+from PyQt6 import QtCore, QtGui, QtWidgets, uic
+from PyQt6.QtCore import (pyqtSlot, QThread, pyqtSignal)
+from PyQt6.QtGui import QPixmap, QImage
+from PyQt6.QtWidgets import QLabel
+#from matplotlib.backends.backend_qt4agg import (
+#    FigureCanvasQTAgg as FigureCanvas,
+#    NavigationToolbar2QT as NavigationToolbar)
 from matplotlib.figure import Figure
 import pyqtgraph
 import pyqtgraph as pg
@@ -46,7 +47,8 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         QtBaseClass.__init__(self)
         Ui_CameraWindow.__init__(parent)
         self.setupUi(self)
-        
+        self.start_stream
+
         # Add event handlers to all the buttons
         self.startStreamButton.clicked.connect(self.start_stream)
         self.stopStreamButton.clicked.connect(self.stop_stream)
@@ -57,16 +59,16 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         self.data_acquired.connect(self.update_info)
         self.triggerCheck.stateChanged.connect(self.set_trigger)
         self.device_connected.connect(self.setup_window)
-        self.startXField.valueChanged.connect(self.set_offsetX)
-        self.startYField.valueChanged.connect(self.set_offsetY)
-        self.heightField.valueChanged.connect(self.set_height)
-        self.widthField.valueChanged.connect(self.set_width)
-        self.fullROIButton.clicked.connect(self.fullROI)
-        self.referenceCrossCheck.stateChanged.connect(self.toggle_ref_cross)
-        self.crossXField.valueChanged.connect(self.set_cross)
-        self.crossYField.valueChanged.connect(self.set_cross)
-        self.centroidCrossCheck.stateChanged.connect(self.toggle_cen_cross)
-        self.getCenButton.clicked.connect(self.ref_centroid)
+#        self.startXField.valueChanged.connect(self.set_offsetX)
+#        self.startYField.valueChanged.connect(self.set_offsetY)
+#        self.heightField.valueChanged.connect(self.set_height)
+#        self.widthField.valueChanged.connect(self.set_width)
+#        self.fullROIButton.clicked.connect(self.fullROI)
+#        self.referenceCrossCheck.stateChanged.connect(self.toggle_ref_cross)
+#        self.crossXField.valueChanged.connect(self.set_cross)
+#        self.crossYField.valueChanged.connect(self.set_cross)
+#        self.centroidCrossCheck.stateChanged.connect(self.toggle_cen_cross)
+#        self.getCenButton.clicked.connect(self.ref_centroid)
         
         # Grab references for controlling the camera
         self.DAQ = DAQ
@@ -408,7 +410,7 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
 # For testing the window directly
 if __name__ == "__main__":
     import sys
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     ui = CameraWindow(None, None, None)
     ui.show()
     sys.exit(app.exec_())

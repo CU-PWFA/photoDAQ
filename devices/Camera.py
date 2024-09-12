@@ -43,7 +43,6 @@ class Camera(Device):
             self.nodemap_tl = cam.GetTLDeviceNodeMap()
             cam.Init()
             self.nodemap = cam.GetNodeMap()
-            
             self.serialNum = serial
             self.model = model = cam.TLDevice.DeviceModelName.ToString()
             self.fv = fv = cam.DeviceFirmwareVersion.ToString()
@@ -51,6 +50,7 @@ class Camera(Device):
             print('Camera ID:', self.ID)
     
     def setupCam(self, serial):
+
         """ Set settings required for correct image acquisition. """
         # Set all auto controlled parameters to off
         cam = self.cam
@@ -83,8 +83,8 @@ class Camera(Device):
             cam.AcquisitionMode.SetValue(PySpin.AcquisitionMode_Continuous)
         if cam.AcquisitionFrameRateEnable.GetAccessMode() == PySpin.RW:
             cam.AcquisitionFrameRateEnable.SetValue(True)
-        #if cam.AcquisitionFrameRateAuto.GetAccessMode() == PySpin.RW:
-        #    cam.AcquisitionFrameRateAuto.SetValue(PySpin.AcquisitionFrameRateAuto_Off)
+#        if cam.AcquisitionFrameRateAuto.GetAccessMode() == PySpin.RW:
+#            cam.AcquisitionFrameRateAuto.SetValue(PySpin.AcquisitionFrameRateAuto_Off)
         if cam.AcquisitionFrameRate.GetAccessMode() == PySpin.RW:
             cam.AcquisitionFrameRate.SetValue(10)
         # Disable sharpening
