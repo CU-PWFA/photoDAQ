@@ -8,6 +8,7 @@ Created on Wed Jun 13 16:32:45 2018
 
 from devices.device import Device
 import PySpin
+import random
 
 class Camera(Device):
     """ Class to control the FLIR cameras. """
@@ -83,6 +84,7 @@ class Camera(Device):
             cam.AcquisitionMode.SetValue(PySpin.AcquisitionMode_Continuous)
         if cam.AcquisitionFrameRateEnable.GetAccessMode() == PySpin.RW:
             cam.AcquisitionFrameRateEnable.SetValue(True)
+#Those two lines is needed but you need to change how you call them
 #        if cam.AcquisitionFrameRateAuto.GetAccessMode() == PySpin.RW:
 #            cam.AcquisitionFrameRateAuto.SetValue(PySpin.AcquisitionFrameRateAuto_Off)
         if cam.AcquisitionFrameRate.GetAccessMode() == PySpin.RW:
@@ -119,14 +121,27 @@ class Camera(Device):
             print('Max packet size is only %i, increase to 9000 for best performance.' % max_packet)
             
         # Set the packet delay, will limit bandwidth. Size=9000 and delay=5900 is 25MB/s
-        if cam.GevSCPD.GetAccessMode() == PySpin.RW:
-            cam.GevSCPD.SetValue(5900)
-        
+#        if cam.GevSCPD.GetAccessMode() == PySpin.RW:
+#            cam.GevSCPD.SetValue(5900)
+        #I added thses
+        scpd = PySpin.CIntegerPtr(cam.GetNodeMap().GetNode("GevSCPD"))
+        if PySpin.IsAvailable(scpd) and PySpin.IsWritable(scpd):
+            scpd.SetValue(9000)  # Adjust as needed (e.g., 10000 for higher delay)
+
+        # Set GevSCPSPacketSize (packet size)
+        packet_size = PySpin.CIntegerPtr(cam.GetNodeMap().GetNode("GevSCPSPacketSize"))
+        if PySpin.IsAvailable(packet_size) and PySpin.IsWritable(packet_size):
+            packet_size.SetValue(1440)  # Typical safe value
+#            print("GevSCPD =", scpd.GetValue())
+
         # Conversion to Mono16 (required to generate numpy array) reduces image to 8bit anyways
         #self.set_pixel_format('Mono12Packed')
         self.set_pixel_format('Mono8')
         self.set_trigger_settings(False)
-        
+
+        if self.serialNum=='24070909':
+            self.cam.Height.SetValue(1500)
+            self.cam.Width.SetValue(2000)
     # Request camera parameters
     #--------------------------------------------------------------------------
     def get_sensor_height(self):
@@ -204,7 +219,10 @@ class Camera(Device):
     def get_framerate(self):
         """ Get the current framerate setting. """
         return self.cam.AcquisitionFrameRate.GetValue()
-    
+
+    def get_min_TriggerDelay(self):
+        """ Get the minimum shutter setting. """
+        return self.cam.TriggerDelay.GetMin()
     # Set camera parameters
     #--------------------------------------------------------------------------   
     def set_pixel_format(self, pixelFormat):
@@ -315,10 +333,18 @@ class Camera(Device):
         if enable == True:
             cam.TriggerSource.SetValue(PySpin.TriggerSource_Line0)
             cam.TriggerActivation.SetValue(PySpin.TriggerActivation_RisingEdge)
-            cam.TriggerDelay.SetValue(0)
+            min_triggerDelay= self.get_min_TriggerDelay()
+#            if self.serialNum== '24070909':
+#                extra_delay= 1000
+#            if self.serialNum== '24520697':
+#                extra_delay= 3000
+            extra_delay= 0
+            randomDelay= min_triggerDelay+ extra_delay
+            cam.TriggerDelay.SetValue(randomDelay)
             cam.TriggerSelector.SetValue(PySpin.TriggerSelector_FrameStart)
-            if cam.TriggerOverlap.GetAccessMode() == PySpin.RW:
-                cam.TriggerOverlap.SetValue(PySpin.TriggerOverlap_ReadOut)
+            #try to comment out the following two lines
+#            if cam.TriggerOverlap.GetAccessMode() == PySpin.RW:
+#                cam.TriggerOverlap.SetValue(PySpin.TriggerOverlap_ReadOut)
             
             cam.TriggerMode.SetValue(PySpin.TriggerMode_On)
         if enable == False:
@@ -339,6 +365,7 @@ class Camera(Device):
         if offsetX < 0:
             print('Negative framerates are not allowed, setting to 0.')
             offsetX = 0
+        offsetX= (offsetX//4)*4
         self.cam.OffsetX.SetValue(offsetX)
         
     def set_offsetY(self, offsetY):
@@ -356,6 +383,7 @@ class Camera(Device):
         if offsetY < 0:
             print('Negative offsets are not allowed, setting to 0.')
             offsetY = 0
+        offsetY= (offsetY//4)*4
         self.cam.OffsetY.SetValue(offsetY)
         
     def set_height(self, height):

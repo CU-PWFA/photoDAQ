@@ -61,7 +61,7 @@
          <x>0</x>
          <y>0</y>
          <width>200</width>
-         <height>436</height>
+         <height>445</height>
         </rect>
        </property>
        <attribute name="label">
@@ -414,6 +414,29 @@ color:white;</string>
          </property>
         </widget>
        </widget>
+       <widget class="QComboBox" name="CmapDrop">
+        <property name="geometry">
+         <rect>
+          <x>100</x>
+          <y>380</y>
+          <width>86</width>
+          <height>25</height>
+         </rect>
+        </property>
+       </widget>
+       <widget class="QLabel" name="heightLabel_2">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>380</y>
+          <width>81</width>
+          <height>21</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Colormaps</string>
+        </property>
+       </widget>
       </widget>
       <widget class="QWidget" name="postPage">
        <property name="geometry">
@@ -421,7 +444,7 @@ color:white;</string>
          <x>0</x>
          <y>0</y>
          <width>200</width>
-         <height>436</height>
+         <height>445</height>
         </rect>
        </property>
        <attribute name="label">
@@ -551,7 +574,7 @@ color:white;</string>
          <x>0</x>
          <y>0</y>
          <width>200</width>
-         <height>436</height>
+         <height>445</height>
         </rect>
        </property>
        <attribute name="label">
@@ -626,7 +649,7 @@ color:white;</string>
      <x>0</x>
      <y>0</y>
      <width>1005</width>
-     <height>31</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>

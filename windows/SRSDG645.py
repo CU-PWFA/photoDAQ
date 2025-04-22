@@ -134,11 +134,11 @@ class DGWindow(QtBaseClass, Ui_DGWindow):
         ns = np.floor(delay)
         delay = (delay - ns)*1000
         ps = np.floor(delay)
-        self.sField.setValue(s)
-        self.msField.setValue(ms)
-        self.usField.setValue(us)
-        self.nsField.setValue(ns)
-        self.psField.setValue(ps)
+        self.sField.setValue(int(s))
+        self.msField.setValue(int(ms))
+        self.usField.setValue(int(us))
+        self.nsField.setValue(int(ns))
+        self.psField.setValue(int(ps))
         
     def set_reference_field(self, channel):
         """ Set the reference field for the passed channel. 

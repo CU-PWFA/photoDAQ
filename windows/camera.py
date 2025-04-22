@@ -7,9 +7,9 @@ Created on Fri Jan  4 16:00:22 2019
 """
 
 from PyQt6 import QtCore, QtGui, QtWidgets, uic
-from PyQt6.QtCore import (pyqtSlot, QThread, pyqtSignal)
+from PyQt6.QtCore import pyqtSlot, QThread, pyqtSignal, Qt, QEvent
 from PyQt6.QtGui import QPixmap, QImage
-from PyQt6.QtWidgets import QLabel
+from PyQt6.QtWidgets import QLabel, QMenu
 #from matplotlib.backends.backend_qt4agg import (
 #    FigureCanvasQTAgg as FigureCanvas,
 #    NavigationToolbar2QT as NavigationToolbar)
@@ -59,16 +59,18 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         self.data_acquired.connect(self.update_info)
         self.triggerCheck.stateChanged.connect(self.set_trigger)
         self.device_connected.connect(self.setup_window)
-#        self.startXField.valueChanged.connect(self.set_offsetX)
-#        self.startYField.valueChanged.connect(self.set_offsetY)
-#        self.heightField.valueChanged.connect(self.set_height)
-#        self.widthField.valueChanged.connect(self.set_width)
-#        self.fullROIButton.clicked.connect(self.fullROI)
-#        self.referenceCrossCheck.stateChanged.connect(self.toggle_ref_cross)
-#        self.crossXField.valueChanged.connect(self.set_cross)
-#        self.crossYField.valueChanged.connect(self.set_cross)
-#        self.centroidCrossCheck.stateChanged.connect(self.toggle_cen_cross)
-#        self.getCenButton.clicked.connect(self.ref_centroid)
+        self.startXField.valueChanged.connect(self.set_offsetX)
+        self.startYField.valueChanged.connect(self.set_offsetY)
+        self.heightField.valueChanged.connect(self.set_height)
+        self.widthField.valueChanged.connect(self.set_width)
+        self.fullROIButton.clicked.connect(self.fullROI)
+        self.referenceCrossCheck.stateChanged.connect(self.toggle_ref_cross)
+        self.crossXField.valueChanged.connect(self.set_cross)
+        self.crossYField.valueChanged.connect(self.set_cross)
+        self.centroidCrossCheck.stateChanged.connect(self.toggle_cen_cross)
+        self.getCenButton.clicked.connect(self.ref_centroid)
+        self.CmapDrop.addItems(['grey', 'viridis', 'plasma', 'spectrum', 'greyclip'])
+        self.CmapDrop.currentTextChanged.connect(self.change_colormap)
         
         # Grab references for controlling the camera
         self.DAQ = DAQ
@@ -88,7 +90,7 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         self.calc_cen = False
         self.cen_x = 0
         self.cen_y = 0
-        
+
     def create_image(self):
         """ Create the matplotlib image canvas. """
         # Following the pyqtgraph VideoSpeedTest example, add the image
@@ -247,6 +249,14 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         self.cen_x = self.CM[1]
         self.cen_y = self.CM[0]
         
+    def change_colormap(self, cmap):
+        """Update the colormap based on the combo box selection."""
+        if cmap == "saturate":
+            self.image_view.setColorMap(self.custom_cmap)
+        else:
+            self.image_view.ui.histogram.gradient.loadPreset(cmap)
+
+
     # Event Handlers
     ###########################################################################
     @pyqtSlot(object)
@@ -297,16 +307,16 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         """ Set the framerate value. """
         self.send_command('set_frame_rate', value)
         
-    @pyqtSlot(float)
+    @pyqtSlot(int)
     def set_offsetX(self, value):
         """ Set the offsetX value. """
         # Ensure the number is even
-        value = int(value/2)*2
+        value = int(int(value/2)*2)
         self.widthField.setMaximum(self.maxWidth-value)
         self.crossXField.setMaximum(self.maxWidth-value)
         self.send_command('set_offsetX', value)
 
-    @pyqtSlot(float)
+    @pyqtSlot(int)
     def set_offsetY(self, value):
         """ Set the offsetY value. """
         value = int(value/2)*2
@@ -314,14 +324,14 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         self.crossYField.setMaximum(self.maxHeight-value)
         self.send_command('set_offsetY', value)
         
-    @pyqtSlot(float)
+    @pyqtSlot(int)
     def set_height(self, value):
         """ Set the height value. """
         value = int(value/2)*2
         self.startYField.setMaximum(self.maxHeight-value)
         self.send_command('set_height', value)
         
-    @pyqtSlot(float)
+    @pyqtSlot(int)
     def set_width(self, value):
         """ Set the width value. """
         value = int(value/4)*4
@@ -385,7 +395,7 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
         else:
             self.draw_ref_cross()
             
-    @pyqtSlot(float)
+    @pyqtSlot(int)
     def set_cross(self, value):
         if self.referenceCrossCheck.isChecked():
             self.draw_ref_cross()
@@ -403,8 +413,8 @@ class CameraWindow(QtBaseClass, Ui_CameraWindow):
             
     @pyqtSlot()
     def ref_centroid(self):
-        self.crossXField.setValue(self.CM[1])
-        self.crossYField.setValue(self.CM[0])
+        self.crossXField.setValue(int(self.CM[1]))
+        self.crossYField.setValue(int(self.CM[0]))
             
 
 # For testing the window directly

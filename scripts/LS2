@@ -1,0 +1,68 @@
+ --- Global stage parameters
+; --- <Stage.GenericInformation>
+SmartStageName =
+Unit = mm
+ConfigurationComment =
+
+; --- Motor driver parameters
+DriverName = NON_CONFIGURABLE_DRV
+DriverMotorResistance = 0.88 ;Ohm
+DriverMotorInductance = 0.0034 ;Henry
+DriverCutOffFrequency = 1500 ;Hz
+DriverBemfCompensationGain = 1
+
+; --- Driver command interface parameters
+; --- <MotorDriverInterface.AnalogStepperPosition>
+MotorDriverInterface = PulseDir
+DelayAfterMotorOnToSetClosedLoop = 0.05 ; sec   # Not used in all firmwares
+DigitalStepperPulseLogic = Positive
+DigitalStepperDirectionLogic= Negative
+DisplacementPerFullStep = 0.301 ; Unit
+MicroStepsPerFullStep = 2
+;PeakCurrentPerPhase = 4.2 ; Amp
+;StandbyPeakCurrentPerPhase = 2.1 ; Amp
+;BaseVelocity = 0 ; Unit/Sec
+
+; --- Position encoder interface parameters
+; --- <Encoder.NoEncoder>
+EncoderType = NoEncoder
+
+; --- Travels and servitudes type parameters
+; --- <Servitudes.StandardEORDriverPlug>
+ServitudesType = StandardEORDriverPlug
+MinimumTargetPosition = 0 ; Unit
+MaximumTargetPosition = 2400 ; Unit
+HomePreset = 0 ; Unit
+
+; --- Backlash parameters
+; --- <Backlash.Standard>
+Backlash = 0 ; Unit
+CurrentVelocityCutOffFrequency = 100 ; Hz
+CurrentAccelerationCutOffFrequency = 100 ; Hz
+
+; --- Profile generator parameters
+; --- <Profiler.Sgamma>
+MaximumVelocity = 200 ; Unit/Sec
+;JogMaximumVelocity = 20 ; Unit/Sec  # Not used by all firmwares
+MaximumAcceleration = 80 ; Unit/Sec²
+;JogMaximumAcceleration = 80 ; Unit/Sec²  # Not used by all firmwares
+EmergencyDecelerationMultiplier = 4
+MinimumJerkTime = 0.005 ; Sec
+MaximumJerkTime = 0.05 ; Sec
+TrackingCutOffFrequency = 25 ; Hz
+
+; --- Home search process parameters
+; --- <HomeSearch.MechanicalZeroHomeSearch>
+HomeSearchSequenceType = MechanicalZeroHomeSearch
+HomeSearchMaximumVelocity = 200 ; Unit/Sec
+HomeSearchMaximumAcceleration = 40 ; Unit/Sec²
+HomeSearchTimeOut = 15 ; Sec
+HomingSensorOffset = 0 ; Unit
+
+; --- Position servo loop parameters
+; --- <Corrector.NoEncoderPosition>
+CorrectorType = NoEncoderPosition
+
+; --- Motion done parameters
+; --- <MotionDone.Theoretical>
+MotionDoneMode = Theoretical

@@ -601,7 +601,7 @@ color:white;</string>
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>50</y>
+       <y>10</y>
        <width>241</width>
        <height>17</height>
       </rect>
@@ -614,7 +614,7 @@ color:white;</string>
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>70</y>
+       <y>30</y>
        <width>241</width>
        <height>17</height>
       </rect>
@@ -623,29 +623,11 @@ color:white;</string>
       <string>Timing controller connected:</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="detectSDGButton">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>10</y>
-       <width>161</width>
-       <height>32</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <pointsize>16</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>Detect SDG</string>
-     </property>
-    </widget>
     <widget class="QLabel" name="SDGBoolLabel">
      <property name="geometry">
       <rect>
        <x>260</x>
-       <y>50</y>
+       <y>10</y>
        <width>81</width>
        <height>16</height>
       </rect>
@@ -661,7 +643,7 @@ color:white;</string>
      <property name="geometry">
       <rect>
        <x>260</x>
-       <y>70</y>
+       <y>30</y>
        <width>81</width>
        <height>16</height>
       </rect>
@@ -677,7 +659,7 @@ color:white;</string>
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>100</y>
+       <y>60</y>
        <width>161</width>
        <height>32</height>
       </rect>
@@ -771,185 +753,6 @@ color:white;</string>
      </property>
      <property name="text">
       <string>Detect Cameras</string>
-     </property>
-    </widget>
-    <widget class="QLabel" name="defaultSettingsLabel">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>50</y>
-       <width>251</width>
-       <height>17</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Default Settings - Not Implemented</string>
-     </property>
-    </widget>
-    <widget class="QDoubleSpinBox" name="shutterField">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="geometry">
-      <rect>
-       <x>137</x>
-       <y>80</y>
-       <width>81</width>
-       <height>26</height>
-      </rect>
-     </property>
-     <property name="decimals">
-      <number>2</number>
-     </property>
-     <property name="maximum">
-      <double>99.390000000000001</double>
-     </property>
-     <property name="value">
-      <double>10.000000000000000</double>
-     </property>
-    </widget>
-    <widget class="QDoubleSpinBox" name="gainField">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="geometry">
-      <rect>
-       <x>137</x>
-       <y>110</y>
-       <width>81</width>
-       <height>26</height>
-      </rect>
-     </property>
-     <property name="maximum">
-      <double>24.000000000000000</double>
-     </property>
-    </widget>
-    <widget class="QLabel" name="gainLabel">
-     <property name="geometry">
-      <rect>
-       <x>40</x>
-       <y>110</y>
-       <width>91</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Gain (dB)</string>
-     </property>
-    </widget>
-    <widget class="QLabel" name="shutterLabel">
-     <property name="geometry">
-      <rect>
-       <x>40</x>
-       <y>80</y>
-       <width>91</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Shutter (ms)</string>
-     </property>
-    </widget>
-    <widget class="QDoubleSpinBox" name="framerateField">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="geometry">
-      <rect>
-       <x>137</x>
-       <y>140</y>
-       <width>81</width>
-       <height>26</height>
-      </rect>
-     </property>
-     <property name="decimals">
-      <number>2</number>
-     </property>
-     <property name="minimum">
-      <double>1.000000000000000</double>
-     </property>
-     <property name="maximum">
-      <double>10.000000000000000</double>
-     </property>
-     <property name="value">
-      <double>10.000000000000000</double>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="triggerCheck">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="geometry">
-      <rect>
-       <x>40</x>
-       <y>170</y>
-       <width>181</width>
-       <height>23</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>External Trigger</string>
-     </property>
-    </widget>
-    <widget class="QLabel" name="framerateLabel">
-     <property name="geometry">
-      <rect>
-       <x>40</x>
-       <y>140</y>
-       <width>91</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Framerate</string>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="defaultShutterCheck">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>80</y>
-       <width>21</width>
-       <height>22</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="defaultGainCheck">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>110</y>
-       <width>21</width>
-       <height>22</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="defaultShutterCheck_3">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>140</y>
-       <width>21</width>
-       <height>22</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string/>
      </property>
     </widget>
     <widget class="QCheckBox" name="cameraSaveCheck">
@@ -1501,6 +1304,18 @@ color:white;</string>
          </property>
         </widget>
        </item>
+       <item row="2" column="1">
+        <widget class="QPushButton" name="detectSDGButton">
+         <property name="font">
+          <font>
+           <pointsize>16</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>Detect SDG</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </item>
     </layout>
@@ -1512,7 +1327,7 @@ color:white;</string>
      <x>0</x>
      <y>0</y>
      <width>1920</width>
-     <height>25</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>

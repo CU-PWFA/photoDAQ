@@ -32,7 +32,7 @@ class XPS(Device):
         ip : string
             The ip address of the XPS controller.
         """
-        self.xps = NewportXPS(ip,username='Administrator', password='Administrator')
+        self.xps = NewportXPS(ip, username='Administrator', password='Administrator')
         self.xps.read_systemini()
         
     def group_names(self):

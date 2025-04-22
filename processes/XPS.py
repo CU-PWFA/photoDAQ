@@ -26,6 +26,7 @@ class XPS(StreamProcess):
         self.sampleDelay = 0.2
         super().__init__(instr)
         self.delay = 0.05
+        self.output_queue = self.r_queue
     
     def home_group1(self):
         xps = self.device
@@ -60,6 +61,7 @@ class XPS(StreamProcess):
     def update_position1(self):
         xps = self.device
         pos_readback1 = xps.get_stage1_position()
+        print("[XPS.process] pos_readback1 =", pos_readback1) 
         rsp = daq.Rsp('driver', info={'pos_readback1': pos_readback1})
         self.r_queue.put(rsp)
 
