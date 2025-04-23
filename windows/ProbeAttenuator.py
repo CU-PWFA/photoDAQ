@@ -22,8 +22,6 @@ class ProbePanel(QDialog, Ui_ProbePanel):
     device_connected = pyqtSignal()
     def __init__(self, parent, DAQ, instr):
         super().__init__(parent)
-        self.queue = instr.output_queue
-        self.create_update_thread()
 
         self.setupUi(self)
         self.poll_timer = QTimer(self)
@@ -46,22 +44,32 @@ class ProbePanel(QDialog, Ui_ProbePanel):
         self.requestPosValue.returnPressed.connect(self.move_abs)
         self.requestPosValue.setValidator(QDoubleValidator())
         
-   
+        self.Percent1Button.clicked.connect(self.set_percent_1)
+        self.Percent5Button.clicked.connect(self.set_percent_5)
+        self.Percent10Button.clicked.connect(self.set_percent_10)
+        self.PlusEnButton.clicked.connect(self.move_plus_en)
+        self.MinusEnButton.clicked.connect(self.move_minus_en)
+        self.requestEnValue.returnPressed.connect(self.move_abs_en)
+        self.requestEnValue.setValidator(QDoubleValidator())
 
-    def create_update_thread(self):
-        args = (self.queue, self.data_acquired.emit, self.device_connected.emit)
-        thread = threading.Thread(target=self.update_thread, args=args)
-        thread.setDaemon(True)
-        thread.start()
     
-    def update_thread(self, queue, update, setup):
-        while True:
-            rsp = queue.get()
-            print("[ProbePanel] Got Rsp from queue:", rsp.info)
-            if rsp.response == 'driver':
-                update(rsp)
-            queue.task_done()
-        
+    def position_to_energy(self):
+        current_pos_text = self.currentPosValue.text()
+        current_pos = float(current_pos_text)
+        print(current_pos)
+        return current_pos*2
+    
+    def energy_to_position(self):
+        current_percent_text = self.currentEnergyValue.text()
+        current_percent = float(current_percent_text)
+        return current_percent/2
+   
+    def energy_to_position_cal(self, current_percent):
+        return current_percent/2
+
+    def position_to_energy_cal(self, current_position):
+        return current_position*2
+           
     def send_command(self, command, *args, **kwargs):
         """ Send commands to this windows instruments. 
         
@@ -90,12 +98,15 @@ class ProbePanel(QDialog, Ui_ProbePanel):
     @pyqtSlot(object)
     def update_text(self, rsp):
         if "pos_readback1" in rsp.info:
-            self.currentPosValue.setText(str(rsp.info['pos_readback1']))
+            pos = rsp.info['pos_readback1']
+            self.currentPosValue.setText(str(pos))
+    
+            # ✅ Update energy display here
+            energy = self.position_to_energy_cal(pos)
+            self.currentEnergyValue.setText(f"{energy:.2f}")
     
         if "status1" in rsp.info:
             status = rsp.info["status1"]
-            print("[ProbePanel] status1 =", status)
-        
             if hasattr(self, "statusLabel"):
                 if "Ready" in status or "IDLE" in status:
                     self.statusLabel.setText("Ready")
@@ -131,6 +142,8 @@ class ProbePanel(QDialog, Ui_ProbePanel):
     def move_stage_rev_plus(self):
         """ Move stage 1 to absolute or relative position 'pos' [deg]. """
         req_pos = self.requestRev
+        self.statusLabel.setText("Moving...")
+        self.statusLabel.setStyleSheet("color: orange;")
         self.poll_timer.start(100)
         self.send_command('move_stage1_rel', req_pos)
         self.send_command('update_status1')
@@ -139,6 +152,8 @@ class ProbePanel(QDialog, Ui_ProbePanel):
     def move_stage_rev_minus(self):
         """ Move stage 1 to absolute or relative position 'pos' [deg]. """
         req_pos = self.requestRev
+        self.statusLabel.setText("Moving...")
+        self.statusLabel.setStyleSheet("color: orange;")
         self.poll_timer.start(100)
         self.send_command('move_stage1_rel', -req_pos)
         self.send_command('update_status1')
@@ -156,3 +171,62 @@ class ProbePanel(QDialog, Ui_ProbePanel):
         except ValueError:
             print("[move_abs] Invalid number entered.")
 
+    @pyqtSlot(bool)
+    def set_percent_1(self):
+        self.requestRev_percent= 1
+
+    @pyqtSlot(bool)
+    def set_percent_5(self):
+        self.requestRev_percent= 5
+
+    @pyqtSlot(bool)
+    def set_percent_10(self):
+        self.requestRev_percent= 10
+
+    @pyqtSlot(bool)
+    def move_plus_en(self):
+        self.move_stage_rev_plus_en()
+
+    @pyqtSlot(bool)
+    def move_minus_en(self):
+        self.move_stage_rev_minus_en()
+
+    @pyqtSlot(float)
+    def move_stage_rev_plus_en(self):
+        """ Move stage 1 to absolute or relative position 'pos' [deg]. """
+        current_percent_text = self.currentEnergyValue.text()
+        current_percent = float(current_percent_text)
+        req_en = current_percent+ self.requestRev_percent
+        req_pos = self.energy_to_position_cal(req_en)
+        self.statusLabel.setText("Moving...")
+        self.statusLabel.setStyleSheet("color: orange;")
+        self.poll_timer.start(100)
+        self.send_command('move_stage1_abs', req_pos)
+        self.send_command('update_status1')
+
+    @pyqtSlot(float)
+    def move_stage_rev_minus_en(self):
+        """ Move stage 1 to absolute or relative position 'pos' [deg]. """
+        current_percent_text = self.currentEnergyValue.text()
+        current_percent = float(current_percent_text)
+        req_en = current_percent- self.requestRev_percent
+        req_pos = self.energy_to_position_cal(req_en)
+        self.statusLabel.setText("Moving...")
+        self.statusLabel.setStyleSheet("color: orange;")
+        self.poll_timer.start(100)
+        self.send_command('move_stage1_abs', req_pos)
+        self.send_command('update_status1')
+    
+    @pyqtSlot()
+    def move_abs_en(self):
+        """ Move stage 1 to absolute or relative position 'pos' [mm]. """
+        try:
+            req_en = float(self.requestEnValue.text())
+            req_pos = self.energy_to_position_cal(req_en)
+            self.statusLabel.setText("Moving...")
+            self.statusLabel.setStyleSheet("color: orange;")
+            self.poll_timer.start(100)
+            self.send_command('move_stage1_abs', req_pos)
+            self.send_command('update_status1')
+        except ValueError:
+            print("[move_abs] Invalid number entered.")

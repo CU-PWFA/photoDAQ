@@ -61,7 +61,6 @@ class XPS(StreamProcess):
     def update_position1(self):
         xps = self.device
         pos_readback1 = xps.get_stage1_position()
-        print("[XPS.process] pos_readback1 =", pos_readback1) 
         rsp = daq.Rsp('driver', info={'pos_readback1': pos_readback1})
         self.r_queue.put(rsp)
 

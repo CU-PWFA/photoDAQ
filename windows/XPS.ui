@@ -45,7 +45,7 @@
     <string>Reboot</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="ProbeAttenuator">
+  <widget class="QPushButton" name="MainAttenuator">
    <property name="geometry">
     <rect>
      <x>10</x>
@@ -61,7 +61,64 @@
 }</string>
    </property>
    <property name="text">
+    <string>Main Energy Attenuator</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="ProbeAttenuator">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>50</y>
+     <width>191</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton {
+    background-color: green;
+    color: white;
+}</string>
+   </property>
+   <property name="text">
     <string>Probe Energy Attenuator</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="RAIL">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>80</y>
+     <width>191</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton {
+    background-color: green;
+    color: white;
+}</string>
+   </property>
+   <property name="text">
+    <string>RAIL</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="FROG">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>110</y>
+     <width>191</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton {
+    background-color: green;
+    color: white;
+}</string>
+   </property>
+   <property name="text">
+    <string>FROG</string>
    </property>
   </widget>
  </widget>
